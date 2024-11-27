@@ -12,6 +12,184 @@ fn empty_token_stream() {
 }
 
 #[test]
+fn literal_null_token_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("null");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 5), "null", TokenType::LiteralNull),
+        Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn literal_number_int_and_long_tokens_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("0");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 2), "0", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 2, 3), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("42");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "42", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 3, 4), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("1000000000000000");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 17), "1000000000000000", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 17, 18), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn literal_number_float_tokens_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("4.2f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 5), "4.2f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("2.f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "2.f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens(".5f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), ".5f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn literal_number_float_with_exp_tokens_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("4.2e+2f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 8), "4.2e+2f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 8, 9), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("2.E-3f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 7), "2.E-3f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens(".5e+200f");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 9), ".5e+200f", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 9, 10), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn literal_number_double_tokens_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("4.2");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "4.2", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("2.");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "2.", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 3, 4), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens(".5");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), ".5", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 3, 4), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn literal_number_double_with_exp_tokens_test() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("4.2e+2");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 7), "4.2e+2", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("2.E-3");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 6), "2.E-3", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 6, 7), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens(".5e+200");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 8), ".5e+200", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 8, 9), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
 fn other_token_stream() {
     let mut lexer = Lexer::new();
 

@@ -986,7 +986,7 @@ impl Lexer {
         }
 
         let c = token.as_bytes()[0];
-        if !matches!(c, b'0'..=b'9') && c != b'.' {
+        if !c.is_ascii_digit() && c != b'.' {
             return false;
         }
 
@@ -1024,7 +1024,7 @@ impl Lexer {
             return false;
         }
 
-        f64::from_str(&token[..token.len() - 1]).is_ok()
+        f64::from_str(token).is_ok()
     }
 
     fn get_code_position(&self, column_from: usize) -> CodePosition {
