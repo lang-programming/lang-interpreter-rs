@@ -393,7 +393,7 @@ impl Lexer {
         }
 
         //Add empty LITERAL_TEXT token
-        tokens.push(Token::new(self.get_code_position(from_column), "", TokenType::LiteralText));
+        tokens.push(Token::new(self.get_code_position(self.column), "", TokenType::LiteralText));
 
         from_column = self.column;
         self.column += 3;
