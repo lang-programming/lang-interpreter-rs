@@ -55,6 +55,26 @@ fn literal_number_int_and_long_tokens() {
         Token::new(CodePosition::new(1, 1, 17, 18), "\n", TokenType::Eol),
         Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
     ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("42L");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "42L", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("1000000000000000l");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 18), "1000000000000000l", TokenType::LiteralNumber),
+        Token::new(CodePosition::new(1, 1, 18, 19), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
 }
 
 #[test]
