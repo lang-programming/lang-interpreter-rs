@@ -12,7 +12,7 @@ fn empty_token_stream() {
 }
 
 #[test]
-fn literal_null_token_test() {
+fn literal_null_token() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("null");
@@ -25,7 +25,7 @@ fn literal_null_token_test() {
 }
 
 #[test]
-fn literal_number_int_and_long_tokens_test() {
+fn literal_number_int_and_long_tokens() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("0");
@@ -58,7 +58,7 @@ fn literal_number_int_and_long_tokens_test() {
 }
 
 #[test]
-fn literal_number_float_tokens_test() {
+fn literal_number_float_tokens() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("4.2f");
@@ -91,7 +91,7 @@ fn literal_number_float_tokens_test() {
 }
 
 #[test]
-fn literal_number_float_with_exp_tokens_test() {
+fn literal_number_float_with_exp_tokens() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("4.2e+2f");
@@ -124,7 +124,7 @@ fn literal_number_float_with_exp_tokens_test() {
 }
 
 #[test]
-fn literal_number_double_tokens_test() {
+fn literal_number_double_tokens() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("4.2");
@@ -157,7 +157,7 @@ fn literal_number_double_tokens_test() {
 }
 
 #[test]
-fn literal_number_double_with_exp_tokens_test() {
+fn literal_number_double_with_exp_tokens() {
     let mut lexer = Lexer::new();
 
     let tokens = lexer.read_tokens("4.2e+2");
@@ -202,6 +202,55 @@ fn other_token_stream() {
         Token::new(CodePosition::new(1, 1, 4, 5), "2", TokenType::LiteralNumber),
         Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
         Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn multiline_text_without_escape_sequence_support() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("{{{TEST \"\"\"\\s\\u{6A}\\\ntest\n\n\"\"\"\n42}}}");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "{{{", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 21), "TEST \"\"\"\\s\\u{6A}\\", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 21, 22), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 5), "test", TokenType::LiteralText),
+        Token::new(CodePosition::new(2, 2, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(3, 3, 1, 2), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(4, 4, 1, 4), "\"\"\"", TokenType::LiteralText),
+        Token::new(CodePosition::new(4, 4, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(5, 5, 1, 3), "42", TokenType::LiteralText),
+        Token::new(CodePosition::new(5, 5, 3, 6), "}}}", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(5, 5, 6, 7), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(6, 6, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn multiline_text_with_escape_sequence_support() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\"\"\"TEST {{{\\s\\u{6A}\\\ntest\n\n}}}\n42\"\"\"");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "\"\"\"", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 12), "TEST {{{", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 12, 14), "\\s", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 14, 14), "", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 14, 20), "\\u{6A}", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 20, 21), "\\", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 21, 22), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 5), "test", TokenType::LiteralText),
+        Token::new(CodePosition::new(2, 2, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(3, 3, 1, 2), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(4, 4, 1, 4), "}}}", TokenType::LiteralText),
+        Token::new(CodePosition::new(4, 4, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(5, 5, 1, 3), "42", TokenType::LiteralText),
+        Token::new(CodePosition::new(5, 5, 3, 3), "", TokenType::LiteralText),
+        Token::new(CodePosition::new(5, 5, 3, 6), "\"\"\"", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(5, 5, 6, 7), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(6, 6, 1, 1), "", TokenType::Eof),
     ]);
 }
 
