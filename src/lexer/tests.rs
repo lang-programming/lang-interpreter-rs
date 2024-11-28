@@ -210,6 +210,96 @@ fn literal_number_double_with_exp_tokens() {
 }
 
 #[test]
+fn identifier_tokens() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("$abc");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 5), "$abc", TokenType::Identifier),
+        Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("&abc");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 5), "&abc", TokenType::Identifier),
+        Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("fp.abc");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 7), "fp.abc", TokenType::Identifier),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("op:add");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 7), "op:add", TokenType::Identifier),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("$[[abc]]");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 9), "$[[abc]]", TokenType::Identifier),
+        Token::new(CodePosition::new(1, 1, 9, 10), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn invalid_identifier_tokens() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("$[abc");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 2), "$", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 2, 3), "[", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 3, 6), "abc", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 6, 7), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("$[[abc]");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 1), "Bracket is missing in variable pointer: \"$[[abc]\"", TokenType::LexerError),
+        Token::new(CodePosition::new(1, 1, 1, 2), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+
+    lexer.reset_position_vars();
+
+    let tokens = lexer.read_tokens("op:xyz");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "op", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 3, 4), ":", TokenType::Operator),
+        Token::new(CodePosition::new(1, 1, 4, 7), "xyz", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
 fn other_token_stream() {
     let mut lexer = Lexer::new();
 
