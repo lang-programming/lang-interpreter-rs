@@ -374,13 +374,13 @@ pub struct FunctionDefinition {
     function_name: String,
     overloaded: bool,
     combinator: bool,
-    doc_comment: String,
-    return_value_type_constraint: String,
+    doc_comment: Option<String>,
+    return_value_type_constraint: Option<String>,
     function_body: AST,
 }
 
 impl FunctionDefinition {
-    pub fn new(function_name: String, overloaded: bool, combinator: bool, doc_comment: String, return_value_type_constraint: String, function_body: AST) -> Self {
+    pub fn new(function_name: String, overloaded: bool, combinator: bool, doc_comment: Option<String>, return_value_type_constraint: Option<String>, function_body: AST) -> Self {
         Self { function_name, overloaded, combinator, doc_comment, return_value_type_constraint, function_body }
     }
 
@@ -396,12 +396,12 @@ impl FunctionDefinition {
         self.combinator
     }
 
-    pub fn doc_comment(&self) -> &str {
-        &self.doc_comment
+    pub fn doc_comment(&self) -> Option<&str> {
+        self.doc_comment.as_deref()
     }
 
-    pub fn return_value_type_constraint(&self) -> &str {
-        &self.return_value_type_constraint
+    pub fn return_value_type_constraint(&self) -> Option<&str> {
+        self.return_value_type_constraint.as_deref()
     }
 
     pub fn function_body(&self) -> &AST {
