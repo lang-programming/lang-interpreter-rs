@@ -21,12 +21,12 @@ pub(crate) fn get_index_of_matching_bracket(
             bracket_count += 1;
         }else if c == closed_bracket {
             bracket_count = bracket_count.saturating_sub(1);
-            
+
             if bracket_count == 0 {
                 return Some(i);
             }
         }
-        
+
         i += 1;
     }
 
