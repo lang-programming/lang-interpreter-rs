@@ -409,6 +409,47 @@ impl FunctionDefinition {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct StructMember {
+    name: String,
+    type_constraint: Option<String>,
+}
+
+impl StructMember {
+    pub fn new(name: String, type_constraint: Option<String>) -> Self {
+        Self { name, type_constraint }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn type_constraint(&self) -> Option<&str> {
+        self.type_constraint.as_deref()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StructDefinition {
+    struct_name: String,
+
+    members: Vec<StructMember>,
+}
+
+impl StructDefinition {
+    pub fn new(struct_name: String, members: Vec<StructMember>) -> Self {
+        Self { struct_name, members }
+    }
+
+    pub fn struct_name(&self) -> &str {
+        &self.struct_name
+    }
+
+    pub fn members(&self) -> &[StructMember] {
+        &self.members
+    }
+}
+
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Visibility {
     Private,
@@ -417,30 +458,104 @@ pub enum Visibility {
 }
 
 #[derive(Debug, Clone)]
+pub struct ClassMember {
+    name: String,
+    type_constraint: Option<String>,
+    value: Option<Node>,
+    final_flag: bool,
+    visibility: Visibility,
+}
+
+impl ClassMember {
+    pub fn new(name: String, type_constraint: Option<String>, value: Option<Node>, final_flag: bool, visibility: Visibility) -> Self {
+        Self { name, type_constraint, value, final_flag, visibility }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn type_constraint(&self) -> Option<&str> {
+        self.type_constraint.as_deref()
+    }
+
+    pub fn value(&self) -> Option<&Node> {
+        self.value.as_ref()
+    }
+
+    pub fn final_flag(&self) -> bool {
+        self.final_flag
+    }
+
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Method {
+    name: String,
+    body: AST,
+    override_flag: bool,
+    visibility: Visibility,
+}
+
+impl Method {
+    pub fn new(name: String, body: AST, override_flag: bool, visibility: Visibility) -> Self {
+        Self { name, body, override_flag, visibility }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn body(&self) -> &AST {
+        &self.body
+    }
+
+    pub fn override_flag(&self) -> bool {
+        self.override_flag
+    }
+
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Constructor {
+    body: AST,
+    visibility: Visibility,
+}
+
+impl Constructor {
+    pub fn new(body: AST, visibility: Visibility) -> Self {
+        Self { body, visibility }
+    }
+
+    pub fn body(&self) -> &AST {
+        &self.body
+    }
+
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ClassDefinition {
     class_name: String,
 
-    static_member_names: Vec<String>,
-    static_member_type_constraints: Vec<String>,
-    static_member_values: Vec<Node>,
-    static_member_final_flag: Vec<bool>,
-    static_member_visibility: Vec<Visibility>,
+    static_members: Vec<ClassMember>,
 
-    member_names: Vec<String>,
-    member_type_constraints: Vec<String>,
-    member_final_flag: Vec<bool>,
-    member_visibility: Vec<Visibility>,
+    members: Vec<ClassMember>,
 
     /**
      * If multiple methods have the same name, they are overloaded
      */
-    method_names: Vec<String>,
-    method_definitions: Vec<Node>,
-    method_override_flag: Vec<bool>,
-    method_visibility: Vec<Visibility>,
+    methods: Vec<Method>,
 
-    constructor_definitions: Vec<Node>,
-    constructor_visibility: Vec<Visibility>,
+    constructors: Vec<Constructor>,
 
     /**
      * List of parent nodes separated by ArgumentSeparator nodes
@@ -451,50 +566,22 @@ pub struct ClassDefinition {
 impl ClassDefinition {
     pub fn new(
         class_name: String,
-
-        static_member_names: Vec<String>,
-        static_member_type_constraints: Vec<String>,
-        static_member_values: Vec<Node>,
-        static_member_final_flag: Vec<bool>,
-        static_member_visibility: Vec<Visibility>,
-
-        member_names: Vec<String>,
-        member_type_constraints: Vec<String>,
-        member_final_flag: Vec<bool>,
-        member_visibility: Vec<Visibility>,
-
-        method_names: Vec<String>,
-        method_definitions: Vec<Node>,
-        method_override_flag: Vec<bool>,
-        method_visibility: Vec<Visibility>,
-
-        constructor_definitions: Vec<Node>,
-        constructor_visibility: Vec<Visibility>,
-
+        static_members: Vec<ClassMember>,
+        members: Vec<ClassMember>,
+        methods: Vec<Method>,
+        constructors: Vec<Constructor>,
         parent_classes: Vec<Node>,
     ) -> Self {
+        if members.iter().any(|member| member.value.is_some()) {
+            panic!("Non-static class members can not have a default values");
+        }
+
         Self {
             class_name,
-
-            static_member_names,
-            static_member_type_constraints,
-            static_member_values,
-            static_member_final_flag,
-            static_member_visibility,
-
-            member_names,
-            member_type_constraints,
-            member_final_flag,
-            member_visibility,
-
-            method_names,
-            method_definitions,
-            method_override_flag,
-            method_visibility,
-
-            constructor_definitions,
-            constructor_visibility,
-
+            static_members,
+            members,
+            methods,
+            constructors,
             parent_classes,
         }
     }
@@ -503,67 +590,23 @@ impl ClassDefinition {
         &self.class_name
     }
 
-    pub fn static_member_names(&self) -> &Vec<String> {
-        &self.static_member_names
+    pub fn static_members(&self) -> &[ClassMember] {
+        &self.static_members
     }
 
-    pub fn static_member_type_constraints(&self) -> &Vec<String> {
-        &self.static_member_type_constraints
+    pub fn members(&self) -> &[ClassMember] {
+        &self.members
     }
 
-    pub fn static_member_values(&self) -> &Vec<Node> {
-        &self.static_member_values
+    pub fn methods(&self) -> &[Method] {
+        &self.methods
     }
 
-    pub fn static_member_final_flag(&self) -> &Vec<bool> {
-        &self.static_member_final_flag
+    pub fn constructors(&self) -> &[Constructor] {
+        &self.constructors
     }
 
-    pub fn static_member_visibility(&self) -> &Vec<Visibility> {
-        &self.static_member_visibility
-    }
-
-    pub fn member_names(&self) -> &Vec<String> {
-        &self.member_names
-    }
-
-    pub fn member_type_constraints(&self) -> &Vec<String> {
-        &self.member_type_constraints
-    }
-
-    pub fn member_final_flag(&self) -> &Vec<bool> {
-        &self.member_final_flag
-    }
-
-    pub fn member_visibility(&self) -> &Vec<Visibility> {
-        &self.member_visibility
-    }
-
-    pub fn method_names(&self) -> &Vec<String> {
-        &self.method_names
-    }
-
-    pub fn method_definitions(&self) -> &Vec<Node> {
-        &self.method_definitions
-    }
-
-    pub fn method_override_flag(&self) -> &Vec<bool> {
-        &self.method_override_flag
-    }
-
-    pub fn method_visibility(&self) -> &Vec<Visibility> {
-        &self.method_visibility
-    }
-
-    pub fn constructor_definitions(&self) -> &Vec<Node> {
-        &self.constructor_definitions
-    }
-
-    pub fn constructor_visibility(&self) -> &Vec<Visibility> {
-        &self.constructor_visibility
-    }
-
-    pub fn parent_classes(&self) -> &Vec<Node> {
+    pub fn parent_classes(&self) -> &[Node] {
         &self.parent_classes
     }
 }
@@ -694,11 +737,7 @@ pub enum NodeData {
     VoidValue,
     ArrayValue,
 
-    StructDefinition {
-        struct_name: String,
-        member_names: Vec<String>,
-        type_constraints: Vec<String>,
-    },
+    StructDefinition(Box<StructDefinition>),
 
     ClassDefinition(Box<ClassDefinition>),
 }
@@ -1176,20 +1215,11 @@ impl Node {
         }
     }
 
-    pub fn new_struct_definition_node(
-        pos: CodePosition,
-        struct_name: String,
-        member_names: Vec<String>,
-        type_constraints: Vec<String>,
-    ) -> Node {
+    pub fn new_struct_definition_node(pos: CodePosition, struct_definition: StructDefinition) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
-            node_data: NodeData::StructDefinition {
-                struct_name,
-                member_names,
-                type_constraints,
-            },
+            node_data: NodeData::StructDefinition(Box::new(struct_definition)),
         }
     }
 

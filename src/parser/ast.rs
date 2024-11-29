@@ -1,6 +1,6 @@
 mod node;
 
-pub use node::{Node, NodeData, Visibility, ClassDefinition, Operator, OperatorType, FunctionDefinition};
+pub use node::{Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition};
 
 use crate::lexer::CodePosition;
 
