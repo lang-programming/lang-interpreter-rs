@@ -700,7 +700,7 @@ pub enum NodeData {
         type_constraints: Vec<String>,
     },
 
-    ClassDefinition(ClassDefinition),
+    ClassDefinition(Box<ClassDefinition>),
 }
 
 #[derive(Debug, Clone)]
@@ -1197,7 +1197,7 @@ impl Node {
         Self {
             pos,
             child_nodes: Default::default(),
-            node_data: NodeData::ClassDefinition(class_definition),
+            node_data: NodeData::ClassDefinition(Box::new(class_definition)),
         }
     }
 
