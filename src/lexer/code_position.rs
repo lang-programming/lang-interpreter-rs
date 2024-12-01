@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct CodePosition {
     line_number_from: isize,
     line_number_to: isize,

@@ -1,4 +1,4 @@
-pub(crate) fn get_index_of_matching_bracket(
+pub(crate) fn get_index_of_matching_bracket_str(
     string: &str,
     start_byte_index: usize,
     end_byte_index: usize,

@@ -457,7 +457,7 @@ impl Lexer {
         tokens.push(Token::new(self.get_code_position(from_column), token, TokenType::LiteralText));
 
         current_line = current_line[byte_index..].to_string();
-        
+
         from_column = self.column;
         self.column += 3;
 
@@ -836,7 +836,7 @@ impl Lexer {
 
                 //Check if var pointer brackets are closed correctly
                 if regex_patterns::PARSING_VAR_NAME_PTR_AND_DEREFERENCE.is_match(token) {
-                    let end_byte_index = utils::get_index_of_matching_bracket(
+                    let end_byte_index = utils::get_index_of_matching_bracket_str(
                         token,
                         token.find("$").map(|index| index + 1).unwrap_or(0),
                         usize::MAX,
