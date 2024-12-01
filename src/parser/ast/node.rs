@@ -217,6 +217,18 @@ impl Operator {
         }
     }
 
+    pub fn is_unary(&self) -> bool {
+        self.arity() == 1
+    }
+
+    pub fn is_binary(&self) -> bool {
+        self.arity() == 2
+    }
+
+    pub fn is_ternary(&self) -> bool {
+        self.arity() == 3
+    }
+
     pub fn precedence(&self) -> isize {
         match self {
             //General
@@ -840,9 +852,9 @@ impl Node {
 
     pub fn new_function_call_previous_node_value_node(
         pos: CodePosition,
-        argument_list: Vec<Node>,
         leading_whitespace: impl Into<String>,
         trailing_whitespace: impl Into<String>,
+        argument_list: Vec<Node>,
     ) -> Node {
         Self {
             pos,
@@ -1183,11 +1195,11 @@ impl Node {
         }
     }
 
-    pub fn new_text_value_node(pos: CodePosition, value: String) -> Node {
+    pub fn new_text_value_node(pos: CodePosition, value: impl Into<String>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
-            node_data: NodeData::TextValue(value),
+            node_data: NodeData::TextValue(value.into()),
         }
     }
 
@@ -1241,5 +1253,97 @@ impl Node {
 
     pub fn node_data(&self) -> &NodeData {
         &self.node_data
+    }
+
+    pub fn operator(&self) -> Option<Operator> {
+        match &self.node_data {
+            NodeData::Operation {operator, ..} |
+            NodeData::Math {operator, ..} |
+            NodeData::Condition {operator, ..} => Some(*operator),
+
+            _ => None,
+        }
+    }
+
+    pub fn left_side_operand(&self) -> Option<&Node> {
+        match &self.node_data {
+            NodeData::Operation {left_side_operand, ..} |
+            NodeData::Math {left_side_operand, ..} |
+            NodeData::Condition {left_side_operand, ..} => left_side_operand.as_deref(),
+
+            _ => None,
+        }
+    }
+
+    pub fn into_left_side_operand(self) -> Option<Node> {
+        match self.node_data {
+            NodeData::Operation {left_side_operand, ..} |
+            NodeData::Math {left_side_operand, ..} |
+            NodeData::Condition {left_side_operand, ..} => left_side_operand.map(|node| *node),
+
+            _ => None,
+        }
+    }
+
+    pub fn middle_operand(&self) -> Option<&Node> {
+        match &self.node_data {
+            NodeData::Operation {middle_operand, ..} |
+            NodeData::Math {middle_operand, ..} |
+            NodeData::Condition {middle_operand, ..} => middle_operand.as_deref(),
+
+            _ => None,
+        }
+    }
+
+    pub fn into_middle_operand(self) -> Option<Node> {
+        match self.node_data {
+            NodeData::Operation {middle_operand, ..} |
+            NodeData::Math {middle_operand, ..} |
+            NodeData::Condition {middle_operand, ..} => middle_operand.map(|node| *node),
+
+            _ => None,
+        }
+    }
+
+    pub fn right_side_operand(&self) -> Option<&Node> {
+        match &self.node_data {
+            NodeData::Operation {right_side_operand, ..} |
+            NodeData::Math {right_side_operand, ..} |
+            NodeData::Condition {right_side_operand, ..} => right_side_operand.as_deref(),
+
+            _ => None,
+        }
+    }
+
+    pub fn into_right_side_operand(self) -> Option<Node> {
+        match self.node_data {
+            NodeData::Operation {right_side_operand, ..} |
+            NodeData::Math {right_side_operand, ..} |
+            NodeData::Condition {right_side_operand, ..} => right_side_operand.map(|node| *node),
+
+            _ => None,
+        }
+    }
+
+    pub fn operands(&self) -> (Option<&Node>, Option<&Node>, Option<&Node>) {
+        match &self.node_data {
+            NodeData::Operation {left_side_operand, middle_operand, right_side_operand, ..} |
+            NodeData::Math {left_side_operand, middle_operand, right_side_operand, ..} |
+            NodeData::Condition {left_side_operand, middle_operand, right_side_operand, ..} =>
+                (left_side_operand.as_deref(), middle_operand.as_deref(), right_side_operand.as_deref()),
+
+            _ => (None, None, None),
+        }
+    }
+
+    pub fn into_operands(self) -> (Option<Node>, Option<Node>, Option<Node>) {
+        match self.node_data {
+            NodeData::Operation {left_side_operand, middle_operand, right_side_operand, ..} |
+            NodeData::Math {left_side_operand, middle_operand, right_side_operand, ..} |
+            NodeData::Condition {left_side_operand, middle_operand, right_side_operand, ..} =>
+                (left_side_operand.map(|node| *node), middle_operand.map(|node| *node), right_side_operand.map(|node| *node)),
+
+            _ => (None, None, None),
+        }
     }
 }
