@@ -624,6 +624,82 @@ impl ClassDefinition {
 }
 
 #[derive(Debug, Clone)]
+pub struct OperationExpression {
+    left_side_operand: Option<Box<Node>>,
+    middle_operand: Option<Box<Node>>,
+    right_side_operand: Option<Box<Node>>,
+    operator: Operator,
+    operator_type: OperatorType,
+}
+
+impl OperationExpression {
+    pub fn new(
+        left_side_operand: Option<Box<Node>>,
+        middle_operand: Option<Box<Node>>,
+        right_side_operand: Option<Box<Node>>,
+        operator: Operator,
+        operator_type: OperatorType,
+    ) -> Self {
+        let arity = operator.arity();
+        if matches!(
+            arity,
+
+            1 if left_side_operand.is_none() || middle_operand.is_some() || right_side_operand.is_some(),
+        ) {
+            panic!("Invalid operand count for unary operator");
+        }
+
+        if matches!(
+            arity,
+
+            2 if left_side_operand.is_none() || middle_operand.is_some() || right_side_operand.is_none(),
+        ) {
+            panic!("Invalid operand count for binary operator");
+        }
+
+        if matches!(
+            arity,
+
+            3 if left_side_operand.is_none() || middle_operand.is_none() || right_side_operand.is_none(),
+        ) {
+            panic!("Invalid operand count for ternary operator");
+        }
+
+        if !operator.operator_type().is_compatible_with(operator_type) {
+            panic!("Node type is not compatible with the operator");
+        }
+
+        Self {
+            operator,
+            left_side_operand,
+            middle_operand,
+            right_side_operand,
+            operator_type,
+        }
+    }
+
+    pub fn left_side_operand(&self) -> Option<&Node> {
+        self.left_side_operand.as_deref()
+    }
+
+    pub fn middle_operand(&self) -> Option<&Node> {
+        self.middle_operand.as_deref()
+    }
+
+    pub fn right_side_operand(&self) -> Option<&Node> {
+        self.right_side_operand.as_deref()
+    }
+
+    pub fn operator(&self) -> Operator {
+        self.operator
+    }
+
+    pub fn operator_type(&self) -> OperatorType {
+        self.operator_type
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ConditionalNode {
     node: Node,
 }
@@ -713,28 +789,13 @@ pub enum NodeData {
     TryStatement,
 
     ContinueBreakStatement {
-        number_node: Box<Node>,
+        number_node: Option<Box<Node>>,
         continue_node: bool,
     },
 
-    Operation {
-        operator: Operator,
-        left_side_operand: Option<Box<Node>>,
-        middle_operand: Option<Box<Node>>,
-        right_side_operand: Option<Box<Node>>,
-    },
-    Math {
-        operator: Operator,
-        left_side_operand: Option<Box<Node>>,
-        middle_operand: Option<Box<Node>>,
-        right_side_operand: Option<Box<Node>>,
-    },
-    Condition {
-        operator: Operator,
-        left_side_operand: Option<Box<Node>>,
-        middle_operand: Option<Box<Node>>,
-        right_side_operand: Option<Box<Node>>,
-    },
+    Operation(OperationExpression),
+    Math(OperationExpression),
+    Condition(OperationExpression),
 
     Return,
     Throw,
@@ -989,7 +1050,7 @@ impl Node {
         }
     }
 
-    pub fn new_continue_break_statement_node(pos: CodePosition, number_node: Box<Node>, continue_node: bool) -> Node {
+    pub fn new_continue_break_statement_node(pos: CodePosition, number_node: Option<Box<Node>>, continue_node: bool) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -1072,63 +1133,15 @@ impl Node {
 
     pub fn new_operation_statement_node(
         pos: CodePosition,
-        left_side_operand: Option<Box<Node>>,
-        middle_operand: Option<Box<Node>>,
-        right_side_operand: Option<Box<Node>>,
-        operator: Operator,
-        operator_type: OperatorType,
+        operation_expression: OperationExpression,
     ) -> Node {
-        let arity = operator.arity();
-        if matches!(
-            arity,
-
-            1 if left_side_operand.is_none() || middle_operand.is_some() || right_side_operand.is_some(),
-        ) {
-            panic!("Invalid operand count for unary operator");
-        }
-
-        if matches!(
-            arity,
-
-            2 if left_side_operand.is_none() || middle_operand.is_some() || right_side_operand.is_none(),
-        ) {
-            panic!("Invalid operand count for binary operator");
-        }
-
-        if matches!(
-            arity,
-
-            3 if left_side_operand.is_none() || middle_operand.is_none() || right_side_operand.is_none(),
-        ) {
-            panic!("Invalid operand count for ternary operator");
-        }
-
-        if !operator.operator_type().is_compatible_with(operator_type) {
-            panic!("Node type is not compatible with the operator");
-        }
-
         Self {
             pos,
             child_nodes: Default::default(),
-            node_data: match operator_type {
-                OperatorType::All | OperatorType::General => NodeData::Operation {
-                    left_side_operand,
-                    middle_operand,
-                    right_side_operand,
-                    operator,
-                },
-                OperatorType::Math => NodeData::Math {
-                    left_side_operand,
-                    middle_operand,
-                    right_side_operand,
-                    operator,
-                },
-                OperatorType::Condition => NodeData::Condition {
-                    left_side_operand,
-                    middle_operand,
-                    right_side_operand,
-                    operator,
-                },
+            node_data: match operation_expression.operator_type {
+                OperatorType::All | OperatorType::General => NodeData::Operation(operation_expression),
+                OperatorType::Math => NodeData::Math(operation_expression),
+                OperatorType::Condition => NodeData::Condition(operation_expression),
             },
         }
     }
@@ -1257,9 +1270,10 @@ impl Node {
 
     pub fn operator(&self) -> Option<Operator> {
         match &self.node_data {
-            NodeData::Operation {operator, ..} |
-            NodeData::Math {operator, ..} |
-            NodeData::Condition {operator, ..} => Some(*operator),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                Some(operation_expression.operator),
 
             _ => None,
         }
@@ -1267,9 +1281,10 @@ impl Node {
 
     pub fn left_side_operand(&self) -> Option<&Node> {
         match &self.node_data {
-            NodeData::Operation {left_side_operand, ..} |
-            NodeData::Math {left_side_operand, ..} |
-            NodeData::Condition {left_side_operand, ..} => left_side_operand.as_deref(),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.left_side_operand.as_deref(),
 
             _ => None,
         }
@@ -1277,9 +1292,10 @@ impl Node {
 
     pub fn into_left_side_operand(self) -> Option<Node> {
         match self.node_data {
-            NodeData::Operation {left_side_operand, ..} |
-            NodeData::Math {left_side_operand, ..} |
-            NodeData::Condition {left_side_operand, ..} => left_side_operand.map(|node| *node),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.left_side_operand.map(|node| *node),
 
             _ => None,
         }
@@ -1287,9 +1303,10 @@ impl Node {
 
     pub fn middle_operand(&self) -> Option<&Node> {
         match &self.node_data {
-            NodeData::Operation {middle_operand, ..} |
-            NodeData::Math {middle_operand, ..} |
-            NodeData::Condition {middle_operand, ..} => middle_operand.as_deref(),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.middle_operand.as_deref(),
 
             _ => None,
         }
@@ -1297,9 +1314,10 @@ impl Node {
 
     pub fn into_middle_operand(self) -> Option<Node> {
         match self.node_data {
-            NodeData::Operation {middle_operand, ..} |
-            NodeData::Math {middle_operand, ..} |
-            NodeData::Condition {middle_operand, ..} => middle_operand.map(|node| *node),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.middle_operand.map(|node| *node),
 
             _ => None,
         }
@@ -1307,9 +1325,10 @@ impl Node {
 
     pub fn right_side_operand(&self) -> Option<&Node> {
         match &self.node_data {
-            NodeData::Operation {right_side_operand, ..} |
-            NodeData::Math {right_side_operand, ..} |
-            NodeData::Condition {right_side_operand, ..} => right_side_operand.as_deref(),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.right_side_operand.as_deref(),
 
             _ => None,
         }
@@ -1317,9 +1336,10 @@ impl Node {
 
     pub fn into_right_side_operand(self) -> Option<Node> {
         match self.node_data {
-            NodeData::Operation {right_side_operand, ..} |
-            NodeData::Math {right_side_operand, ..} |
-            NodeData::Condition {right_side_operand, ..} => right_side_operand.map(|node| *node),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                operation_expression.right_side_operand.map(|node| *node),
 
             _ => None,
         }
@@ -1327,10 +1347,14 @@ impl Node {
 
     pub fn operands(&self) -> (Option<&Node>, Option<&Node>, Option<&Node>) {
         match &self.node_data {
-            NodeData::Operation {left_side_operand, middle_operand, right_side_operand, ..} |
-            NodeData::Math {left_side_operand, middle_operand, right_side_operand, ..} |
-            NodeData::Condition {left_side_operand, middle_operand, right_side_operand, ..} =>
-                (left_side_operand.as_deref(), middle_operand.as_deref(), right_side_operand.as_deref()),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                (
+                    operation_expression.left_side_operand.as_deref(),
+                    operation_expression.middle_operand.as_deref(),
+                    operation_expression.right_side_operand.as_deref(),
+                ),
 
             _ => (None, None, None),
         }
@@ -1338,10 +1362,14 @@ impl Node {
 
     pub fn into_operands(self) -> (Option<Node>, Option<Node>, Option<Node>) {
         match self.node_data {
-            NodeData::Operation {left_side_operand, middle_operand, right_side_operand, ..} |
-            NodeData::Math {left_side_operand, middle_operand, right_side_operand, ..} |
-            NodeData::Condition {left_side_operand, middle_operand, right_side_operand, ..} =>
-                (left_side_operand.map(|node| *node), middle_operand.map(|node| *node), right_side_operand.map(|node| *node)),
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) =>
+                (
+                    operation_expression.left_side_operand.map(|node| *node),
+                    operation_expression.middle_operand.map(|node| *node),
+                    operation_expression.right_side_operand.map(|node| *node),
+                ),
 
             _ => (None, None, None),
         }

@@ -1,6 +1,10 @@
 pub mod node;
 
-pub use node::{Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method, ConditionalNode, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition};
+pub use node::{
+    Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method,
+    ConditionalNode, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition,
+    OperationExpression,
+};
 
 use crate::lexer::CodePosition;
 
@@ -26,7 +30,19 @@ impl AST {
         self.nodes.push(node);
     }
 
-    pub fn convert_to_node(self) -> Node {
+    pub fn nodes(&self) -> &[Node] {
+        &self.nodes
+    }
+    
+    pub(in crate::parser) fn nodes_mut(&mut self) -> &mut Vec<Node> {
+        &mut self.nodes
+    }
+
+    pub fn into_nodes(self) -> Vec<Node> {
+        self.nodes
+    }
+
+    pub fn into_node(self) -> Node {
         if self.nodes.len() == 1 {
             self.nodes.into_iter().next().unwrap()
         }else {
