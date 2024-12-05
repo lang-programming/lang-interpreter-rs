@@ -383,7 +383,7 @@ impl Operator {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
-    function_name: String,
+    function_name: Option<String>,
     overloaded: bool,
     combinator: bool,
     doc_comment: Option<String>,
@@ -392,12 +392,12 @@ pub struct FunctionDefinition {
 }
 
 impl FunctionDefinition {
-    pub fn new(function_name: String, overloaded: bool, combinator: bool, doc_comment: Option<String>, return_value_type_constraint: Option<String>, function_body: AST) -> Self {
+    pub fn new(function_name: Option<String>, overloaded: bool, combinator: bool, doc_comment: Option<String>, return_value_type_constraint: Option<String>, function_body: AST) -> Self {
         Self { function_name, overloaded, combinator, doc_comment, return_value_type_constraint, function_body }
     }
 
-    pub fn function_name(&self) -> &str {
-        &self.function_name
+    pub fn function_name(&self) -> Option<&str> {
+        self.function_name.as_deref()
     }
 
     pub fn overloaded(&self) -> bool {
@@ -443,18 +443,18 @@ impl StructMember {
 
 #[derive(Debug, Clone)]
 pub struct StructDefinition {
-    struct_name: String,
+    struct_name: Option<String>,
 
     members: Vec<StructMember>,
 }
 
 impl StructDefinition {
-    pub fn new(struct_name: String, members: Vec<StructMember>) -> Self {
+    pub fn new(struct_name: Option<String>, members: Vec<StructMember>) -> Self {
         Self { struct_name, members }
     }
 
-    pub fn struct_name(&self) -> &str {
-        &self.struct_name
+    pub fn struct_name(&self) -> Option<&str> {
+        self.struct_name.as_deref()
     }
 
     pub fn members(&self) -> &[StructMember] {
@@ -506,19 +506,19 @@ impl ClassMember {
 
 #[derive(Debug, Clone)]
 pub struct Method {
-    name: String,
+    name: Option<String>,
     body: AST,
     override_flag: bool,
     visibility: Visibility,
 }
 
 impl Method {
-    pub fn new(name: String, body: AST, override_flag: bool, visibility: Visibility) -> Self {
+    pub fn new(name: Option<String>, body: AST, override_flag: bool, visibility: Visibility) -> Self {
         Self { name, body, override_flag, visibility }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 
     pub fn body(&self) -> &AST {
