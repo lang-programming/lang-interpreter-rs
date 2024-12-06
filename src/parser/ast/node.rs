@@ -506,19 +506,19 @@ impl ClassMember {
 
 #[derive(Debug, Clone)]
 pub struct Method {
-    name: Option<String>,
+    name: String,
     body: AST,
     override_flag: bool,
     visibility: Visibility,
 }
 
 impl Method {
-    pub fn new(name: Option<String>, body: AST, override_flag: bool, visibility: Visibility) -> Self {
+    pub fn new(name: String, body: AST, override_flag: bool, visibility: Visibility) -> Self {
         Self { name, body, override_flag, visibility }
     }
 
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn body(&self) -> &AST {
@@ -556,7 +556,7 @@ impl Constructor {
 
 #[derive(Debug, Clone)]
 pub struct ClassDefinition {
-    class_name: String,
+    class_name: Option<String>,
 
     static_members: Vec<ClassMember>,
 
@@ -577,7 +577,7 @@ pub struct ClassDefinition {
 
 impl ClassDefinition {
     pub fn new(
-        class_name: String,
+        class_name: Option<String>,
         static_members: Vec<ClassMember>,
         members: Vec<ClassMember>,
         methods: Vec<Method>,
@@ -598,8 +598,8 @@ impl ClassDefinition {
         }
     }
 
-    pub fn class_name(&self) -> &str {
-        &self.class_name
+    pub fn class_name(&self) -> Option<&str> {
+        self.class_name.as_deref()
     }
 
     pub fn static_members(&self) -> &[ClassMember] {
