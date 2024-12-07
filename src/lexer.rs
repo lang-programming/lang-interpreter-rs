@@ -115,7 +115,7 @@ impl Lexer {
                 return None;
             }
 
-            self.is_first_code_token_in_line = false;
+            self.is_first_code_token_in_line = true;
             return ret;
         }
 
@@ -806,7 +806,7 @@ impl Lexer {
         _lines: &mut VecDeque<&str>,
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
-        let match_result = regex_patterns::PARSER_FUNCTION_IDENTIFIER.find(current_line);
+        let match_result = regex_patterns::STARTS_WITH_FUNCTION_IDENTIFIER.find(current_line);
         if let Some(match_result) = match_result {
             if match_result.start() == 0 {
                 let token = match_result.as_str();
@@ -829,7 +829,7 @@ impl Lexer {
         _lines: &mut VecDeque<&str>,
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
-        let match_result = regex_patterns::VAR_NAME_FULL_WITH_FUNCS_AND_PTR_AND_DEREFERENCE_WITH_OPERATOR_AND_CONVERSION_METHODS.find(current_line);
+        let match_result = regex_patterns::STARTS_WITH_VAR_NAME_FULL_WITH_FUNCS_AND_PTR_AND_DEREFERENCE_WITH_OPERATOR_AND_CONVERSION_METHODS.find(current_line);
         if let Some(match_result) = match_result {
             if match_result.start() == 0 {
                 let mut token = match_result.as_str();
@@ -893,7 +893,7 @@ impl Lexer {
         _lines: &mut VecDeque<&str>,
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
-        let match_result = regex_patterns::ARGUMENT_SEPARATOR.find(current_line);
+        let match_result = regex_patterns::STARTS_WITH_ARGUMENT_SEPARATOR.find(current_line);
         if let Some(match_result) = match_result {
             if match_result.start() == 0 {
                 let token = match_result.as_str();
@@ -920,7 +920,7 @@ impl Lexer {
             return None;
         }
 
-        let match_result = regex_patterns::PARSING_ASSIGNMENT_OPERATOR.find(current_line);
+        let match_result = regex_patterns::STARTS_WITH_ASSIGNMENT_OPERATOR.find(current_line);
         if let Some(match_result) = match_result {
             if match_result.start() == 0 {
                 let token = match_result.as_str();

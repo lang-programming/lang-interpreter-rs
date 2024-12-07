@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::lexer::CodePosition;
 use crate::parser::ast::AST;
 use crate::parser::ParsingError;
@@ -381,7 +382,7 @@ impl Operator {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDefinition {
     function_name: Option<String>,
     overloaded: bool,
@@ -421,7 +422,7 @@ impl FunctionDefinition {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StructMember {
     name: String,
     type_constraint: Option<String>,
@@ -441,7 +442,7 @@ impl StructMember {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StructDefinition {
     struct_name: Option<String>,
 
@@ -469,7 +470,37 @@ pub enum Visibility {
     Public,
 }
 
-#[derive(Debug, Clone)]
+impl Visibility {
+    pub fn from_symbol(symbol: u8) -> Option<Visibility> {
+        match symbol {
+            b'-' => Some(Visibility::Private),
+            b'~' => Some(Visibility::Protected),
+            b'+' => Some(Visibility::Public),
+
+            _ => None,
+        }
+    }
+
+    pub fn from_keyword(keyword: &str) -> Option<Visibility> {
+        match keyword {
+            "private" => Some(Visibility::Private),
+            "protected" => Some(Visibility::Protected),
+            "public" => Some(Visibility::Public),
+
+            _ => None,
+        }
+    }
+
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            Visibility::Private => "-",
+            Visibility::Protected => "~",
+            Visibility::Public => "+",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ClassMember {
     name: String,
     type_constraint: Option<String>,
@@ -504,25 +535,25 @@ impl ClassMember {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Method {
     name: String,
-    body: AST,
+    definition: Node,
     override_flag: bool,
     visibility: Visibility,
 }
 
 impl Method {
-    pub fn new(name: String, body: AST, override_flag: bool, visibility: Visibility) -> Self {
-        Self { name, body, override_flag, visibility }
+    pub fn new(name: String, definition: Node, override_flag: bool, visibility: Visibility) -> Self {
+        Self { name, definition, override_flag, visibility }
     }
 
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn body(&self) -> &AST {
-        &self.body
+    pub fn body(&self) -> &Node {
+        &self.definition
     }
 
     pub fn override_flag(&self) -> bool {
@@ -534,19 +565,19 @@ impl Method {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Constructor {
-    body: AST,
+    definition: Node,
     visibility: Visibility,
 }
 
 impl Constructor {
-    pub fn new(body: AST, visibility: Visibility) -> Self {
-        Self { body, visibility }
+    pub fn new(definition: Node, visibility: Visibility) -> Self {
+        Self { definition, visibility }
     }
 
-    pub fn body(&self) -> &AST {
-        &self.body
+    pub fn body(&self) -> &Node {
+        &self.definition
     }
 
     pub fn visibility(&self) -> Visibility {
@@ -554,7 +585,7 @@ impl Constructor {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ClassDefinition {
     class_name: Option<String>,
 
@@ -585,7 +616,7 @@ impl ClassDefinition {
         parent_classes: Vec<Node>,
     ) -> Self {
         if members.iter().any(|member| member.value.is_some()) {
-            panic!("Non-static class members can not have a default values");
+            panic!("Non-static class members can not have a default value");
         }
 
         Self {
@@ -623,7 +654,7 @@ impl ClassDefinition {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct OperationExpression {
     left_side_operand: Option<Box<Node>>,
     middle_operand: Option<Box<Node>>,
@@ -699,7 +730,7 @@ impl OperationExpression {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ConditionalNode {
     node: Node,
 }
@@ -718,7 +749,7 @@ impl ConditionalNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NodeData {
     List,
 
@@ -735,7 +766,7 @@ pub enum NodeData {
     UnprocessedVariableName(String),
     VariableName {
         variable_name: String,
-        type_constraint: String,
+        type_constraint: Option<String>,
     },
 
     ArgumentSeparator(String),
@@ -884,13 +915,13 @@ impl Node {
         }
     }
 
-    pub fn new_variable_name_node(pos: CodePosition, variable_name: impl Into<String>, type_constraint: impl Into<String>) -> Node {
+    pub fn new_variable_name_node(pos: CodePosition, variable_name: impl Into<String>, type_constraint: Option<String>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
             node_data: NodeData::VariableName {
                 variable_name: variable_name.into(),
-                type_constraint: type_constraint.into(),
+                type_constraint,
             },
         }
     }
@@ -956,8 +987,8 @@ impl Node {
 
     pub fn new_if_statement_node(pos: CodePosition, nodes: Vec<Node>) -> Node {
         if nodes.iter().any(|node| {
-            matches!(node.node_data, NodeData::IfStatementPartIf{..}) ||
-                    matches!(node.node_data, NodeData::IfStatementPartElse(..))
+            !matches!(node.node_data, NodeData::IfStatementPartIf{..}) &&
+                    !matches!(node.node_data, NodeData::IfStatementPartElse(..))
         }) {
             panic!("Node type is not compatible with this node");
         }
@@ -1033,12 +1064,12 @@ impl Node {
 
     pub fn new_loop_statement_node(pos: CodePosition, nodes: Vec<Node>) -> Node {
         if nodes.iter().any(|node| {
-            matches!(node.node_data, NodeData::LoopStatementPartLoop(..)) ||
-                    matches!(node.node_data, NodeData::LoopStatementPartWhile{..}) ||
-                    matches!(node.node_data, NodeData::LoopStatementPartUntil{..}) ||
-                    matches!(node.node_data, NodeData::LoopStatementPartRepeat{..}) ||
-                    matches!(node.node_data, NodeData::LoopStatementPartForEach{..}) ||
-                    matches!(node.node_data, NodeData::LoopStatementPartElse(..))
+            !matches!(node.node_data, NodeData::LoopStatementPartLoop(..)) &&
+                    !matches!(node.node_data, NodeData::LoopStatementPartWhile{..}) &&
+                    !matches!(node.node_data, NodeData::LoopStatementPartUntil{..}) &&
+                    !matches!(node.node_data, NodeData::LoopStatementPartRepeat{..}) &&
+                    !matches!(node.node_data, NodeData::LoopStatementPartForEach{..}) &&
+                    !matches!(node.node_data, NodeData::LoopStatementPartElse(..))
         }) {
             panic!("Node type is not compatible with this node");
         }
@@ -1114,12 +1145,12 @@ impl Node {
 
     pub fn new_try_statement_node(pos: CodePosition, nodes: Vec<Node>) -> Node {
         if nodes.iter().any(|node| {
-            matches!(node.node_data, NodeData::TryStatementPartTry(..)) ||
-                    matches!(node.node_data, NodeData::TryStatementPartSoftTry{..}) ||
-                    matches!(node.node_data, NodeData::TryStatementPartNonTry{..}) ||
-                    matches!(node.node_data, NodeData::TryStatementPartCatch{..}) ||
-                    matches!(node.node_data, NodeData::TryStatementPartElse(..)) ||
-                    matches!(node.node_data, NodeData::TryStatementPartFinally(..))
+            !matches!(node.node_data, NodeData::TryStatementPartTry(..)) &&
+                    !matches!(node.node_data, NodeData::TryStatementPartSoftTry{..}) &&
+                    !matches!(node.node_data, NodeData::TryStatementPartNonTry{..}) &&
+                    !matches!(node.node_data, NodeData::TryStatementPartCatch{..}) &&
+                    !matches!(node.node_data, NodeData::TryStatementPartElse(..)) &&
+                    !matches!(node.node_data, NodeData::TryStatementPartFinally(..))
         }) {
             panic!("Node type is not compatible with this node");
         }
@@ -1373,5 +1404,515 @@ impl Node {
 
             _ => (None, None, None),
         }
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.child_nodes == other.child_nodes && self.node_data == other.node_data
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut builder = String::new();
+
+        match &self.node_data {
+            NodeData::List => {
+                builder += &format!("ListNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Children: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::ParsingError { error, message } => {
+                builder += &format!("ParsingErrorNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Error: \"{error:?}\"");
+                builder += &format!(", Message: \"{message}\"");
+            },
+
+            NodeData::Assignment => {
+                builder += &format!("AssignmentNode: Position: {}", self.pos.to_compact_string());
+                builder += ", lvalue: {\n";
+                for token in format!("{}", self.child_nodes[0]).split("\n") {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, rvalue: {\n";
+                for token in format!("{}", self.child_nodes[1]).split("\n") {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::EscapeSequence(char) => {
+                builder += &format!("EscapeSequenceNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Char: \"{char}\"");
+            },
+
+            NodeData::UnicodeEscapeSequence(hex_code_point) => {
+                builder += &format!("UnicodeEscapeSequenceNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", hexCodePoint: \"{hex_code_point}\"");
+            },
+
+            NodeData::UnprocessedVariableName(variable_name) => {
+                builder += &format!("UnprocessedVariableNameNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Variable Name: \"{variable_name}\"");
+            },
+
+            NodeData::VariableName { variable_name, type_constraint } => {
+                builder += &format!("VariableNameNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Variable Name: \"{variable_name}\"");
+                builder += &format!(", TypeConstraint: \"{}\"", type_constraint.as_deref().unwrap_or("null"));
+            },
+
+            NodeData::ArgumentSeparator(original_text) => {
+                builder += &format!("ArgumentSeparatorNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", OriginalText: \"{original_text}\"");
+            },
+
+            NodeData::FunctionCall(function_name) => {
+                builder += &format!("FunctionCallNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", FunctionName: \"{function_name}\"");
+                builder += ", ParameterList: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::FunctionCallPreviousNodeValue { leading_whitespace, trailing_whitespace } => {
+                builder += &format!("FunctionCallNode: Position: {}", self.pos.to_compact_string());
+                builder += ", ArgumentList: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += &format!("}}, LeadingWhitespace: \"{leading_whitespace}\"");
+                builder += &format!(", TrailingWhitespace: \"{trailing_whitespace}\"");
+            },
+
+            NodeData::FunctionDefinition(function_definition) => {
+                builder += &format!("FunctionDefinitionNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", FunctionName: \"{}\"", function_definition.function_name.as_deref().unwrap_or("null"));
+                builder += &format!(", Overloaded: \"{}\"", function_definition.overloaded);
+                builder += &format!(", Combinator: \"{}\"", function_definition.combinator);
+                builder += &format!(", Doc Comment: \"{}\"", function_definition.doc_comment.as_deref().unwrap_or("null"));
+                builder += ", ParameterList: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += &format!(
+                    "}}, ReturnValueTypeConstraint: \"{}\"",
+                    function_definition.return_value_type_constraint.as_deref().unwrap_or("null"),
+                );
+                builder += ", FunctionBody: {\n";
+                for token in function_definition.function_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::IfStatementPartIf { if_body, condition } => {
+                builder += &format!("IfStatementPartIfNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Condition: {\n";
+                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, IfBody: {\n";
+                for token in if_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::IfStatementPartElse(if_body) => {
+                builder += &format!("IfStatementPartElseNode: Position: {}", self.pos.to_compact_string());
+                builder += ", IfBody: {\n";
+                for token in if_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::IfStatement => {
+                builder += &format!("IfStatementNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Children: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartLoop(loop_body) => {
+                builder += &format!("LoopStatementPartLoopNode: Position: {}", self.pos.to_compact_string());
+                builder += ", LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartWhile { loop_body, condition } => {
+                builder += &format!("LoopStatementPartWhileNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Condition: {\n";
+                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartUntil { loop_body, condition } => {
+                builder += &format!("LoopStatementPartUntilNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Condition: {\n";
+                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartRepeat {
+                loop_body,
+                var_pointer_node,
+                repeat_count_node,
+            } => {
+                builder += &format!("LoopStatementPartRepeatNode: Position: {}", self.pos.to_compact_string());
+                builder += ", varPointer: {\n";
+                for token in var_pointer_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, repeatCount: {\n";
+                for token in repeat_count_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartForEach {
+                loop_body,
+                var_pointer_node,
+                composite_or_text_node,
+            } => {
+                builder += &format!("LoopStatementPartForEachNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Condition: {\n";
+                for token in var_pointer_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, compositeOrTextNode: {\n";
+                for token in composite_or_text_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatementPartElse(loop_body) => {
+                builder += &format!("LoopStatementPartElseNode: Position: {}", self.pos.to_compact_string());
+                builder += ", LoopBody: {\n";
+                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::LoopStatement => {
+                builder += &format!("LoopStatementNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Children: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartTry(try_body) => {
+                builder += &format!("TryStatementPartTryNode: Position: {}", self.pos.to_compact_string());
+                builder += ", TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartSoftTry(try_body) => {
+                builder += &format!("TryStatementPartSoftTryNode: Position: {}", self.pos.to_compact_string());
+                builder += ", TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartNonTry(try_body) => {
+                builder += &format!("TryStatementPartNonTryNode: Position: {}", self.pos.to_compact_string());
+                builder += ", TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartCatch { try_body, errors } => {
+                builder += &format!("TryStatementPartCatchNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Errors: {\n";
+                if let Some(errors) = errors {
+                    for node in errors.iter() {
+                        for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                            builder += &format!("\t{token}\n");
+                        }
+                    }
+                }else {
+                    builder += "\tnull\n";
+                }
+                builder += "}, TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartElse(try_body) => {
+                builder += &format!("TryStatementPartElseNode: Position: {}", self.pos.to_compact_string());
+                builder += ", TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatementPartFinally(try_body) => {
+                builder += &format!("TryStatementPartFinallyNode: Position: {}", self.pos.to_compact_string());
+                builder += ", TryBody: {\n";
+                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}";
+            },
+
+            NodeData::TryStatement => {
+                builder += &format!("TryStatementNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Children: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::ContinueBreakStatement { number_node, continue_node } => {
+                builder += &format!("LoopStatementContinueBreakStatementNode: Position: {}", self.pos.to_compact_string());
+                builder += ", numberNode: {\n";
+                if let Some(number_node) = number_node {
+                    for token in number_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }else {
+                    builder += "\tnull\n";
+                }
+                builder += &format!("}}, continueNode: \"{}\"", continue_node);
+            },
+
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) => {
+                builder += &format!("OperationNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", NodeType: \"{:?}\"", operation_expression.operator_type);
+                builder += &format!(", Operator: \"{:?}\"", operation_expression.operator);
+                builder += &format!(", OperatorType: \"{:?}\"", operation_expression.operator.operator_type());
+                builder += ", Operands: {\n";
+                for node in operation_expression.left_side_operand.iter().
+                        chain(operation_expression.middle_operand.iter()).
+                        chain(operation_expression.right_side_operand.iter()) {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::Return => {
+                builder += &format!("ReturnNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Children: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::Throw => {
+                builder += &format!("ThrowNode: Position: {}", self.pos.to_compact_string());
+                builder += ", ThrowValue: {\n";
+                for token in self.child_nodes[0].to_string().split("\n").filter(|token| !token.is_empty()) {
+                    builder += &format!("\t{token}\n");
+                }
+                builder += "}, Message: ";
+                if let Some(message) = self.child_nodes.get(1) {
+                    builder += "{\n";
+                    for token in message.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                    builder += "}";
+                }else {
+                    builder += "null";
+                }
+            },
+
+            NodeData::IntValue(value) => {
+                builder += &format!("IntValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::LongValue(value) => {
+                builder += &format!("LongValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::FloatValue(value) => {
+                builder += &format!("FloatValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::DoubleValue(value) => {
+                builder += &format!("DoubleValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::CharValue(value) => {
+                builder += &format!("CharValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::TextValue(value) => {
+                builder += &format!("TextValueNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", Value: \"{value}\"");
+            },
+
+            NodeData::NullValue => {
+                builder += &format!("NullValueNode: Position: {}", self.pos.to_compact_string());
+            },
+
+            NodeData::VoidValue => {
+                builder += &format!("VoidValueNode: Position: {}", self.pos.to_compact_string());
+            },
+
+            NodeData::ArrayValue => {
+                builder += &format!("ArrayNode: Position: {}", self.pos.to_compact_string());
+                builder += ", Elements: {\n";
+                for node in self.child_nodes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+
+            NodeData::StructDefinition(struct_definition) => {
+                builder += &format!("StructDefinitionNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", StructName: \"{}\"", struct_definition.struct_name.as_deref().unwrap_or("null"));
+                builder += ", Members{TypeConstraints}: {\n";
+                for member in struct_definition.members.iter() {
+                    builder += &format!("\t{}", member.name);
+                    if let Some(type_constraint) = &member.type_constraint {
+                        builder += &format!("{{{type_constraint}}}");
+                    }
+                    builder += "\n";
+                }
+                builder += "}";
+            },
+
+            NodeData::ClassDefinition(class_definition) => {
+                builder += &format!("ClassDefinitionNode: Position: {}", self.pos.to_compact_string());
+                builder += &format!(", ClassName: \"{}\"", class_definition.class_name.as_deref().unwrap_or("null"));
+                builder += ", StaticMembers{TypeConstraints} = <value>: {\n";
+                for member in class_definition.static_members.iter() {
+                    builder += &format!("\t{}{}{}", member.visibility.symbol(), if member.final_flag {
+                        "final:"
+                    } else {
+                        ""
+                    }, member.name);
+                    if let Some(type_constraint) = &member.type_constraint {
+                        builder += &format!("{{{type_constraint}}}");
+                    }
+                    if let Some(value) = &member.value {
+                        builder += "= {\n";
+                        for token in value.to_string().split("\n").filter(|token| !token.is_empty()) {
+                            builder += &format!("\t\t{token}\n");
+                        }
+                        builder += "\t}";
+                    }
+                    builder += "\n";
+                }
+                builder += "}, Members{TypeConstraints}: {\n";
+                for member in class_definition.members.iter() {
+                    builder += &format!("\t{}{}{}", member.visibility.symbol(), if member.final_flag {
+                        "final:"
+                    } else {
+                        ""
+                    }, member.name);
+                    if let Some(type_constraint) = &member.type_constraint {
+                        builder += &format!("{{{type_constraint}}}");
+                    }
+                    builder += "\n";
+                }
+                builder += "}, MethodName = <definition>: {\n";
+                for method in class_definition.methods.iter() {
+                    builder += &format!("\t{}{}{} = {{\n", method.visibility.symbol(), if method.override_flag {
+                        "override:"
+                    } else {
+                        ""
+                    }, method.name);
+                    for token in method.definition.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t\t{token}\n");
+                    }
+                    builder += "\t}\n";
+                }
+                builder += "}, Constructors: {\n";
+                for constructor in class_definition.constructors.iter() {
+                    builder += &format!("\t{}construct = {{\n", constructor.visibility.symbol());
+                    for token in constructor.definition.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t\t{token}\n");
+                    }
+                    builder += "\t}\n";
+                }
+                builder += "}, ParentClasses: {\n";
+                for node in class_definition.parent_classes.iter() {
+                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        builder += &format!("\t{token}\n");
+                    }
+                }
+                builder += "}";
+            },
+        }
+
+        f.write_str(builder.as_str())
     }
 }

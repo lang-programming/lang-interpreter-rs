@@ -1,5 +1,6 @@
 pub mod node;
 
+use std::fmt::{Display, Formatter};
 pub use node::{
     Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method,
     ConditionalNode, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition,
@@ -8,7 +9,7 @@ pub use node::{
 
 use crate::lexer::CodePosition;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AST {
     nodes: Vec<Node>,
 }
@@ -33,7 +34,7 @@ impl AST {
     pub fn nodes(&self) -> &[Node] {
         &self.nodes
     }
-    
+
     pub(in crate::parser) fn nodes_mut(&mut self) -> &mut Vec<Node> {
         &mut self.nodes
     }
@@ -54,5 +55,60 @@ impl AST {
 impl Default for AST {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Display for AST {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut builder = String::new();
+        builder += "AST: Children: {\n";
+        for node in self.nodes.iter() {
+            for token in node.to_string().split("\n") {
+                builder += &format!("\t{token}\n");
+            }
+        }
+        builder += "}";
+
+        f.write_str(builder.as_str())
+    }
+}
+
+impl From<&[Node]> for AST {
+    fn from(value: &[Node]) -> Self {
+        Self {
+            nodes: Vec::from(value),
+        }
+    }
+}
+
+impl From<&mut [Node]> for AST {
+    fn from(value: &mut [Node]) -> Self {
+        Self {
+            nodes: Vec::from(value),
+        }
+    }
+}
+
+impl <const N: usize> From<&[Node; N]> for AST {
+    fn from(value: &[Node; N]) -> Self {
+        Self {
+            nodes: Vec::from(value),
+        }
+    }
+}
+
+impl <const N: usize> From<&mut [Node; N]> for AST {
+    fn from(value: &mut [Node; N]) -> Self {
+        Self {
+            nodes: Vec::from(value),
+        }
+    }
+}
+
+impl <const N: usize> From<[Node; N]> for AST {
+    fn from(value: [Node; N]) -> Self {
+        Self {
+            nodes: Vec::from(value),
+        }
     }
 }
