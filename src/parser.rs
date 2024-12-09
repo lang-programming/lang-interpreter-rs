@@ -89,7 +89,11 @@ impl Parser {
     pub fn parse_tokens(&mut self, mut tokens: VecDeque<Token>) -> Option<AST> {
         Self::remove_line_continuation_and_single_line_text_quotes_tokens(&mut tokens);
 
-        self.parse_tokens_internal(&mut tokens)
+        self.parse_tokens_internal(&mut tokens).map(|mut ast| {
+            ast.optimize_ast();
+
+            ast
+        })
     }
 
     fn parse_tokens_internal(&mut self, tokens: &mut VecDeque<Token>) -> Option<AST> {

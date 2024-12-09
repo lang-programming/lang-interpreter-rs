@@ -50,6 +50,10 @@ impl AST {
             Node::new_list_node(self.nodes)
         }
     }
+
+    pub fn optimize_ast(&mut self) {
+        Node::optimize_nodes(&mut self.nodes);
+    }
 }
 
 impl Default for AST {

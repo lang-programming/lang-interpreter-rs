@@ -31,9 +31,7 @@ fn equals_sign_in_function_call() {
             CodePosition::EMPTY,
             vec![
                 Node::new_unprocessed_variable_name_node(CodePosition::EMPTY, "$val"),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
-                Node::new_char_value_node(CodePosition::EMPTY, '='),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
+                Node::new_text_value_node(CodePosition::EMPTY, " = "),
                 Node::new_int_value_node(CodePosition::EMPTY, 42),
             ],
             "fn.println",
@@ -116,19 +114,13 @@ until($i > $MAX) {
                                     Some(Box::new(Node::new_operation_statement_node(
                                         CodePosition::EMPTY,
                                         OperationExpression::new(
-                                            Some(Box::new(Node::new_operation_statement_node(
-                                                CodePosition::EMPTY,
-                                                OperationExpression::new(
-                                                    Some(Box::new(var_node_i.clone())), None, Some(Box::new(Node::new_int_value_node(
-                                                        CodePosition::EMPTY, 3,
-                                                    ))),
-                                                    Operator::Mod, OperatorType::General,
-                                                ),
-                                            ))), None, None,
-                                            Operator::Not, OperatorType::General,
+                                            Some(Box::new(var_node_i.clone())), None, Some(Box::new(Node::new_int_value_node(
+                                                CodePosition::EMPTY, 3,
+                                            ))),
+                                            Operator::Mod, OperatorType::General,
                                         ),
                                     ))), None, None,
-                                    Operator::Non, OperatorType::General,
+                                    Operator::Not, OperatorType::General,
                                 ),
                             ))), None, None,
                             Operator::ConditionalNon, OperatorType::Condition,
@@ -153,19 +145,13 @@ until($i > $MAX) {
                                     Some(Box::new(Node::new_operation_statement_node(
                                         CodePosition::EMPTY,
                                         OperationExpression::new(
-                                            Some(Box::new(Node::new_operation_statement_node(
-                                                CodePosition::EMPTY,
-                                                OperationExpression::new(
-                                                    Some(Box::new(var_node_i.clone())), None, Some(Box::new(Node::new_int_value_node(
-                                                        CodePosition::EMPTY, 5,
-                                                    ))),
-                                                    Operator::Mod, OperatorType::General,
-                                                ),
-                                            ))), None, None,
-                                            Operator::Not, OperatorType::General,
+                                            Some(Box::new(var_node_i.clone())), None, Some(Box::new(Node::new_int_value_node(
+                                                CodePosition::EMPTY, 5,
+                                            ))),
+                                            Operator::Mod, OperatorType::General,
                                         ),
                                     ))), None, None,
-                                    Operator::Non, OperatorType::General,
+                                    Operator::Not, OperatorType::General,
                                 ),
                             ))), None, None,
                             Operator::ConditionalNon, OperatorType::Condition,
@@ -183,14 +169,8 @@ until($i > $MAX) {
                             Some(Box::new(Node::new_operation_statement_node(
                                 CodePosition::EMPTY,
                                 OperationExpression::new(
-                                    Some(Box::new(Node::new_operation_statement_node(
-                                        CodePosition::EMPTY,
-                                        OperationExpression::new(
-                                            Some(Box::new(var_node_3_or_5_flag.clone())), None, None,
-                                            Operator::Not, OperatorType::General,
-                                        ),
-                                    ))), None, None,
-                                    Operator::Non, OperatorType::General,
+                                    Some(Box::new(var_node_3_or_5_flag.clone())), None, None,
+                                    Operator::Not, OperatorType::General,
                                 ),
                             ))), None, None,
                             Operator::ConditionalNon, OperatorType::Condition,
@@ -251,6 +231,8 @@ $s = {{{func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {,
 func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, $s)"
     );
 
+    println!("{}", ast.clone().unwrap());
+
     assert_eq!(ast, Some(AST::from([
         Node::new_assignment_node(
             Node::new_text_value_node(CodePosition::EMPTY, "lang.name"),
@@ -262,13 +244,12 @@ func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, 
         ),
         Node::new_assignment_node(
             Node::new_unprocessed_variable_name_node(CodePosition::EMPTY, "$h"),
-            Node::new_list_node(vec![
-                Node::new_text_value_node(CodePosition::EMPTY, "# Execute in command line without any arguments except this Lang file"),
-                Node::new_text_value_node(CodePosition::EMPTY, "\n"),
-                Node::new_text_value_node(CodePosition::EMPTY, "lang.name = Quine"),
-                Node::new_text_value_node(CodePosition::EMPTY, "\n"),
-                Node::new_text_value_node(CodePosition::EMPTY, "lang.version = v1.0.0"),
-            ]),
+            Node::new_text_value_node(
+                CodePosition::EMPTY,
+                r"# Execute in command line without any arguments except this Lang file
+lang.name = Quine
+lang.version = v1.0.0"
+            ),
         ),
         Node::new_assignment_node(
             Node::new_unprocessed_variable_name_node(CodePosition::EMPTY, "$s"),
@@ -278,42 +259,14 @@ func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, 
             CodePosition::EMPTY,
             vec![
                 Node::new_unprocessed_variable_name_node(CodePosition::EMPTY, "$h"),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, 'n'),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, 'n'),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, '$'),
-                Node::new_char_value_node(CodePosition::EMPTY, 'h'),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, '='),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_text_value_node(CodePosition::EMPTY, "{"),
-                Node::new_text_value_node(CodePosition::EMPTY, "{"),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_text_value_node(CodePosition::EMPTY, "}"),
-                Node::new_text_value_node(CodePosition::EMPTY, "}"),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, 'n'),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, '$'),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, '='),
-                Node::new_text_value_node(CodePosition::EMPTY, " "),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_text_value_node(CodePosition::EMPTY, "{"),
-                Node::new_text_value_node(CodePosition::EMPTY, "{"),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_text_value_node(CodePosition::EMPTY, "}"),
-                Node::new_text_value_node(CodePosition::EMPTY, "}"),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
-                Node::new_escape_sequence_node(CodePosition::EMPTY, 'n'),
-                Node::new_text_value_node(CodePosition::EMPTY, "%"),
-                Node::new_char_value_node(CodePosition::EMPTY, 's'),
+                Node::new_text_value_node(
+                    CodePosition::EMPTY,
+                    r"
+
+$h = %s{{%s}}%s
+$s = %s{{%s}}%s
+%s"
+                ),
                 Node::new_argument_separator_node(CodePosition::EMPTY, ", "),
                 Node::new_text_value_node(CodePosition::EMPTY, "{"),
                 Node::new_argument_separator_node(CodePosition::EMPTY, ", "),

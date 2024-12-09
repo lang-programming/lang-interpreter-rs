@@ -17,6 +17,7 @@ impl CodePosition {
         Self { line_number_from, line_number_to, column_from, column_to }
     }
 
+    #[must_use]
     pub fn combine(&self, code_position: &CodePosition) -> CodePosition {
         if *self == Self::EMPTY || *code_position == Self::EMPTY {
             return Self::EMPTY;

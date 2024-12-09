@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::mem;
 use crate::lexer::CodePosition;
 use crate::parser::ast::AST;
 use crate::parser::ParsingError;
@@ -538,14 +539,14 @@ impl ClassMember {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Method {
     name: String,
-    definition: Node,
+    body: Node,
     override_flag: bool,
     visibility: Visibility,
 }
 
 impl Method {
     pub fn new(name: String, definition: Node, override_flag: bool, visibility: Visibility) -> Self {
-        Self { name, definition, override_flag, visibility }
+        Self { name, body: definition, override_flag, visibility }
     }
 
     pub fn name(&self) -> &str {
@@ -553,7 +554,7 @@ impl Method {
     }
 
     pub fn body(&self) -> &Node {
-        &self.definition
+        &self.body
     }
 
     pub fn override_flag(&self) -> bool {
@@ -567,17 +568,17 @@ impl Method {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Constructor {
-    definition: Node,
+    body: Node,
     visibility: Visibility,
 }
 
 impl Constructor {
     pub fn new(definition: Node, visibility: Visibility) -> Self {
-        Self { definition, visibility }
+        Self { body: definition, visibility }
     }
 
     pub fn body(&self) -> &Node {
-        &self.definition
+        &self.body
     }
 
     pub fn visibility(&self) -> Visibility {
@@ -1405,6 +1406,244 @@ impl Node {
             _ => (None, None, None),
         }
     }
+
+    fn try_evaluate_escape_sequence(char: char) -> Option<String> {
+        match char {
+            '0' => Some("\0".to_string()),
+            'n' => Some("\n".to_string()),
+            'r' => Some("\r".to_string()),
+            'f' => Some("\u{000C}".to_string()),
+            's' => Some(" ".to_string()),
+            'e' => Some("".to_string()),
+            'E' => Some("\u{001B}".to_string()),
+            'b' => Some("\u{0008}".to_string()),
+            't' => Some("\t".to_string()),
+
+            '$' | '&' | '#' | ',' | '.' | '(' | ')' | '[' | ']' | '{' | '}' | '=' | '<' | '>' |
+            '+' | '-' | '/' | '*' | '%' | '|' | '~' | '^' | '?' | ':' | '@' | '\u{25b2}' |
+            '\u{25bc}' | '\"' => Some(char.to_string()),
+
+            _ => None,
+        }
+    }
+
+    pub(super) fn optimize_nodes(nodes: &mut Vec<Node>) {
+        let mut i = 0;
+        while i < nodes.len() {
+            nodes[i].optimize_node();
+
+            let mut builder = None;
+            if let NodeData::EscapeSequence(char) = nodes[i].node_data() {
+                builder = Self::try_evaluate_escape_sequence(*char);
+            }else if let NodeData::TextValue(str) = nodes[i].node_data() {
+                builder = Some(str.clone());
+            }else if let NodeData::CharValue(char) = nodes[i].node_data() {
+                builder = Some(char.to_string());
+            }
+
+            if let Some(mut builder) = builder {
+                let mut pos = nodes[i].pos();
+
+                let mut changed = false;
+                let index = i + 1;
+                while index < nodes.len() {
+                    match nodes[index].node_data() {
+                        NodeData::EscapeSequence(char) => {
+                            if let Some(str) = Self::try_evaluate_escape_sequence(*char) {
+                                changed = true;
+
+                                builder += &str;
+                                pos = pos.combine(&nodes[index].pos());
+
+                                nodes.remove(index);
+                                continue;
+                            }
+
+                            break;
+                        },
+
+                        NodeData::TextValue(str) => {
+                            changed = true;
+
+                            builder += str;
+                            pos = pos.combine(&nodes[index].pos());
+
+                            nodes.remove(index);
+                            continue;
+                        },
+
+                        NodeData::CharValue(char) => {
+                            changed = true;
+
+                            builder += &char.to_string();
+                            pos = pos.combine(&nodes[index].pos());
+
+                            nodes.remove(index);
+                            continue;
+                        },
+
+                        _ => break,
+                    }
+                }
+
+                if changed {
+                    nodes[i] = Node::new_text_value_node(pos, builder);
+                }
+            }
+
+            i += 1;
+        }
+    }
+
+    pub(super) fn optimize_node(&mut self) {
+        if matches!(self.node_data, NodeData::List | NodeData::FunctionCall(..) |
+            NodeData::FunctionCallPreviousNodeValue { .. } | NodeData::IfStatement |
+            NodeData::LoopStatement | NodeData::TryStatement) {
+            Self::optimize_nodes(&mut self.child_nodes);
+        }else {
+            for node in &mut self.child_nodes {
+                node.optimize_node();
+            }
+        }
+
+        match &mut self.node_data {
+            NodeData::List if self.child_nodes.len() == 1 => {
+                let _ = mem::replace(self, self.child_nodes[0].clone());
+            },
+
+            NodeData::FunctionDefinition(function_definition) => {
+                function_definition.function_body.optimize_ast();
+            },
+
+            NodeData::IfStatementPartIf { if_body, condition } => {
+                if_body.optimize_ast();
+
+                Self::optimize_node(&mut condition.node);
+            },
+
+            NodeData::IfStatementPartElse(if_body) => {
+                if_body.optimize_ast();
+            },
+
+            NodeData::LoopStatementPartLoop(loop_body) |
+            NodeData::LoopStatementPartElse(loop_body) => {
+                loop_body.optimize_ast();
+            },
+
+            NodeData::LoopStatementPartWhile { loop_body, condition } |
+            NodeData::LoopStatementPartUntil { loop_body, condition } => {
+                loop_body.optimize_ast();
+
+                Self::optimize_node(&mut condition.node);
+            },
+
+            NodeData::LoopStatementPartRepeat {
+                loop_body,
+                var_pointer_node,
+                repeat_count_node,
+            } => {
+                loop_body.optimize_ast();
+
+                Self::optimize_node(var_pointer_node);
+                Self::optimize_node(repeat_count_node);
+            },
+
+            NodeData::LoopStatementPartForEach {
+                loop_body,
+                var_pointer_node,
+                composite_or_text_node,
+            } => {
+                loop_body.optimize_ast();
+
+                Self::optimize_node(var_pointer_node);
+                Self::optimize_node(composite_or_text_node);
+            },
+
+            NodeData::TryStatementPartTry(try_body) |
+            NodeData::TryStatementPartSoftTry(try_body) |
+            NodeData::TryStatementPartNonTry(try_body) |
+            NodeData::TryStatementPartElse(try_body) |
+            NodeData::TryStatementPartFinally(try_body) => {
+                try_body.optimize_ast();
+            },
+
+            NodeData::TryStatementPartCatch { try_body, errors } => {
+                try_body.optimize_ast();
+
+                if let Some(errors) = errors {
+                    Self::optimize_nodes(errors);
+                }
+            },
+
+            NodeData::ContinueBreakStatement { number_node, .. } => {
+                if let Some(number_node) = number_node {
+                    Self::optimize_node(number_node);
+                }
+            },
+
+            NodeData::Operation(operation_expression) |
+            NodeData::Math(operation_expression) |
+            NodeData::Condition(operation_expression) => {
+                if let Some(node) = &mut operation_expression.left_side_operand {
+                    Self::optimize_node(node);
+                }
+
+                if let Some(node) = &mut operation_expression.middle_operand {
+                    Self::optimize_node(node);
+                }
+
+                if let Some(node) = &mut operation_expression.right_side_operand {
+                    Self::optimize_node(node);
+                }
+
+                if matches!(operation_expression.operator(), Operator::Non | Operator::MathNon |
+                    Operator::ConditionalNon) {
+                    let mut inner_non_value = None;
+
+                    if let Some(node) = operation_expression.left_side_operand.as_deref() {
+                        if let
+                                NodeData::Operation(inner_operation_expression) |
+                                NodeData::Math(inner_operation_expression) |
+                                NodeData::Condition(inner_operation_expression) = &node.node_data {
+                            if matches!(inner_operation_expression.operator(), Operator::Non) ||
+                                    mem::discriminant(&operation_expression.operator) ==
+                                            mem::discriminant(&inner_operation_expression.operator) {
+                                inner_non_value = inner_operation_expression.left_side_operand.clone();
+                            }
+                        }
+                    }
+
+                    if inner_non_value.is_some() {
+                        operation_expression.left_side_operand = inner_non_value;
+                    }
+                }
+            },
+
+            NodeData::ClassDefinition(class_definition) => {
+                for member in &mut class_definition.static_members {
+                    if let Some(value) = &mut member.value {
+                        Self::optimize_node(value);
+                    }
+                }
+
+                for member in &mut class_definition.members {
+                    if let Some(value) = &mut member.value {
+                        Self::optimize_node(value);
+                    }
+                }
+
+                for method in &mut class_definition.methods {
+                    Self::optimize_node(&mut method.body);
+                }
+
+                for constructor in &mut class_definition.constructors {
+                    Self::optimize_node(&mut constructor.body);
+                }
+            },
+
+            _ => {},
+        }
+    }
 }
 
 impl PartialEq for Node {
@@ -1422,7 +1661,7 @@ impl Display for Node {
                 builder += &format!("ListNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Children: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1479,7 +1718,7 @@ impl Display for Node {
                 builder += &format!(", FunctionName: \"{function_name}\"");
                 builder += ", ParameterList: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1490,7 +1729,7 @@ impl Display for Node {
                 builder += &format!("FunctionCallNode: Position: {}", self.pos.to_compact_string());
                 builder += ", ArgumentList: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1506,7 +1745,7 @@ impl Display for Node {
                 builder += &format!(", Doc Comment: \"{}\"", function_definition.doc_comment.as_deref().unwrap_or("null"));
                 builder += ", ParameterList: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1515,7 +1754,7 @@ impl Display for Node {
                     function_definition.return_value_type_constraint.as_deref().unwrap_or("null"),
                 );
                 builder += ", FunctionBody: {\n";
-                for token in function_definition.function_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in function_definition.function_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1524,11 +1763,11 @@ impl Display for Node {
             NodeData::IfStatementPartIf { if_body, condition } => {
                 builder += &format!("IfStatementPartIfNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Condition: {\n";
-                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in condition.node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, IfBody: {\n";
-                for token in if_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in if_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1537,7 +1776,7 @@ impl Display for Node {
             NodeData::IfStatementPartElse(if_body) => {
                 builder += &format!("IfStatementPartElseNode: Position: {}", self.pos.to_compact_string());
                 builder += ", IfBody: {\n";
-                for token in if_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in if_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1547,7 +1786,7 @@ impl Display for Node {
                 builder += &format!("IfStatementNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Children: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1557,7 +1796,7 @@ impl Display for Node {
             NodeData::LoopStatementPartLoop(loop_body) => {
                 builder += &format!("LoopStatementPartLoopNode: Position: {}", self.pos.to_compact_string());
                 builder += ", LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1566,11 +1805,11 @@ impl Display for Node {
             NodeData::LoopStatementPartWhile { loop_body, condition } => {
                 builder += &format!("LoopStatementPartWhileNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Condition: {\n";
-                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in condition.node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1579,11 +1818,11 @@ impl Display for Node {
             NodeData::LoopStatementPartUntil { loop_body, condition } => {
                 builder += &format!("LoopStatementPartUntilNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Condition: {\n";
-                for token in condition.node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in condition.node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1596,15 +1835,15 @@ impl Display for Node {
             } => {
                 builder += &format!("LoopStatementPartRepeatNode: Position: {}", self.pos.to_compact_string());
                 builder += ", varPointer: {\n";
-                for token in var_pointer_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in var_pointer_node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, repeatCount: {\n";
-                for token in repeat_count_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in repeat_count_node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1617,15 +1856,15 @@ impl Display for Node {
             } => {
                 builder += &format!("LoopStatementPartForEachNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Condition: {\n";
-                for token in var_pointer_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in var_pointer_node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, compositeOrTextNode: {\n";
-                for token in composite_or_text_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in composite_or_text_node.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1634,7 +1873,7 @@ impl Display for Node {
             NodeData::LoopStatementPartElse(loop_body) => {
                 builder += &format!("LoopStatementPartElseNode: Position: {}", self.pos.to_compact_string());
                 builder += ", LoopBody: {\n";
-                for token in loop_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in loop_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1644,7 +1883,7 @@ impl Display for Node {
                 builder += &format!("LoopStatementNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Children: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1654,7 +1893,7 @@ impl Display for Node {
             NodeData::TryStatementPartTry(try_body) => {
                 builder += &format!("TryStatementPartTryNode: Position: {}", self.pos.to_compact_string());
                 builder += ", TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1663,7 +1902,7 @@ impl Display for Node {
             NodeData::TryStatementPartSoftTry(try_body) => {
                 builder += &format!("TryStatementPartSoftTryNode: Position: {}", self.pos.to_compact_string());
                 builder += ", TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1672,7 +1911,7 @@ impl Display for Node {
             NodeData::TryStatementPartNonTry(try_body) => {
                 builder += &format!("TryStatementPartNonTryNode: Position: {}", self.pos.to_compact_string());
                 builder += ", TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1683,7 +1922,7 @@ impl Display for Node {
                 builder += ", Errors: {\n";
                 if let Some(errors) = errors {
                     for node in errors.iter() {
-                        for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        for token in node.to_string().split("\n") {
                             builder += &format!("\t{token}\n");
                         }
                     }
@@ -1691,7 +1930,7 @@ impl Display for Node {
                     builder += "\tnull\n";
                 }
                 builder += "}, TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1700,7 +1939,7 @@ impl Display for Node {
             NodeData::TryStatementPartElse(try_body) => {
                 builder += &format!("TryStatementPartElseNode: Position: {}", self.pos.to_compact_string());
                 builder += ", TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1709,7 +1948,7 @@ impl Display for Node {
             NodeData::TryStatementPartFinally(try_body) => {
                 builder += &format!("TryStatementPartFinallyNode: Position: {}", self.pos.to_compact_string());
                 builder += ", TryBody: {\n";
-                for token in try_body.to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in try_body.to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}";
@@ -1719,7 +1958,7 @@ impl Display for Node {
                 builder += &format!("TryStatementNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Children: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1730,7 +1969,7 @@ impl Display for Node {
                 builder += &format!("LoopStatementContinueBreakStatementNode: Position: {}", self.pos.to_compact_string());
                 builder += ", numberNode: {\n";
                 if let Some(number_node) = number_node {
-                    for token in number_node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in number_node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }else {
@@ -1750,7 +1989,7 @@ impl Display for Node {
                 for node in operation_expression.left_side_operand.iter().
                         chain(operation_expression.middle_operand.iter()).
                         chain(operation_expression.right_side_operand.iter()) {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1761,7 +2000,7 @@ impl Display for Node {
                 builder += &format!("ReturnNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Children: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1771,13 +2010,13 @@ impl Display for Node {
             NodeData::Throw => {
                 builder += &format!("ThrowNode: Position: {}", self.pos.to_compact_string());
                 builder += ", ThrowValue: {\n";
-                for token in self.child_nodes[0].to_string().split("\n").filter(|token| !token.is_empty()) {
+                for token in self.child_nodes[0].to_string().split("\n") {
                     builder += &format!("\t{token}\n");
                 }
                 builder += "}, Message: ";
                 if let Some(message) = self.child_nodes.get(1) {
                     builder += "{\n";
-                    for token in message.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in message.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                     builder += "}";
@@ -1828,7 +2067,7 @@ impl Display for Node {
                 builder += &format!("ArrayNode: Position: {}", self.pos.to_compact_string());
                 builder += ", Elements: {\n";
                 for node in self.child_nodes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
@@ -1864,7 +2103,7 @@ impl Display for Node {
                     }
                     if let Some(value) = &member.value {
                         builder += "= {\n";
-                        for token in value.to_string().split("\n").filter(|token| !token.is_empty()) {
+                        for token in value.to_string().split("\n") {
                             builder += &format!("\t\t{token}\n");
                         }
                         builder += "\t}";
@@ -1890,7 +2129,7 @@ impl Display for Node {
                     } else {
                         ""
                     }, method.name);
-                    for token in method.definition.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in method.body.to_string().split("\n") {
                         builder += &format!("\t\t{token}\n");
                     }
                     builder += "\t}\n";
@@ -1898,14 +2137,14 @@ impl Display for Node {
                 builder += "}, Constructors: {\n";
                 for constructor in class_definition.constructors.iter() {
                     builder += &format!("\t{}construct = {{\n", constructor.visibility.symbol());
-                    for token in constructor.definition.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in constructor.body.to_string().split("\n") {
                         builder += &format!("\t\t{token}\n");
                     }
                     builder += "\t}\n";
                 }
                 builder += "}, ParentClasses: {\n";
                 for node in class_definition.parent_classes.iter() {
-                    for token in node.to_string().split("\n").filter(|token| !token.is_empty()) {
+                    for token in node.to_string().split("\n") {
                         builder += &format!("\t{token}\n");
                     }
                 }
