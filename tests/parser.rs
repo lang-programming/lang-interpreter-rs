@@ -227,8 +227,9 @@ lang.version = v1.0.0
 $h = {{{# Execute in command line without any arguments except this Lang file
 lang.name = Quine
 lang.version = v1.0.0}}}
-$s = {{{func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, $s)}}}
-func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, $s)"
+$s = {{{func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s\n, {, $h, }, {, $s, }, $s)}}}
+func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s\n, {, $h, }, {, $s, }, $s)
+"
     );
 
     println!("{}", ast.clone().unwrap());
@@ -253,7 +254,7 @@ lang.version = v1.0.0"
         ),
         Node::new_assignment_node(
             Node::new_unprocessed_variable_name_node(CodePosition::EMPTY, "$s"),
-            Node::new_text_value_node(CodePosition::EMPTY, r"func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s, {, $h, }, {, $s, }, $s)"),
+            Node::new_text_value_node(CodePosition::EMPTY, r"func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s\n, {, $h, }, {, $s, }, $s)"),
         ),
         Node::new_function_call_node(
             CodePosition::EMPTY,
@@ -265,7 +266,8 @@ lang.version = v1.0.0"
 
 $h = %s{{%s}}%s
 $s = %s{{%s}}%s
-%s"
+%s
+"
                 ),
                 Node::new_argument_separator_node(CodePosition::EMPTY, ", "),
                 Node::new_text_value_node(CodePosition::EMPTY, "{"),
