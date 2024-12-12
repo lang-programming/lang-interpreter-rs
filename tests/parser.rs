@@ -232,8 +232,6 @@ func.printf($h\n\n\$h \= %s{{%s}}%s\n\$s \= %s{{%s}}%s\n%s\n, {, $h, }, {, $s, }
 "
     );
 
-    println!("{}", ast.clone().unwrap());
-
     assert_eq!(ast, Some(AST::from([
         Node::new_assignment_node(
             Node::new_text_value_node(CodePosition::EMPTY, "lang.name"),
