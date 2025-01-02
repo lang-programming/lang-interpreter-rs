@@ -1,0 +1,23 @@
+[package]
+name = "lang-interpreter-macros"
+version = "0.1.0"
+edition = "2021"
+authors = ["JDDev0 <jddev0@dorneger.at>"]
+description = "Proc Macros for the lang-interpreter crate"
+repository = "https://github.com/lang-programming/lang-interpreter-rs"
+license = "MIT"
+readme = false
+keywords = ["lang", "lang-interpreter", "macros"]
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+darling = "0.20.10"
+syn = "2.0.92"
+quote = "1.0.38"
+proc-macro2 = "1.0.92"

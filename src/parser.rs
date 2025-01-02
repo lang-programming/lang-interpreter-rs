@@ -71,8 +71,8 @@ impl Parser {
         self.lang_doc_comment = None;
     }
 
-    pub fn line_number(&self) {
-        self.lexer.line_number();
+    pub fn line_number(&self) -> usize {
+        self.lexer.line_number()
     }
 
     pub fn set_line_number(&mut self, line_number: usize) {
@@ -1265,7 +1265,7 @@ impl Parser {
 
                         let combined_number_token = Token::new(
                             t.pos().combine(&number_token.pos()),
-                            t.value().to_string() + number_token.value(),
+                            &(t.value().to_string() + number_token.value()),
                             TokenType::LiteralNumber,
                         );
 
@@ -1599,9 +1599,9 @@ impl Parser {
             }
         }
 
-        let is_variable_assignment = lvalue_tokens.front().is_some_and(|token|
-                matches!(token.token_type(), TokenType::Identifier) &&
-                        regex_patterns::VAR_NAME_FULL.is_match(token.value()));
+        let is_variable_assignment = lvalue_tokens.len() == 1 &&
+                matches!(lvalue_tokens[0].token_type(), TokenType::Identifier) &&
+                regex_patterns::VAR_NAME_FULL.is_match(lvalue_tokens[0].value());
 
         if assignment_token.value() == " =" {
             let pos = assignment_token.pos();
@@ -2530,6 +2530,7 @@ impl Parser {
             //Return without value
             if token_count_first_line == 1 {
                 nodes.push(Node::new_return_statement_node(return_statement_token_pos, None));
+                tokens.pop_front();
 
                 return Some(ast);
             }
@@ -2635,7 +2636,7 @@ impl Parser {
             token_count_first_line -= 1;
 
             let overloaded = matches!(tokens[0].token_type(), TokenType::Other) &&
-                    tokens[0].value() == "overloaded" && matches!(tokens[1].token_type(), TokenType::Whitespace);
+                    tokens[0].value() == "overload" && matches!(tokens[1].token_type(), TokenType::Whitespace);
             if overloaded {
                 tokens.pop_front();
                 tokens.pop_front();
@@ -4127,7 +4128,7 @@ impl Parser {
 
                         let combined_number_token = Token::new(
                             t.pos().combine(&number_token.pos()),
-                            t.value().to_string() + number_token.value(),
+                            &(t.value().to_string() + number_token.value()),
                             TokenType::LiteralNumber,
                         );
 
@@ -4680,7 +4681,7 @@ impl Parser {
 
                             let combined_number_token = Token::new(
                                 t.pos().combine(&number_token.pos()),
-                                t.value().to_string() + number_token.value(),
+                                &(t.value().to_string() + number_token.value()),
                                 TokenType::LiteralNumber,
                             );
 

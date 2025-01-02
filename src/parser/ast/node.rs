@@ -727,7 +727,7 @@ impl OperationExpression {
     }
 
     pub fn operator_type(&self) -> OperatorType {
-        self.operator_type
+        self.operator.operator_type()
     }
 }
 
@@ -1414,14 +1414,14 @@ impl Node {
             'r' => Some("\r".to_string()),
             'f' => Some("\u{000C}".to_string()),
             's' => Some(" ".to_string()),
-            'e' => Some("".to_string()),
+            'e' => Some(String::new()),
             'E' => Some("\u{001B}".to_string()),
             'b' => Some("\u{0008}".to_string()),
             't' => Some("\t".to_string()),
 
             '$' | '&' | '#' | ',' | '.' | '(' | ')' | '[' | ']' | '{' | '}' | '=' | '<' | '>' |
             '+' | '-' | '/' | '*' | '%' | '|' | '~' | '^' | '?' | ':' | '@' | '\u{25b2}' |
-            '\u{25bc}' | '\"' => Some(char.to_string()),
+            '\u{25bc}' | '\"' | '\\' => Some(char.to_string()),
 
             _ => None,
         }

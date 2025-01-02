@@ -207,7 +207,7 @@ fn parse_number_token_invalid() {
 mod helper {
     use crate::parser::*;
 
-    pub fn parse_number_token(number_value: impl Into<String>) -> Option<Node> {
+    pub fn parse_number_token(number_value: &str) -> Option<Node> {
         let mut parser = Parser::new();
 
         let mut values = Vec::new();
@@ -219,7 +219,7 @@ mod helper {
         values.into_iter().next()
     }
 
-    pub fn create_number_token(value: impl Into<String>) -> Token {
+    pub fn create_number_token(value: &str) -> Token {
         Token::new(CodePosition::EMPTY, value, TokenType::LiteralNumber)
     }
 }

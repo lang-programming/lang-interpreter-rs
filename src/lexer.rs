@@ -156,7 +156,7 @@ impl Lexer {
             CodePosition::new(from_line_number, from_line_number, from_column, self.column as isize),
         ));
 
-        Some("".to_string())
+        Some(String::new())
     }
 
     fn try_tokenize_tokens(
@@ -297,7 +297,7 @@ impl Lexer {
             self.column += i;
 
             let token = current_line.chars().take(i).collect::<String>();
-            tokens.push(Token::new(self.get_code_position(from_column), token, TokenType::Whitespace));
+            tokens.push(Token::new(self.get_code_position(from_column), &token, TokenType::Whitespace));
 
             return Some(current_line.chars().skip(i).collect::<String>());
         }
@@ -374,7 +374,7 @@ impl Lexer {
                         TokenType::LexerError,
                     ));
 
-                    return Some("".to_string());
+                    return Some(String::new());
                 }
 
                 current_line = ret;
@@ -432,7 +432,7 @@ impl Lexer {
                         TokenType::LexerError,
                     ));
 
-                    return Some("".to_string());
+                    return Some(String::new());
                 }
 
                 current_line = ret;
@@ -440,9 +440,9 @@ impl Lexer {
                 from_column = self.column;
                 self.column += current_line.chars().count();
 
-                tokens.push(Token::new(self.get_code_position(from_column), current_line, TokenType::LiteralText));
+                tokens.push(Token::new(self.get_code_position(from_column), &current_line, TokenType::LiteralText));
 
-                current_line = "".to_string();
+                current_line = String::new();
             }
         }
 
@@ -570,7 +570,7 @@ impl Lexer {
             let ret = self.try_tokenize_new_line("", lines, tokens);
 
             self.opening_bracket_count = original_opening_bracket_count;
-            return ret.or(Some("".to_string()));
+            return ret.or(Some(String::new()));
         }
 
         None
@@ -658,9 +658,9 @@ impl Lexer {
             let from_column = self.column;
             self.column += current_line.chars().count();
 
-            tokens.push(Token::new(self.get_code_position(from_column), current_line, TokenType::LiteralText));
+            tokens.push(Token::new(self.get_code_position(from_column), &current_line, TokenType::LiteralText));
 
-            current_line = "".to_string();
+            current_line = String::new();
         }
 
         tokens.push(Token::new(self.get_code_position(self.column), "", TokenType::EndComment));
@@ -844,11 +844,11 @@ impl Lexer {
                     );
 
                     if end_byte_index.is_none() {
-                        tokens.push(Token::new(self.get_code_position(self.column), format!(
+                        tokens.push(Token::new(self.get_code_position(self.column), &format!(
                             "Bracket is missing in variable pointer: \"{token}\"",
                         ), TokenType::LexerError));
 
-                        return Some("".to_string());
+                        return Some(String::new());
                     }
 
                     //Limit token to end with closing "]"

@@ -1,0 +1,3 @@
+[submodule "tests/interpreter/spec-test"]
+	path = tests/interpreter/spec-test
+	url = https://github.com/lang-programming/spec-test

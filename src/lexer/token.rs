@@ -48,12 +48,12 @@ pub enum TokenType {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Token {
     pos: CodePosition,
-    value: String,
+    value: Box<str>,
     token_type: TokenType,
 }
 
 impl Token {
-    pub fn new(pos: CodePosition, value: impl Into<String>, token_type: TokenType) -> Self {
+    pub fn new(pos: CodePosition, value: &str, token_type: TokenType) -> Self {
         Self {
             pos,
             value: value.into(),
