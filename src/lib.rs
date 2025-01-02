@@ -1,6 +1,7 @@
 pub(crate) mod regex_patterns;
 
 #[macro_use]
+#[doc(hidden)]
 pub mod macros;
 
 pub mod terminal_io;
