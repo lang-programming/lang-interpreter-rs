@@ -1,2 +1,5 @@
 .idea/
 /target
+
+# Ignore Cargo.lock for library
+Cargo.lock
