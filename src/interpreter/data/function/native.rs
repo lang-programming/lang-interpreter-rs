@@ -9,8 +9,6 @@ use crate::lexer::CodePosition;
 
 pub type Result<T> = std::result::Result<T, NativeError>;
 
-type DynFnLangNativeFunction<Args, Ret> = dyn Fn(&mut Interpreter, Args) -> Ret;
-
 mod dyn_fn_lang_native_function_return_type {
     use super::Result;
 

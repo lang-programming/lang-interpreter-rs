@@ -442,7 +442,7 @@ impl Function {
                         }
 
                         //Not "+1", because argumentIndex will be incremented at the end of the for loop
-                        argument_index = combined_argument_list.len() + i - arg_cnt;
+                        argument_index = (combined_argument_list.len() + i).wrapping_sub(arg_cnt);
 
                         Ok(())
                     },
@@ -515,7 +515,7 @@ impl Function {
                 ));
             }
 
-            argument_index += 1;
+            argument_index = argument_index.wrapping_add(1);
         }
 
         let ret = function.function_body().lang_call(

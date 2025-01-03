@@ -22,4 +22,4 @@ lang-interpreter-macros = { version = "0.2.0", path = "lang-interpreter-macros" 
 include_dir = "0.7.4"
 regex = "1.11.1"
 chrono = "0.4.39"
-rand = "0.8.5"
+rand = { version = "0.8.5", features = ["small_rng"] }

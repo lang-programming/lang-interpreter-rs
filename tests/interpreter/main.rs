@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::Read;
 use lang_interpreter::interpreter::Interpreter;
 use lang_interpreter::interpreter::platform::DefaultPlatformAPI;
-use lang_interpreter::terminal_io::TerminalIO;
 
 #[test]
 fn lang_spec_test() {
@@ -15,7 +14,7 @@ fn lang_spec_test() {
     let mut interpreter = Interpreter::new(
         current_dir.to_str().unwrap(),
         Some("test.lang"),
-        Some(TerminalIO::new(None).unwrap()),
+        None,
         Box::new(DefaultPlatformAPI::new()),
         None,
     );

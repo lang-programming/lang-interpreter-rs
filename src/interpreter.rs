@@ -20,6 +20,8 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Instant;
 use include_dir::{include_dir, Dir};
+use rand::rngs::SmallRng;
+use rand::{thread_rng, SeedableRng};
 use crate::interpreter::module::{Module, ModuleManager};
 use crate::interpreter::platform::{PlatformAPI};
 use crate::interpreter::data::{
@@ -72,7 +74,7 @@ pub struct Interpreter {
     term: Option<TerminalIO>,
     platform_api: Box<dyn PlatformAPI>,
     origin_time: Instant,
-    //TODO random
+    ran: SmallRng,
 
     //Lang tests
     lang_test_store: LangTest,
@@ -134,6 +136,7 @@ impl Interpreter {
             term,
             platform_api,
             origin_time: Instant::now(),
+            ran: SmallRng::from_rng(thread_rng()).unwrap(),
 
             lang_test_store: LangTest::new(),
             lang_test_expected_throw_value: None,
@@ -5677,7 +5680,7 @@ impl Interpreter {
                 min();
 
         let Some(min_end_index) = min_end_index else {
-            return Err(FormatSequenceError::InvalidFormatSequence);
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid format specifier")));
         };
 
         let mut full_format = &format[..min_end_index + 1];
@@ -5687,7 +5690,7 @@ impl Interpreter {
         let value_specified_index = if full_format.as_bytes()[0] == b'[' {
             let value_specified_index_end_index = full_format.find(']');
             let Some(value_specified_index_end_index) = value_specified_index_end_index else {
-                return Err(FormatSequenceError::InvalidFormatSequence);
+                return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Missing closing bracket in value index")));
             };
 
             let number = &full_format[1..value_specified_index_end_index];
@@ -5695,12 +5698,12 @@ impl Interpreter {
 
             for char in number.bytes() {
                 if !char.is_ascii_digit() {
-                    return Err(FormatSequenceError::InvalidFormatSequence);
+                    return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid number in value index")));
                 }
             }
             let number = usize::from_str(number).unwrap();
             if number >= full_argument_list.len() {
-                return Err(FormatSequenceError::SpecifiedIndexOutOfBounds);
+                return Err(FormatSequenceError::SpecifiedIndexOutOfBounds(Box::from("For value index")));
             }
 
             Some(number)
@@ -5735,7 +5738,7 @@ impl Interpreter {
         let size_argument_index = if size_in_argument && full_format.as_bytes()[0] == b'[' {
             let value_specified_index_end_index = full_format.find(']');
             let Some(value_specified_index_end_index) = value_specified_index_end_index else {
-                return Err(FormatSequenceError::InvalidFormatSequence);
+                return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Missing closing bracket in size argument index")));
             };
 
             let number = &full_format[1..value_specified_index_end_index];
@@ -5743,12 +5746,12 @@ impl Interpreter {
 
             for char in number.bytes() {
                 if !char.is_ascii_digit() {
-                    return Err(FormatSequenceError::InvalidFormatSequence);
+                    return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid number in value index")));
                 }
             }
             let number = usize::from_str(number).unwrap();
             if number >= full_argument_list.len() {
-                return Err(FormatSequenceError::SpecifiedIndexOutOfBounds);
+                return Err(FormatSequenceError::SpecifiedIndexOutOfBounds(Box::from("For value index")));
             }
 
             Some(number)
@@ -5784,7 +5787,7 @@ impl Interpreter {
             decimal_places_count_index = if decimal_places_in_argument && full_format.as_bytes()[0] == b'[' {
                 let decimal_places_count_index_end_index = full_format.find(']');
                 let Some(decimal_places_count_index_end_index) = decimal_places_count_index_end_index else {
-                    return Err(FormatSequenceError::InvalidFormatSequence);
+                    return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Missing closing bracket in decimal places index")));
                 };
 
                 let number = &full_format[1..decimal_places_count_index_end_index];
@@ -5792,12 +5795,12 @@ impl Interpreter {
 
                 for char in number.bytes() {
                     if !char.is_ascii_digit() {
-                        return Err(FormatSequenceError::InvalidFormatSequence);
+                        return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid number in decimal places index")));
                     }
                 }
                 let number = usize::from_str(number).unwrap();
                 if number >= full_argument_list.len() {
-                    return Err(FormatSequenceError::SpecifiedIndexOutOfBounds);
+                    return Err(FormatSequenceError::SpecifiedIndexOutOfBounds(Box::from("For decimal places index")));
                 }
 
                 Some(number)
@@ -5825,23 +5828,23 @@ impl Interpreter {
         }
 
         if full_format.as_bytes()[0] != format_type {
-            return Err(FormatSequenceError::InvalidFormatSequence); //Invalid characters
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid characters")));
         }
 
         if (size_in_argument && size.is_some()) || (decimal_places_in_argument && decimal_places_count.is_some()) || (left_justify && leading_zeros) {
-            return Err(FormatSequenceError::InvalidFormatSequence); //Invalid format argument combinations
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Invalid format argument combinations")));
         }
 
         if left_justify && (!size_in_argument && size.is_none()) {
-            return Err(FormatSequenceError::InvalidFormatSequence); //Missing size format argument for leftJustify
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from("Missing size format argument for leftJustify")));
         }
 
         //Invalid arguments for formatType
         if matches!(
             format_type,
             b'n'
-        ) && value_specified_index.is_some() || size_in_argument || size.is_some() {
-            return Err(FormatSequenceError::InvalidFormatSequence);
+        ) && (value_specified_index.is_some() || size_in_argument || size.is_some()) {
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from(format!("Value index and size can not be used with %{format_type}"))));
         }
 
         if matches!(
@@ -5849,8 +5852,8 @@ impl Interpreter {
             b'n' |
             b'c' | b'?' |
             b's' | b't'
-        ) && force_sign || sing_space || leading_zeros {
-            return Err(FormatSequenceError::InvalidFormatSequence);
+        ) && (force_sign || sing_space || leading_zeros) {
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from(format!("Force sign, space sing, and leading zeros can not be used with %{format_type}"))));
         }
 
         if matches!(
@@ -5860,13 +5863,13 @@ impl Interpreter {
             //No %s nor %t, because they can have decimal places
             b'b' | b'd' | b'o' | b'x'
         ) && decimal_places {
-            return Err(FormatSequenceError::InvalidFormatSequence);
+            return Err(FormatSequenceError::InvalidFormatSequence(Box::from(format!("Decimal places can not be used with %{format_type}"))));
         }
 
         //Get size from arguments
         if size_in_argument {
             if size_argument_index.is_none() && argument_list.is_empty() {
-                return Err(FormatSequenceError::InvalidArgCount);
+                return Err(FormatSequenceError::InvalidArgCount(Box::from("Size argument missing")));
             }
 
             let data_object = if let Some(size_argument_index) = size_argument_index {
@@ -5877,19 +5880,19 @@ impl Interpreter {
 
             let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
             let Some(number) = number else {
-                return Err(FormatSequenceError::InvalidArguments);
+                return Err(FormatSequenceError::InvalidArguments(Box::from("Invalid number for size from arguments")));
             };
 
             let number = number.int_value();
             if number < 0 {
-                return Err(FormatSequenceError::InvalidArguments);
+                return Err(FormatSequenceError::InvalidArguments(Box::from("Size must be >= 0")));
             }
 
             size = Some(number as usize);
         }
         if decimal_places_in_argument {
             if decimal_places_count_index.is_none() && argument_list.is_empty() {
-                return Err(FormatSequenceError::InvalidArgCount);
+                return Err(FormatSequenceError::InvalidArgCount(Box::from("Decimal places argument missing")));
             }
 
             let data_object = if let Some(decimal_places_count_index) = decimal_places_count_index {
@@ -5900,12 +5903,12 @@ impl Interpreter {
 
             let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
             let Some(number) = number else {
-                return Err(FormatSequenceError::InvalidArguments);
+                return Err(FormatSequenceError::InvalidArguments(Box::from("Invalid number for decimal places from arguments")));
             };
 
             let number = number.int_value();
             if number < 0 {
-                return Err(FormatSequenceError::InvalidArguments);
+                return Err(FormatSequenceError::InvalidArguments(Box::from("Decimal places must be >= 0")));
             }
 
             decimal_places_count = Some(number as usize);
@@ -5915,7 +5918,7 @@ impl Interpreter {
             Some(utils::LINE_SEPARATOR.to_string())
         }else {
             if value_specified_index.is_none() && argument_list.is_empty() {
-                return Err(FormatSequenceError::InvalidArgCount);
+                return Err(FormatSequenceError::InvalidArgCount(Box::from("Argument missing")));
             }
 
             let data_object = if let Some(value_specified_index) = value_specified_index {
@@ -5928,7 +5931,7 @@ impl Interpreter {
                 b'd' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
                     let mut output = format!("{}", number.long_value());
@@ -5946,10 +5949,13 @@ impl Interpreter {
                 b'b' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
-                    let mut output = format!("{:b}", number.long_value());
+                    let sign = if number.long_value().is_negative() { "-" } else { "" };
+                    let number_abs = number.long_value().unsigned_abs();
+
+                    let mut output = format!("{sign}{:b}", number_abs);
                     if force_sign && output.as_bytes()[0] != b'-' {
                         output = "+".to_string() + &output;
                     }
@@ -5964,10 +5970,13 @@ impl Interpreter {
                 b'o' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
-                    let mut output = format!("{:o}", number.long_value());
+                    let sign = if number.long_value().is_negative() { "-" } else { "" };
+                    let number_abs = number.long_value().unsigned_abs();
+
+                    let mut output = format!("{sign}{:o}", number_abs);
                     if force_sign && output.as_bytes()[0] != b'-' {
                         output = "+".to_string() + &output;
                     }
@@ -5982,10 +5991,13 @@ impl Interpreter {
                 b'x' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
-                    let mut output = format!("{:X}", number.long_value());
+                    let sign = if number.long_value().is_negative() { "-" } else { "" };
+                    let number_abs = number.long_value().unsigned_abs();
+
+                    let mut output = format!("{sign}{:X}", number_abs);
                     if force_sign && output.as_bytes()[0] != b'-' {
                         output = "+".to_string() + &output;
                     }
@@ -6000,7 +6012,7 @@ impl Interpreter {
                 b'f' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
                     let value = number.double_value();
@@ -6048,7 +6060,7 @@ impl Interpreter {
                 b'c' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments);
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
                     };
 
                     let code_point = number.int_value() as u32;
@@ -6068,8 +6080,8 @@ impl Interpreter {
                         match ret {
                             Ok(ret) => output = ret,
 
-                            Err(_) => {
-                                return Err(FormatSequenceError::TranslationInvalidPluralizationTemplate);
+                            Err(e) => {
+                                return Err(FormatSequenceError::TranslationInvalidPluralizationTemplate(Box::from(e.message())));
                             },
                         }
                     }
@@ -6082,7 +6094,7 @@ impl Interpreter {
                     let translation_value = self.data_ref().lang.get(&Rc::from(translation_key.as_str())).cloned();
 
                     let Some(output) = translation_value else {
-                        return Err(FormatSequenceError::TranslationKeyNotFound);
+                        return Err(FormatSequenceError::TranslationKeyNotFound(Box::from(format!("For translation key \"{translation_key}\""))));
                     };
 
                     let mut output = output.to_string();
@@ -6095,8 +6107,8 @@ impl Interpreter {
                         match ret {
                             Ok(ret) => output = ret,
 
-                            Err(_) => {
-                                return Err(FormatSequenceError::TranslationInvalidPluralizationTemplate);
+                            Err(e) => {
+                                return Err(FormatSequenceError::TranslationInvalidPluralizationTemplate(Box::from(e.message())));
                             },
                         }
                     }
@@ -6136,7 +6148,7 @@ impl Interpreter {
                     };
 
                     let padding_size = size - if sign_output == 0 { 0 } else { 1 };
-                    output = format!("{1:0<0$}", padding_size, output);
+                    output = format!("{1:0>0$}", padding_size, output);
 
                     if sign_output != 0 {
                         output = (sign_output as char).to_string() + &output;
@@ -6198,18 +6210,18 @@ impl Interpreter {
                     Ok(char_count_used) => i += char_count_used,
 
                     Err(e) => {
-                        let interpreting_error = match e {
-                            FormatSequenceError::InvalidFormatSequence => InterpretingError::InvalidFormat,
-                            FormatSequenceError::InvalidArguments => InterpretingError::InvalidArguments,
-                            FormatSequenceError::InvalidArgCount => InterpretingError::InvalidArgCount,
-                            FormatSequenceError::TranslationKeyNotFound => InterpretingError::TransKeyNotFound,
-                            FormatSequenceError::SpecifiedIndexOutOfBounds => InterpretingError::IndexOutOfBounds,
-                            FormatSequenceError::TranslationInvalidPluralizationTemplate => InterpretingError::InvalidTemplateSyntax,
+                        let (interpreting_error, message) = match e {
+                            FormatSequenceError::InvalidFormatSequence(message) => (InterpretingError::InvalidFormat, message),
+                            FormatSequenceError::InvalidArguments(message) => (InterpretingError::InvalidArguments, message),
+                            FormatSequenceError::InvalidArgCount(message) => (InterpretingError::InvalidArgCount, message),
+                            FormatSequenceError::TranslationKeyNotFound(message) => (InterpretingError::TransKeyNotFound, message),
+                            FormatSequenceError::SpecifiedIndexOutOfBounds(message) => (InterpretingError::IndexOutOfBounds, message),
+                            FormatSequenceError::TranslationInvalidPluralizationTemplate(message) => (InterpretingError::InvalidTemplateSyntax, message),
                         };
 
                         return self.set_errno_error_object(
                             interpreting_error,
-                            None,
+                            Some(&message),
                             CodePosition::EMPTY,
                         );
                     },
@@ -7265,14 +7277,14 @@ impl Interpreter {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 enum FormatSequenceError {
-    InvalidFormatSequence,
-    InvalidArguments,
-    InvalidArgCount,
-    TranslationKeyNotFound,
-    SpecifiedIndexOutOfBounds,
-    TranslationInvalidPluralizationTemplate,
+    InvalidFormatSequence(Box<str>),
+    InvalidArguments(Box<str>),
+    InvalidArgCount(Box<str>),
+    TranslationKeyNotFound(Box<str>),
+    SpecifiedIndexOutOfBounds(Box<str>),
+    TranslationInvalidPluralizationTemplate(Box<str>),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]

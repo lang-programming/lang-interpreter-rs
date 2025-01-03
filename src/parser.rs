@@ -4480,6 +4480,7 @@ impl Parser {
         }
 
         //DOUBLE
+        #[allow(clippy::needless_return)]
         if let Ok(value) = f64::from_str(token) {
             nodes.push(Node::new_double_value_node(number_token.pos(), value));
 

@@ -311,7 +311,7 @@ fn get_most_restrictive_function_signature_index_internal(
             if function_signature.1.is_some_and(|var_args_parameter_index| var_args_parameter_index == j) {
                 let old_argument_index = argument_index;
 
-                argument_index = argument_list.len() - function_signature.0.len() + j + 1;
+                argument_index = argument_list.len() + j + 1 - function_signature.0.len();
 
                 //Check if types are allowed for var args parameter
                 for k in old_argument_index..argument_index {
@@ -769,7 +769,7 @@ pub fn format_translation_template_pluralization_with_template(
             let mut start_count = -2;
             let mut end_count = -2;
             let mut number_start_index = 0;
-            for (k, c) in raw_count_values.bytes().
+            for (k, c) in raw_count_value.bytes().
                     enumerate() {
                 if c.is_ascii_digit() {
                     if k == raw_count_value.len() - 1 {

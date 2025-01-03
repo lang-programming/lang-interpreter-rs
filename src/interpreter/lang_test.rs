@@ -260,18 +260,6 @@ impl Unit {
         }
     }
 
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
-    }
-
-    pub fn sub_units(&self) -> &[SubUnit] {
-        &self.sub_units
-    }
-
-    pub fn add_sub_unit(&mut self, sub_unit: SubUnit) {
-        self.sub_units.push(sub_unit);
-    }
-
     pub fn test_count(&self) -> usize {
         self.sub_units.iter().
                 map(|sub_unit| sub_unit.test_count()).
@@ -419,10 +407,6 @@ impl SubUnit {
             name: None,
             assert_results: Vec::new(),
         }
-    }
-
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
     }
 
     pub fn add_assert_result(&mut self, assert_result: AssertResult) {
