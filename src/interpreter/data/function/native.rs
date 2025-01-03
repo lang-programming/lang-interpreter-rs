@@ -4,11 +4,58 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::interpreter::data::{DataObjectRef, DataTypeConstraintError, LangObjectRef, OptionDataObjectRef, OptionLangObjectRef};
 use crate::interpreter::{operators, Interpreter};
+use crate::interpreter::data::function::native::dyn_fn_lang_native_function_return_type::ReturnType;
 use crate::lexer::CodePosition;
 
 pub type Result<T> = std::result::Result<T, NativeError>;
 
-type DynFnLangNativeFunction<Args> = dyn Fn(&mut Interpreter, Args) -> Result<OptionDataObjectRef>;
+type DynFnLangNativeFunction<Args, Ret> = dyn Fn(&mut Interpreter, Args) -> Ret;
+
+mod dyn_fn_lang_native_function_return_type {
+    use super::Result;
+
+    use crate::interpreter::data::{DataObjectRef, OptionDataObjectRef};
+
+    pub trait ReturnType {
+        fn into(self) -> Result<OptionDataObjectRef>;
+    }
+
+    impl ReturnType for Result<OptionDataObjectRef> {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            self
+        }
+    }
+
+    impl ReturnType for Result<DataObjectRef> {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            self.map(Some)
+        }
+    }
+
+    impl ReturnType for Result<()> {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            self.map(|_| None)
+        }
+    }
+
+    impl ReturnType for OptionDataObjectRef {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            Ok(self)
+        }
+    }
+
+    impl ReturnType for DataObjectRef {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            Ok(Some(self))
+        }
+    }
+
+    impl ReturnType for () {
+        fn into(self) -> Result<OptionDataObjectRef> {
+            Ok(None)
+        }
+    }
+}
 
 pub trait FromLangArgs: Sized {
     fn from_lang_args(
@@ -150,14 +197,15 @@ pub trait NativeFunctionAdapter: private::Sealed {
 
 impl<
     Args: FromLangArgs,
-> NativeFunctionAdapter for Box<DynFnLangNativeFunction<Args>> {
+    Ret: ReturnType,
+> NativeFunctionAdapter for Box<DynFnLangNativeFunction<Args, Ret>> {
     fn lang_call(
         &self,
         interpreter: &mut Interpreter,
         this_object: OptionLangObjectRef,
         args: Vec<DataObjectRef>,
     ) -> Result<OptionDataObjectRef> {
-        self(interpreter, Args::from_lang_args(this_object, args)?)
+        self(interpreter, Args::from_lang_args(this_object, args)?).into()
     }
 
     fn lang_parameter_count(&self) -> usize {
@@ -171,7 +219,8 @@ impl<
 
 impl<
     Args: FromLangArgs,
-> private::Sealed for Box<DynFnLangNativeFunction<Args>> {}
+    Ret: ReturnType,
+> private::Sealed for Box<DynFnLangNativeFunction<Args, Ret>> {}
 
 impl Debug for dyn NativeFunctionAdapter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -180,25 +229,28 @@ impl Debug for dyn NativeFunctionAdapter {
 }
 
 #[inline(always)]
-fn func_trait<F, Args>(func: Box<F>) -> Box<DynFnLangNativeFunction<Args>> where
+fn func_trait<F, Args, Ret>(func: Box<F>) -> Box<DynFnLangNativeFunction<Args, Ret>> where
         Args: FromLangArgs,
-        F: Fn(&mut Interpreter, Args) -> Result<OptionDataObjectRef> + 'static,
+        Ret: ReturnType,
+        F: Fn(&mut Interpreter, Args) -> Ret + 'static,
 {
     func
 }
 
 #[inline(always)]
-fn create_native_function_adapter_from_func_trait<'a, F, Args>(func: F) -> Box<dyn NativeFunctionAdapter + 'a> where
+fn create_native_function_adapter_from_func_trait<'a, F, Args, Ret>(func: F) -> Box<dyn NativeFunctionAdapter + 'a> where
         Args: FromLangArgs,
-        F: Fn(&mut Interpreter, Args) -> Result<OptionDataObjectRef> + NativeFunctionAdapter + 'a,
+        Ret: ReturnType,
+        F: Fn(&mut Interpreter, Args) -> Ret + NativeFunctionAdapter + 'a,
 {
     Box::new(func)
 }
 
 #[inline(always)]
-pub fn create_native_function_adapter<F, Args>(func: F) -> Box<dyn NativeFunctionAdapter + 'static> where
+pub fn create_native_function_adapter<F, Args, Ret>(func: F) -> Box<dyn NativeFunctionAdapter + 'static> where
         Args: FromLangArgs + 'static,
-        F: Fn(&mut Interpreter, Args) -> Result<OptionDataObjectRef> + 'static,
+        Ret: ReturnType + 'static,
+        F: Fn(&mut Interpreter, Args) -> Ret + 'static,
 {
     create_native_function_adapter_from_func_trait(func_trait(Box::new(func)))
 }
