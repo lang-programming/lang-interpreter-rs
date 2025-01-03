@@ -40,15 +40,19 @@ impl Level {
 
 #[derive(Debug)]
 pub struct TerminalIO {
-    file: File,
+    file: Option<File>,
     log_level: Level,
 }
 
 impl TerminalIO {
     const TIME_FORMAT: &'static str = "%d.%m.%Y|%H:%M:%S";
 
-    pub fn new(log_file: impl Into<OsString>) -> Result<Self, io::Error> {
-        let file = File::create(log_file.into())?;
+    pub fn new(log_file: Option<OsString>) -> Result<Self, io::Error> {
+        let file = if let Some(log_file) = log_file {
+            Some(File::create(log_file)?)
+        }else {
+            None
+        };
 
         Ok(Self {
             file,
@@ -80,7 +84,10 @@ impl TerminalIO {
         }
 
         print!("{log}");
-        write!(self.file, "{log}").unwrap();
+        
+        if let Some(file) = &mut self.file {
+            write!(file, "{log}").unwrap();
+        }
     }
     
     pub fn log(&mut self, lvl: Level, txt: impl Into<String>, tag: impl Into<String>) {
