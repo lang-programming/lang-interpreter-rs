@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 use crate::interpreter::data::function::FunctionPointerObject;
 use crate::interpreter::data::object::LangObject;
-use crate::interpreter::InterpretingError;
+use crate::interpreter::{conversions, InterpretingError};
 
 pub type OptionDataObjectRef = Option<DataObjectRef>;
 
@@ -802,6 +802,35 @@ impl DataObject {
         }
     }
 
+    /// This method returns Some for INT, LONG, FLOAT, and DOUBLE values and should only be used
+    /// for native function parameters with the "number" parameter type
+    ///
+    /// This method does not convert the data object into a number if it is none.
+    /// A data object can be converted with [conversions::to_number]
+    pub fn number_value(&self) -> Option<Number> {
+        match self.value {
+            DataValue::Int(value) => Some(value.into()),
+            DataValue::Long(value) => Some(value.into()),
+            DataValue::Float(value) => Some(value.into()),
+            DataValue::Double(value) => Some(value.into()),
+
+            _ => None,
+        }
+    }
+
+    /// This method returns Some for INT values and should only be used
+    /// for native function parameters with the "boolean" parameter type
+    ///
+    /// This method does not convert the data object into a boolean if it is none.
+    /// A data object can be converted with [conversions::to_bool]
+    pub fn bool_value(&self) -> Option<bool> {
+        match self.value {
+            DataValue::Int(value) => Some(value != 0),
+
+            _ => None,
+        }
+    }
+
     pub fn set_variable_name(&mut self, variable_name: Option<&str>) -> Result<&mut Self, DataTypeConstraintError> {
         let new_type_requirement = Self::get_type_constraint_for(variable_name);
         if !new_type_requirement.is_type_allowed(self.value.data_type()) {
@@ -1032,6 +1061,16 @@ impl DataObjectRef {
 
     pub fn type_value(&self) -> Option<DataType> {
         self.0.borrow().type_value()
+    }
+
+    /// This method borrows the data object and copies the value from [DataObject::number_value]
+    pub fn number_value(&self) -> Option<Number> {
+        self.0.borrow().number_value()
+    }
+
+    /// This method borrows the data object and copies the value from [DataObject::bool_value]
+    pub fn bool_value(&self) -> Option<bool> {
+        self.0.borrow().bool_value()
     }
 
     pub fn variable_name(&self) -> Option<Box<str>> {

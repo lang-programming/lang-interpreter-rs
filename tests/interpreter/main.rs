@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use lang_interpreter::interpreter::Interpreter;
 use lang_interpreter::interpreter::platform::DefaultPlatformAPI;
+use lang_interpreter::terminal_io::TerminalIO;
 
 #[test]
 fn lang_spec_test() {
@@ -13,8 +14,8 @@ fn lang_spec_test() {
 
     let mut interpreter = Interpreter::new(
         current_dir.to_str().unwrap(),
-        None,
-        None,
+        Some("test.lang"),
+        Some(TerminalIO::new(None).unwrap()),
         Box::new(DefaultPlatformAPI::new()),
         None,
     );
@@ -27,7 +28,14 @@ fn lang_spec_test() {
     main_test_file.read_to_string(&mut lang_code).unwrap();
 
     interpreter.interpret_lines(lang_code);
-    
-    assert!(interpreter.lang_test_store().test_count() > 0);
-    assert_eq!(interpreter.lang_test_store().test_count(), interpreter.lang_test_store().test_passed_count());
+
+    let test_count = interpreter.lang_test_store().test_count();
+    let passed_test_count = interpreter.lang_test_store().test_passed_count();
+
+    assert!(test_count > 0, "Lang spec tests where not initialized correctly");
+    assert_eq!(
+        test_count,
+        passed_test_count,
+        "Some Lang spec test failed: There are {test_count} tests but only {passed_test_count} tests passed.",
+    );
 }

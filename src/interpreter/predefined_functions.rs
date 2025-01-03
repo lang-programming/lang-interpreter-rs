@@ -270,23 +270,271 @@ mod lang_functions {
 }
 
 mod system_functions {
+    use std::rc::Rc;
+    use std::thread;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
-    use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
-    use crate::interpreter::Interpreter;
+    use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, OptionDataObjectRef};
+    use crate::interpreter::{conversions, Interpreter, InterpretingError, StackElement};
+    use crate::interpreter::data::function::native::NativeError;
+    use crate::lexer::CodePosition;
+    use crate::utils;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        //TODO
+        functions.push(lang_interpreter::lang_func!(
+            sleep_function,
+            lang_interpreter::lang_func_metadata!(
+                name="sleep",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$milliSeconds",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn sleep_function(
+            interpreter: &mut Interpreter,
+            (milli_seconds,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            let milli_seconds = milli_seconds.number_value().unwrap();
+            let milli_seconds = milli_seconds.long_value();
+            if milli_seconds < 0 {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Argument 1 (\"$milliSeconds\") must be >= 0"),
+                    CodePosition::EMPTY,
+                )));
+            }
+
+            thread::sleep(Duration::from_millis(milli_seconds as u64));
+
+            Ok(None)
+        }
 
         functions.push(lang_interpreter::lang_func!(
-            is_lang_version_newer_function,
+            nano_time_function,
             lang_interpreter::lang_func_metadata!(
-                name="asStatic",
+                name="nanoTime",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+            ),
+        ));
+        fn nano_time_function(
+            interpreter: &mut Interpreter,
+            _: (),
+        ) -> native::Result<OptionDataObjectRef> {
+            let nano_time = interpreter.origin_time.elapsed();
+            let nano_time = (nano_time.as_nanos() as u64 & (i64::MAX as u64)) as i64;
+
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_long(nano_time)
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            current_time_millis_function,
+            lang_interpreter::lang_func_metadata!(
+                name="currentTimeMillis",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+            ),
+        ));
+        fn current_time_millis_function(
+            _: &mut Interpreter,
+            _: (),
+        ) -> native::Result<OptionDataObjectRef> {
+            let current_time_millis = SystemTime::now().
+                    duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
+            let current_time_millis = current_time_millis.as_millis() as u64 as i64;
+
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_long(current_time_millis)
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            current_unix_time_function,
+            lang_interpreter::lang_func_metadata!(
+                name="currentUnixTime",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+            ),
+        ));
+        fn current_unix_time_function(
+            _: &mut Interpreter,
+            _: (),
+        ) -> native::Result<OptionDataObjectRef> {
+            let current_time_millis = SystemTime::now().
+                    duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
+            let current_time_millis = current_time_millis.as_secs() as i64;
+
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_long(current_time_millis)
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            get_translation_value_function,
+            lang_interpreter::lang_func_metadata!(
+                name="getTranslationValue",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="$translationKey",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn get_translation_value_function(
+            interpreter: &mut Interpreter,
+            (translation_key_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            let translation_key = conversions::to_text(
+                interpreter,
+                &translation_key_object,
+                CodePosition::EMPTY
+            );
+
+            let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+            let Some(translation_value) = translation_value else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound)));
+            };
+
+            Ok(Some(DataObjectRef::new(DataObject::new_text(translation_value))))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            get_translation_value_template_pluralization_function,
+            lang_interpreter::lang_func_metadata!(
+                name="getTranslationValueTemplatePluralization",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="$count",
+                    parameter_type(number),
+                ),
+                parameter(
+                    name="$translationKey",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn get_translation_value_template_pluralization_function(
+            interpreter: &mut Interpreter,
+            (
+                count,
+                translation_key_object,
+            ): (
+                DataObjectRef,
+                DataObjectRef,
+            ),
+        ) -> native::Result<OptionDataObjectRef> {
+            let count = count.number_value().unwrap();
+            let count = count.int_value();
+            if count < 0 {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Argument 1 (\"$count\") must be >= 0"),
+                    CodePosition::EMPTY,
+                )));
+            }
+
+            let translation_key = conversions::to_text(
+                interpreter,
+                &translation_key_object,
+                CodePosition::EMPTY
+            );
+
+            let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+            let Some(translation_value) = translation_value else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound)));
+            };
+
+            let translation_value = utils::format_translation_template_pluralization(
+                &translation_value, count,
+            );
+            match translation_value {
+                Ok(translation_value) => {
+                    Ok(Some(DataObjectRef::new(DataObject::new_text(translation_value))))
+                },
+
+                Err(e) => {
+                    Ok(Some(interpreter.set_errno_error_object(
+                        InterpretingError::InvalidTemplateSyntax,
+                        Some(e.message()),
+                        CodePosition::EMPTY,
+                    )))
+                },
+            }
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            make_final_function,
+            lang_interpreter::lang_func_metadata!(
+                name="makeFinal",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$ptr",
+                    type_constraint(
+                        allowed=["VAR_POINTER"],
+                    ),
+                ),
+            ),
+        ));
+        fn make_final_function(
+            interpreter: &mut Interpreter,
+            (
+                pointer_object,
+            ): (
+                DataObjectRef,
+            ),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            let variable_name = dereferenced_var_pointer.variable_name();
+            if variable_name.is_none() {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Anonymous values can not be modified"),
+                    CodePosition::EMPTY,
+                )));
+            };
+
+            if dereferenced_var_pointer.is_lang_var() {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::FinalVarChange,
+                )));
+            }
+
+            dereferenced_var_pointer.borrow_mut().set_final_data(true);
+
+            Ok(None)
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            as_final_function,
+            lang_interpreter::lang_func_metadata!(
+                name="asFinal",
                 parameter(
                     name="$value",
                 ),
             ),
         ));
-        fn is_lang_version_newer_function(
+        fn as_final_function(
             _: &mut Interpreter,
             (value_object,): (DataObjectRef,),
         ) -> native::Result<OptionDataObjectRef> {
@@ -294,6 +542,366 @@ mod system_functions {
                 data_object.set_copy_static_and_final_modifiers(true).
                         set_static_data(true).
                         set_data(&value_object.borrow())
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            is_final_function,
+            lang_interpreter::lang_func_metadata!(
+                name="isFinal",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$value",
+                    parameter_type(call_by_pointer),
+                ),
+            ),
+        ));
+        fn is_final_function(
+            interpreter: &mut Interpreter,
+            (pointer_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(dereferenced_var_pointer.is_final_data())
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            make_static_function,
+            lang_interpreter::lang_func_metadata!(
+                name="makeStatic",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$ptr",
+                    type_constraint(
+                        allowed=["VAR_POINTER"],
+                    ),
+                ),
+            ),
+        ));
+        fn make_static_function(
+            interpreter: &mut Interpreter,
+            (
+                pointer_object,
+            ): (
+                DataObjectRef,
+            ),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            let variable_name = dereferenced_var_pointer.variable_name();
+            if variable_name.is_none() {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Anonymous values can not be modified"),
+                    CodePosition::EMPTY,
+                )));
+            };
+
+            if dereferenced_var_pointer.is_lang_var() {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::FinalVarChange,
+                )));
+            }
+
+            dereferenced_var_pointer.borrow_mut().set_static_data(true);
+
+            Ok(None)
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            as_static_function,
+            lang_interpreter::lang_func_metadata!(
+                name="asStatic",
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn as_static_function(
+            _: &mut Interpreter,
+            (value_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_copy_static_and_final_modifiers(true).
+                        set_static_data(true).
+                        set_data(&value_object.borrow())
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            is_static_function,
+            lang_interpreter::lang_func_metadata!(
+                name="isStatic",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$value",
+                    parameter_type(call_by_pointer),
+                ),
+            ),
+        ));
+        fn is_static_function(
+            interpreter: &mut Interpreter,
+            (pointer_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(dereferenced_var_pointer.is_static_data())
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            constrain_variable_allowed_types_function,
+            lang_interpreter::lang_func_metadata!(
+                name="constrainVariableAllowedTypes",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$ptr",
+                    type_constraint(
+                        allowed=["VAR_POINTER"],
+                    ),
+                ),
+                parameter(
+                    name="&types",
+                    parameter_type(var_args),
+                    type_constraint(
+                        allowed=["TYPE"],
+                    ),
+                ),
+            ),
+        ));
+        fn constrain_variable_allowed_types_function(
+            interpreter: &mut Interpreter,
+            (
+                pointer_object,
+                type_objects,
+            ): (
+                DataObjectRef,
+                Vec<DataObjectRef>,
+            ),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            let variable_name = dereferenced_var_pointer.variable_name();
+            if variable_name.is_none() {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Anonymous values can not be modified"),
+                    CodePosition::EMPTY,
+                )));
+            };
+
+            if dereferenced_var_pointer.is_lang_var() {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::FinalVarChange,
+                )));
+            }
+
+            let types = type_objects.iter().
+                    map(|type_value| type_value.type_value().unwrap()).
+                    collect::<Box<_>>();
+
+            let ret = dereferenced_var_pointer.borrow_mut().
+                    set_type_constraint(Box::new(DataTypeConstraint::from_allowed_types(&types))).err();
+            if let Some(e) = ret {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some(e.message()),
+                    CodePosition::EMPTY,
+                )));
+            }
+
+            Ok(None)
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            constrain_variable_not_allowed_types_function,
+            lang_interpreter::lang_func_metadata!(
+                name="constrainVariableNotAllowedTypes",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$ptr",
+                    type_constraint(
+                        allowed=["VAR_POINTER"],
+                    ),
+                ),
+                parameter(
+                    name="&types",
+                    parameter_type(var_args),
+                    type_constraint(
+                        allowed=["TYPE"],
+                    ),
+                ),
+            ),
+        ));
+        fn constrain_variable_not_allowed_types_function(
+            interpreter: &mut Interpreter,
+            (
+                pointer_object,
+                type_objects,
+            ): (
+                DataObjectRef,
+                Vec<DataObjectRef>,
+            ),
+        ) -> native::Result<OptionDataObjectRef> {
+            let dereferenced_var_pointer = pointer_object.var_pointer_value();
+            let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::InvalidArguments,
+                )));
+            };
+
+            let variable_name = dereferenced_var_pointer.variable_name();
+            if variable_name.is_none() {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Anonymous values can not be modified"),
+                    CodePosition::EMPTY,
+                )));
+            };
+
+            if dereferenced_var_pointer.is_lang_var() {
+                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                    InterpretingError::FinalVarChange,
+                )));
+            }
+
+            let types = type_objects.iter().
+                    map(|type_value| type_value.type_value().unwrap()).
+                    collect::<Box<_>>();
+
+            let ret = dereferenced_var_pointer.borrow_mut().
+                    set_type_constraint(Box::new(DataTypeConstraint::from_not_allowed_types(&types))).err();
+            if let Some(e) = ret {
+                return Ok(Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some(e.message()),
+                    CodePosition::EMPTY,
+                )));
+            }
+
+            Ok(None)
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            exec_function,
+            lang_interpreter::lang_func_metadata!(
+                name="exec",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="$text",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn exec_function(
+            interpreter: &mut Interpreter,
+            (text_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+           let lines = &conversions::to_text(
+                interpreter,
+                &text_object,
+                CodePosition::EMPTY
+            );
+
+            //Update call stack
+            let current_stack_element = interpreter.current_call_stack_element();
+            let new_stack_element = StackElement::new(
+                current_stack_element.lang_path(),
+                current_stack_element.lang_file(),
+                current_stack_element.lang_class().cloned(),
+                current_stack_element.lang_class_name(),
+                Some("<exec-code>"),
+                current_stack_element.module(),
+            );
+            interpreter.push_stack_element(new_stack_element, CodePosition::EMPTY);
+
+            let original_line_number = interpreter.parser_line_number();
+
+            interpreter.reset_parser_positional_vars();
+            interpreter.interpret_lines(&**lines);
+
+            interpreter.set_parser_line_number(original_line_number);
+
+            //Get returned value from executed Lang file
+            let ret_tmp = interpreter.get_and_reset_return_value();
+
+            //Update call stack
+            interpreter.pop_stack_element();
+
+            Ok(ret_tmp)
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            is_terminal_available_function,
+            lang_interpreter::lang_func_metadata!(
+                name="isTerminalAvailable",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+            ),
+        ));
+        fn is_terminal_available_function(
+            interpreter: &mut Interpreter,
+            _: (),
+        ) -> native::Result<OptionDataObjectRef> {
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(interpreter.term.is_some())
+            })?)))
+        }
+
+        functions.push(lang_interpreter::lang_func!(
+            is_callable_function,
+            lang_interpreter::lang_func_metadata!(
+                name="isCallable",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn is_callable_function(
+            _: &mut Interpreter,
+            (value_object,): (DataObjectRef,),
+        ) -> native::Result<OptionDataObjectRef> {
+            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(utils::is_callable(&value_object))
             })?)))
         }
 

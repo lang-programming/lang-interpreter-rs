@@ -18,6 +18,7 @@ use std::ops::Deref;
 use std::{ptr, str};
 use std::rc::Rc;
 use std::str::FromStr;
+use std::time::Instant;
 use include_dir::{include_dir, Dir};
 use crate::interpreter::module::{Module, ModuleManager};
 use crate::interpreter::platform::{PlatformAPI};
@@ -71,6 +72,7 @@ pub struct Interpreter {
 
     term: Option<TerminalIO>,
     platform_api: Box<dyn PlatformAPI>,
+    origin_time: Instant,
     //TODO random
 
     //Lang tests
@@ -132,6 +134,7 @@ impl Interpreter {
 
             term,
             platform_api,
+            origin_time: Instant::now(),
 
             lang_test_store: LangTest::new(),
             lang_test_expected_throw_value: None,
@@ -7749,8 +7752,8 @@ impl StackElement {
         self.lang_function_name.as_deref()
     }
 
-    pub fn module(&self) -> Option<&Module> {
-        self.module.as_deref()
+    pub fn module(&self) -> Option<Rc<Module>> {
+        self.module.clone()
     }
 }
 
