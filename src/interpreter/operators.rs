@@ -4280,7 +4280,7 @@ pub fn is_equals(
         return conversions::to_bool(interpreter, &ret, pos);
     }
 
-    if ptr::addr_eq(
+    if ptr::eq(
         left_side_operand.borrow().deref(),
         right_side_operand.borrow().deref(),
     ) {
@@ -4448,14 +4448,14 @@ pub fn is_equals(
         DataValue::Object(left_value) => {
             right_side_operand.object_value().is_some_and(|right_value| {
                 //Check for same reference only (For classes and objects if "op:isEquals()" is not defined)
-                ptr::addr_eq(left_value.borrow().deref(), right_value.borrow().deref())
+                ptr::eq(left_value.borrow().deref(), right_value.borrow().deref())
             })
         },
 
         DataValue::VarPointer(left_value) => {
             right_side_operand.var_pointer_value().is_some_and(|right_value| {
                 //Check for same reference only
-                ptr::addr_eq(left_value.borrow().deref(), right_value.borrow().deref())
+                ptr::eq(left_value.borrow().deref(), right_value.borrow().deref())
             })
         },
 
@@ -4532,7 +4532,7 @@ pub fn is_strict_equals(
         return conversions::to_bool(interpreter, &ret, pos);
     }
 
-    if ptr::addr_eq(
+    if ptr::eq(
         left_side_operand.borrow().deref(),
         right_side_operand.borrow().deref(),
     ) {
@@ -4659,7 +4659,7 @@ pub fn is_strict_equals(
             let right_value = right_value.borrow();
 
             //Check for same reference only (For classes and objects if "op:isStrictEquals()" is not defined)
-            ptr::addr_eq(left_value.borrow().deref(), right_value.deref())
+            ptr::eq(left_value.borrow().deref(), right_value.deref())
         },
 
         DataValue::VarPointer(left_value) => {
@@ -4667,7 +4667,7 @@ pub fn is_strict_equals(
             let right_value = right_value.borrow();
 
             //Check for same reference only
-            ptr::addr_eq(left_value.borrow().deref(), right_value.deref())
+            ptr::eq(left_value.borrow().deref(), right_value.deref())
         },
 
         DataValue::FunctionPointer(left_value) => {
@@ -4717,7 +4717,7 @@ pub fn is_less_than(
         return conversions::to_bool(interpreter, &ret, pos);
     }
 
-    if ptr::addr_eq(
+    if ptr::eq(
         left_side_operand.borrow().deref(),
         right_side_operand.borrow().deref(),
     ) {
@@ -4899,7 +4899,7 @@ pub fn is_greater_than(
         return conversions::to_bool(interpreter, &ret, pos);
     }
 
-    if ptr::addr_eq(
+    if ptr::eq(
         left_side_operand.borrow().deref(),
         right_side_operand.borrow().deref(),
     ) {

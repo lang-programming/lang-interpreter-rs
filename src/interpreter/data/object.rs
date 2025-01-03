@@ -289,7 +289,7 @@ impl LangObject {
             if let Some(function_pointer) = static_member.function_pointer_value() {
                 let func = function_pointer.copy_with_mapped_functions(|function| {
                     if let Some(member_of_class) = function.member_of_class() {
-                        if ptr::addr_eq(member_of_class.borrow().deref(),
+                        if ptr::eq(member_of_class.borrow().deref(),
                                         interpreter.dummy_class_definition_class.as_ref().unwrap().borrow().deref()) {
                             return InternalFunction::copy_with_class_member_attributes(
                                 function,
@@ -430,7 +430,7 @@ impl LangObject {
             for func_a in function_signatures.iter() {
                 for func_b in function_signatures.iter() {
                     //Do not compare to same function signature
-                    if ptr::addr_eq(*func_a, *func_b) {
+                    if ptr::eq(*func_a, *func_b) {
                         continue;
                     }
 
@@ -587,7 +587,7 @@ impl LangObject {
             for func_a in function_signatures.iter() {
                 for func_b in function_signatures.iter() {
                     //Do not compare to same function signature
-                    if ptr::addr_eq(*func_a, *func_b) {
+                    if ptr::eq(*func_a, *func_b) {
                         continue;
                     }
 
@@ -975,7 +975,7 @@ impl LangObject {
             return object.class_base_definition.borrow().is_instance_of(lang_object);
         }
 
-        if ptr::addr_eq(self, lang_object) {
+        if ptr::eq(self, lang_object) {
             return true;
         }
 

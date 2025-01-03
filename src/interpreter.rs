@@ -2370,7 +2370,7 @@ impl Interpreter {
                             }
 
                             if let Some(struct_value) = left_side_operand.struct_value() {
-                                !struct_value.is_definition() && ptr::addr_eq(
+                                !struct_value.is_definition() && ptr::eq(
                                     struct_value.base_definition().unwrap().deref(),
                                     struct_definition.deref(),
                                 )
@@ -2899,7 +2899,7 @@ impl Interpreter {
 
                     let lvalue = lvalue.unwrap();
 
-                    let is_same_reference = ptr::addr_eq(lvalue.deref(), rvalue.deref());
+                    let is_same_reference = ptr::eq(lvalue.deref(), rvalue.deref());
 
                     let mut lvalue = lvalue.borrow_mut();
 

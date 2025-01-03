@@ -816,7 +816,7 @@ impl InternalFunction {
             return false;
         };
 
-        ptr::addr_eq(accessing_class.borrow().deref(), member_of_class.borrow().deref()) || (
+        ptr::eq(accessing_class.borrow().deref(), member_of_class.borrow().deref()) || (
             member_visibility == Visibility::Protected &&
                     accessing_class.borrow().is_instance_of(member_of_class.borrow().deref())
         )
@@ -1146,7 +1146,7 @@ impl FunctionPointerObject {
         match (&self.this_object, &other.this_object) {
             (Some(s), Some(o)) => {
                 //Check for same reference of thisObjects
-                if !ptr::addr_eq(s.borrow().deref(), o.borrow().deref()) {
+                if !ptr::eq(s.borrow().deref(), o.borrow().deref()) {
                     return false;
                 }
             },
@@ -1167,7 +1167,7 @@ impl FunctionPointerObject {
         match (&self.this_object, &other.this_object) {
             (Some(s), Some(o)) => {
                 //Check for same reference of thisObjects
-                if !ptr::addr_eq(s.borrow().deref(), o.borrow().deref()) {
+                if !ptr::eq(s.borrow().deref(), o.borrow().deref()) {
                     return false;
                 }
             },

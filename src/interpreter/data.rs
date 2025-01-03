@@ -196,7 +196,7 @@ impl DataTypeConstraint {
     }
 }
 
-impl PartialEq<Self> for DataTypeConstraint {
+impl PartialEq for DataTypeConstraint {
     fn eq(&self, other: &Self) -> bool {
         self.allowed_types() == other.allowed_types()
     }
@@ -345,6 +345,41 @@ impl DataObject {
             flags: 0,
             member_of_class_id: -1,
             member_visibility: None,
+        }
+    }
+
+    pub fn new_number(value: impl Into<Number>) -> Self {
+        Self {
+            value: match value.into() {
+                Number::Int(value) => DataValue::Int(value),
+                Number::Long(value) => DataValue::Long(value),
+                Number::Float(value) => DataValue::Float(value),
+                Number::Double(value) => DataValue::Double(value),
+            },
+
+            type_constraint: Box::new(CONSTRAINT_NORMAL.clone()),
+
+            variable_name: None,
+            flags: 0,
+            member_of_class_id: -1,
+            member_visibility: None,
+        }
+    }
+
+    pub fn new_optional_text(str: Option<impl Into<Rc<str>>>) -> Self {
+        if let Some(str) = str {
+            Self::new_text(str)
+        }else {
+            Self {
+                value: DataValue::Null,
+
+                type_constraint: Box::new(CONSTRAINT_NORMAL.clone()),
+
+                variable_name: None,
+                flags: 0,
+                member_of_class_id: -1,
+                member_visibility: None,
+            }
         }
     }
 
@@ -1308,7 +1343,7 @@ impl Display for StructObject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 pub struct ErrorObject {
     err: InterpretingError,
     message: Option<Box<str>>,

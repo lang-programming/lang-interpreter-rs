@@ -267,10 +267,11 @@ mod lang_functions {
 
 mod system_functions {
     use std::rc::Rc;
-    use std::thread;
+    use std::{ptr, thread};
+    use std::ops::Deref;
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
-    use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, OptionDataObjectRef};
+    use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, OptionDataObjectRef, StructObject};
     use crate::interpreter::{conversions, Interpreter, InterpretingError, StackElement};
     use crate::interpreter::data::function::native::NativeError;
     use crate::lexer::CodePosition;
@@ -901,7 +902,372 @@ mod system_functions {
             }).unwrap())
         }
 
-        //TODO
+        {
+            functions.push(crate::lang_func!(
+                is_instance_of_function,
+                crate::lang_func_metadata!(
+                    name="isInstanceOf",
+                    has_info=true,
+                    return_type_constraint(
+                        allowed=["INT"],
+                    ),
+                    parameter(
+                        name="$value",
+                    ),
+                    parameter(
+                        name="$type",
+                        type_constraint(
+                            allowed=["TYPE"],
+                        ),
+                    ),
+                ),
+            ));
+            fn is_instance_of_function(
+                _: &mut Interpreter,
+                (
+                    value_object,
+                    type_object,
+                ): (
+                    DataObjectRef,
+                    DataObjectRef,
+                ),
+            ) -> DataObjectRef {
+                DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_bool(value_object.data_type() == type_object.type_value().unwrap())
+                }).unwrap())
+            }
+
+            functions.push(crate::lang_func!(
+                is_instance_of_with_struct_parameters_function,
+                crate::lang_func_metadata!(
+                    name="isInstanceOf",
+                    return_type_constraint(
+                        allowed=["INT"],
+                    ),
+                    parameter(
+                        name="$value",
+                        type_constraint(
+                            allowed=["STRUCT"],
+                        ),
+                    ),
+                    parameter(
+                        name="$type",
+                        type_constraint(
+                            allowed=["STRUCT"],
+                        ),
+                    ),
+                ),
+            ));
+            fn is_instance_of_with_struct_parameters_function(
+                interpreter: &mut Interpreter,
+                (
+                    value_object,
+                    type_object,
+                ): (
+                    DataObjectRef,
+                    DataObjectRef,
+                ),
+            ) -> DataObjectRef {
+                let value_struct = value_object.struct_value().unwrap();
+                let type_struct = type_object.struct_value().unwrap();
+
+                if !type_struct.is_definition() {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some("Argument 2 (\"$type\") must be a definition struct"),
+                        CodePosition::EMPTY,
+                    );
+                }
+
+                if value_struct.is_definition() {
+                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_bool(false)
+                    }).unwrap())
+                }else {
+                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                        //Check for same reference only
+                        data_object.set_bool(ptr::eq(value_struct.base_definition().unwrap().deref(), type_struct.deref()))
+                    }).unwrap())
+                }
+            }
+
+            functions.push(crate::lang_func!(
+                is_instance_of_with_struct_type_parameter_function,
+                crate::lang_func_metadata!(
+                    name="isInstanceOf",
+                    return_type_constraint(
+                        allowed=["INT"],
+                    ),
+                    parameter(
+                        name="$value",
+                    ),
+                    parameter(
+                        name="$type",
+                        type_constraint(
+                            allowed=["STRUCT"],
+                        ),
+                    ),
+                ),
+            ));
+            fn is_instance_of_with_struct_type_parameter_function(
+                interpreter: &mut Interpreter,
+                (
+                    _,
+                    type_object,
+                ): (
+                    DataObjectRef,
+                    DataObjectRef,
+                ),
+            ) -> DataObjectRef {
+                let type_struct = type_object.struct_value().unwrap();
+
+                if !type_struct.is_definition() {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some("Argument 2 (\"$type\") must be a definition struct"),
+                        CodePosition::EMPTY,
+                    );
+                }
+
+                DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_bool(false)
+                }).unwrap())
+            }
+
+            functions.push(crate::lang_func!(
+                is_instance_of_with_object_parameters_function,
+                crate::lang_func_metadata!(
+                    name="isInstanceOf",
+                    return_type_constraint(
+                        allowed=["INT"],
+                    ),
+                    parameter(
+                        name="$value",
+                        type_constraint(
+                            allowed=["OBJECT"],
+                        ),
+                    ),
+                    parameter(
+                        name="$type",
+                        type_constraint(
+                            allowed=["OBJECT"],
+                        ),
+                    ),
+                ),
+            ));
+            fn is_instance_of_with_object_parameters_function(
+                interpreter: &mut Interpreter,
+                (
+                    value_object,
+                    type_object,
+                ): (
+                    DataObjectRef,
+                    DataObjectRef,
+                ),
+            ) -> DataObjectRef {
+                let lang_object = value_object.object_value().unwrap();
+                let type_object = type_object.object_value().unwrap();
+
+                if !type_object.borrow().is_class() {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some("Argument 2 (\"$type\") must be a class"),
+                        CodePosition::EMPTY,
+                    );
+                }
+
+                if lang_object.borrow().is_class() {
+                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_bool(false)
+                    }).unwrap())
+                }else {
+                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_bool(lang_object.borrow().is_instance_of(&type_object.borrow()))
+                    }).unwrap())
+                }
+            }
+
+            functions.push(crate::lang_func!(
+                is_instance_of_with_object_type_parameter_function,
+                crate::lang_func_metadata!(
+                    name="isInstanceOf",
+                    return_type_constraint(
+                        allowed=["INT"],
+                    ),
+                    parameter(
+                        name="$value",
+                    ),
+                    parameter(
+                        name="$type",
+                        type_constraint(
+                            allowed=["OBJECT"],
+                        ),
+                    ),
+                ),
+            ));
+            fn is_instance_of_with_object_type_parameter_function(
+                interpreter: &mut Interpreter,
+                (
+                    _,
+                    type_object,
+                ): (
+                    DataObjectRef,
+                    DataObjectRef,
+                ),
+            ) -> DataObjectRef {
+                let type_object = type_object.object_value().unwrap();
+
+                if !type_object.borrow().is_class() {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some("Argument 2 (\"$type\") must be a class"),
+                        CodePosition::EMPTY,
+                    );
+                }
+
+                DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_bool(false)
+                }).unwrap())
+            }
+        }
+
+        functions.push(crate::lang_func!(
+            type_of_function,
+            crate::lang_func_metadata!(
+                name="typeOf",
+                return_type_constraint(
+                    allowed=["TYPE"],
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn type_of_function(
+            _: &mut Interpreter,
+            (value_object,): (DataObjectRef,),
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_type(value_object.data_type())
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            get_current_stack_trace_element_function,
+            crate::lang_func_metadata!(
+                name="getCurrentStackTraceElement",
+                return_type_constraint(
+                    allowed=["STRUCT"],
+                ),
+            ),
+        ));
+        fn get_current_stack_trace_element_function(
+            interpreter: &mut Interpreter,
+            _: (),
+        ) -> DataObjectRef {
+            let current_stack_element = &interpreter.call_stack[interpreter.call_stack.len() - 1];
+
+            let module_path: Option<String> = None;
+            let module_file: Option<String> = None;
+            if let Some(module) = current_stack_element.module() {
+                todo!("Implement modules: {module:?}");
+            }
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_struct(Rc::new(StructObject::new_instance(
+                    interpreter.standard_types["&StackTraceElement"].struct_value().unwrap(),
+                    &[
+                        DataObjectRef::new(DataObject::new_text(current_stack_element.lang_path())),
+                        DataObjectRef::new(DataObject::new_optional_text(current_stack_element.lang_file())),
+                        DataObjectRef::new(DataObject::with_update(|data_object| {
+                            data_object.set_struct(Rc::new(StructObject::new_instance(
+                                interpreter.standard_types["&CodePosition"].struct_value().unwrap(),
+                                &[
+                                    DataObjectRef::new(DataObject::new_number(current_stack_element.pos().line_number_from() as i32)),
+                                    DataObjectRef::new(DataObject::new_number(current_stack_element.pos().line_number_to() as i32)),
+                                    DataObjectRef::new(DataObject::new_number(current_stack_element.pos().column_from() as i32)),
+                                    DataObjectRef::new(DataObject::new_number(current_stack_element.pos().column_to() as i32)),
+                                ],
+                            )?))
+                        })?),
+                        DataObjectRef::new(DataObject::new_optional_text(current_stack_element.lang_class_name())),
+                        DataObjectRef::new(DataObject::new_optional_text(current_stack_element.lang_function_name())),
+                        DataObjectRef::new(DataObject::new_optional_text(module_path)),
+                        DataObjectRef::new(DataObject::new_optional_text(module_file))
+                    ],
+                )?))
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            get_stack_trace_elements_element_function,
+            crate::lang_func_metadata!(
+                name="getStackTraceElements",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+            ),
+        ));
+        fn get_stack_trace_elements_element_function(
+            interpreter: &mut Interpreter,
+            _: (),
+        ) -> DataObjectRef {
+            let stack_trace_elements = interpreter.call_stack_elements();
+            let array = stack_trace_elements.iter().
+                    map(|ele| {
+                        let module_path: Option<String> = None;
+                        let module_file: Option<String> = None;
+                        if let Some(module) = ele.module() {
+                            todo!("Implement modules: {module:?}");
+                        }
+
+                        DataObjectRef::new(DataObject::with_update(|data_object| {
+                            data_object.set_struct(Rc::new(StructObject::new_instance(
+                                interpreter.standard_types["&StackTraceElement"].struct_value().unwrap(),
+                                &[
+                                    DataObjectRef::new(DataObject::new_text(ele.lang_path())),
+                                    DataObjectRef::new(DataObject::new_optional_text(ele.lang_file())),
+                                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                                        data_object.set_struct(Rc::new(StructObject::new_instance(
+                                            interpreter.standard_types["&CodePosition"].struct_value().unwrap(),
+                                            &[
+                                                DataObjectRef::new(DataObject::new_number(ele.pos().line_number_from() as i32)),
+                                                DataObjectRef::new(DataObject::new_number(ele.pos().line_number_to() as i32)),
+                                                DataObjectRef::new(DataObject::new_number(ele.pos().column_from() as i32)),
+                                                DataObjectRef::new(DataObject::new_number(ele.pos().column_to() as i32)),
+                                            ],
+                                        )?))
+                                    })?),
+                                    DataObjectRef::new(DataObject::new_optional_text(ele.lang_class_name())),
+                                    DataObjectRef::new(DataObject::new_optional_text(ele.lang_function_name())),
+                                    DataObjectRef::new(DataObject::new_optional_text(module_path)),
+                                    DataObjectRef::new(DataObject::new_optional_text(module_file))
+                                ],
+                            )?))
+                        }).unwrap())
+                    }).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(array)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            get_stack_trace_function,
+            crate::lang_func_metadata!(
+                name="getStackTrace",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+            ),
+        ));
+        fn get_stack_trace_function(
+            interpreter: &mut Interpreter,
+            _: (),
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::new_text(interpreter.print_stack_trace(CodePosition::EMPTY)))
+        }
     }
 }
 
