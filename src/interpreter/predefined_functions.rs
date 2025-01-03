@@ -1208,10 +1208,71 @@ mod math_functions {
     use rand::{Rng, RngCore, SeedableRng};
     use rand::rngs::SmallRng;
     use lang_interpreter::interpreter::data::DataObject;
+    use lang_interpreter::interpreter::operators;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
-    use crate::interpreter::{Interpreter, InterpretingError};
+    use crate::interpreter::{conversions, Interpreter, InterpretingError};
     use crate::interpreter::data::DataObjectRef;
     use crate::lexer::CodePosition;
+
+    macro_rules! math_1_arg_function {
+        ( $func_name:literal, $op:ident $(,)? ) => {{
+            fn math_function(
+                _: &mut Interpreter,
+                number: DataObjectRef,
+            ) -> DataObjectRef {
+                let number = number.number_value().unwrap().double_value();
+
+                DataObjectRef::new(DataObject::new_number(number.$op()))
+            }
+
+            crate::lang_func!(
+                math_function,
+                crate::lang_func_metadata!(
+                    name=$func_name,
+                    return_type_constraint(
+                        allowed=["DOUBLE"],
+                    ),
+                    parameter(
+                        name="$number",
+                        parameter_type(number),
+                    ),
+                ),
+            )
+        }};
+    }
+
+    macro_rules! math_2_arg_function {
+        ( $func_name:literal, $op:ident $(,)? ) => {{
+            fn math_function(
+                _: &mut Interpreter,
+                left_number: DataObjectRef,
+                right_number: DataObjectRef,
+            ) -> DataObjectRef {
+                let left_number = left_number.number_value().unwrap().double_value();
+                let right_number = right_number.number_value().unwrap().double_value();
+
+                DataObjectRef::new(DataObject::new_number(left_number.$op(right_number)))
+            }
+
+            crate::lang_func!(
+                math_function,
+                crate::lang_func_metadata!(
+                    name=$func_name,
+                    return_type_constraint(
+                        allowed=["DOUBLE"],
+                    ),
+                    parameter(
+                        name="$a",
+                        parameter_type(number),
+                    ),
+                    parameter(
+                        name="$b",
+                        parameter_type(number),
+                    ),
+                ),
+            )
+        }};
+    }
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         functions.push(crate::lang_func!(
@@ -1476,6 +1537,438 @@ mod math_functions {
             let seed = seed.long_value();
 
             interpreter.ran = SmallRng::seed_from_u64(seed as u64);
+        }
+
+        functions.push(crate::lang_func!(
+            addi_function,
+            crate::lang_func_metadata!(
+                name="addi",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn addi_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut sum = 0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                sum += number.int_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(sum))
+        }
+
+        functions.push(crate::lang_func!(
+            muli_function,
+            crate::lang_func_metadata!(
+                name="muli",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn muli_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut prod = 1;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                prod *= number.int_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(prod))
+        }
+
+        functions.push(crate::lang_func!(
+            addl_function,
+            crate::lang_func_metadata!(
+                name="addl",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn addl_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut sum = 0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                sum += number.long_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(sum))
+        }
+
+        functions.push(crate::lang_func!(
+            mull_function,
+            crate::lang_func_metadata!(
+                name="mull",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn mull_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut prod = 1;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                prod *= number.long_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(prod))
+        }
+
+        functions.push(crate::lang_func!(
+            addf_function,
+            crate::lang_func_metadata!(
+                name="addf",
+                return_type_constraint(
+                    allowed=["FLOAT"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn addf_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut sum = 0.0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                sum += number.float_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(sum))
+        }
+
+        functions.push(crate::lang_func!(
+            mulf_function,
+            crate::lang_func_metadata!(
+                name="mulf",
+                return_type_constraint(
+                    allowed=["FLOAT"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn mulf_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut prod = 1.0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                prod *= number.float_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(prod))
+        }
+
+        functions.push(crate::lang_func!(
+            addd_function,
+            crate::lang_func_metadata!(
+                name="addd",
+                return_type_constraint(
+                    allowed=["DOUBLE"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn addd_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut sum = 0.0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                sum += number.double_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(sum))
+        }
+
+        functions.push(crate::lang_func!(
+            muld_function,
+            crate::lang_func_metadata!(
+                name="muld",
+                return_type_constraint(
+                    allowed=["DOUBLE"],
+                ),
+                parameter(
+                    name="&numbers",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn muld_function(
+            interpreter: &mut Interpreter,
+            number_objects: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut prod = 1.0;
+
+            for (i, number_object) in number_objects.iter().
+                    enumerate() {
+                let number = conversions::to_number(interpreter, number_object, CodePosition::EMPTY);
+                let Some(number) = number else {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::NoNum,
+                        Some(&format!(
+                            "The type of argument {} (for var args parameter \"&numbers\") must be a number",
+                            i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                };
+
+                prod *= number.double_value();
+            }
+
+            DataObjectRef::new(DataObject::new_number(prod))
+        }
+
+        functions.push(math_1_arg_function!("sqrt", sqrt));
+        functions.push(math_1_arg_function!("cbrt", cbrt));
+
+        functions.push(math_2_arg_function!("hypot", hypot));
+
+        functions.push(math_1_arg_function!("toRadians", to_radians));
+        functions.push(math_1_arg_function!("toDegrees", to_degrees));
+
+        functions.push(math_1_arg_function!("sin", sin));
+        functions.push(math_1_arg_function!("cos", cos));
+        functions.push(math_1_arg_function!("tan", tan));
+
+        functions.push(math_1_arg_function!("asin", asin));
+        functions.push(math_1_arg_function!("acos", acos));
+        functions.push(math_1_arg_function!("atan", atan));
+
+        functions.push(math_2_arg_function!("atan2", atan2));
+
+        functions.push(math_1_arg_function!("sinh", sinh));
+        functions.push(math_1_arg_function!("cosh", cosh));
+        functions.push(math_1_arg_function!("tanh", tanh));
+
+        functions.push(math_1_arg_function!("exp", exp));
+
+        functions.push(math_1_arg_function!("loge", ln));
+        functions.push(math_1_arg_function!("log10", log10));
+
+        functions.push(crate::lang_func!(
+            round_function,
+            crate::lang_func_metadata!(
+                name="round",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+                parameter(
+                    name="$number",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn round_function(
+            _: &mut Interpreter,
+            number: DataObjectRef,
+        ) -> DataObjectRef {
+            let number = number.number_value().unwrap().double_value();
+
+            let r = if number.signum() < 0.0 { -1 } else { 1 } * number.abs().round() as i64;
+
+            DataObjectRef::new(DataObject::new_number(r))
+        }
+
+        functions.push(crate::lang_func!(
+            ceil_function,
+            crate::lang_func_metadata!(
+                name="ceil",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+                parameter(
+                    name="$number",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn ceil_function(
+            _: &mut Interpreter,
+            number: DataObjectRef,
+        ) -> DataObjectRef {
+            let number = number.number_value().unwrap().double_value();
+
+            DataObjectRef::new(DataObject::new_number(number.ceil() as i64))
+        }
+
+        functions.push(crate::lang_func!(
+            floor_function,
+            crate::lang_func_metadata!(
+                name="floor",
+                return_type_constraint(
+                    allowed=["LONG"],
+                ),
+                parameter(
+                    name="$number",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn floor_function(
+            _: &mut Interpreter,
+            number: DataObjectRef,
+        ) -> DataObjectRef {
+            let number = number.number_value().unwrap().double_value();
+
+            DataObjectRef::new(DataObject::new_number(number.floor() as i64))
+        }
+
+        functions.push(crate::lang_func!(
+            abs_function,
+            crate::lang_func_metadata!(
+                name="abs",
+                parameter(
+                    name="$operand",
+                ),
+            ),
+        ));
+        fn abs_function(
+            interpreter: &mut Interpreter,
+            operand: DataObjectRef,
+        ) -> DataObjectRef {
+            let ret = operators::op_abs(interpreter, &operand, CodePosition::EMPTY);
+            let Some(ret) = ret else {
+                return interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some(&format!("The abs operator is not defined for {:?}", operand.data_type())),
+                    CodePosition::EMPTY,
+                );
+            };
+
+            ret
         }
     }
 }

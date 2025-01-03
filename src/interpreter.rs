@@ -3447,7 +3447,7 @@ impl Interpreter {
             's' => Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_char(' ')
             }).unwrap())),
-            'e' => Some(DataObjectRef::new(DataObject::new_text(" "))),
+            'e' => Some(DataObjectRef::new(DataObject::new_text(""))),
             'E' => Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_char('\u{001B}')
             }).unwrap())),

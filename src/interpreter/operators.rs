@@ -133,7 +133,7 @@ pub fn op_len(
 
         DataValue::Text(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_int(value.len() as i32)
+                data_object.set_int(value.chars().count() as i32)
             }).unwrap()))
         },
 
