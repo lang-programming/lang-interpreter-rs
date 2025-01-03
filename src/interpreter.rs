@@ -36,7 +36,6 @@ use crate::interpreter::data::{
     Visibility,
 };
 use crate::interpreter::data::function::{
-    native,
     Function,
     FunctionData,
     FunctionMetadata,
@@ -5510,9 +5509,7 @@ impl Interpreter {
             let constructors = constructors.unwrap_or_else(|| {
                 constructor_visibility.push(Visibility::Public);
 
-                let constructor = |_interpreter: &mut Interpreter, (_this,): (LangObjectRef,)| -> native::Result<OptionDataObjectRef> {
-                    Ok(None)
-                };
+                let constructor = |_: &mut Interpreter, (_,): (LangObjectRef,)| {};
                 FunctionPointerObject::from(crate::lang_func!(
                     constructor,
                     crate::lang_func_metadata!(
@@ -6959,11 +6956,11 @@ impl Interpreter {
             let mut method_override_flags = HashMap::new();
             let mut method_visibility = HashMap::new();
 
-            let get_class_method = |_interpreter: &mut Interpreter, (this,): (LangObjectRef,)| -> native::Result<OptionDataObjectRef> {
+            let get_class_method = |_interpreter: &mut Interpreter, (this,): (LangObjectRef,)| -> DataObjectRef {
                 let mut class_object = DataObject::new();
                 class_object.set_object(this.borrow().base_definition().unwrap()).unwrap();
 
-                Ok(Some(DataObjectRef::new(class_object)))
+                DataObjectRef::new(class_object)
             };
             let get_class_method = FunctionPointerObject::from(crate::lang_func!(
                 get_class_method,
@@ -6979,9 +6976,7 @@ impl Interpreter {
             method_override_flags.insert(Box::from("mp.getClass"), vec![false]);
             method_visibility.insert(Box::from("mp.getClass"), vec![Visibility::Public]);
 
-            let constructor = |_interpreter: &mut Interpreter, (_this,): (LangObjectRef,)| -> native::Result<OptionDataObjectRef> {
-                Ok(None)
-            };
+            let constructor = |_interpreter: &mut Interpreter, (_this,): (LangObjectRef,)| {};
             let constructor = FunctionPointerObject::from(crate::lang_func!(
                 constructor,
                 crate::lang_func_metadata!(
@@ -7003,9 +6998,7 @@ impl Interpreter {
 
         //<class-definition> tmp class
         {
-            let constructor = |_interpreter: &mut Interpreter, (_this,): (LangObjectRef,)| -> native::Result<OptionDataObjectRef> {
-                Ok(None)
-            };
+            let constructor = |_interpreter: &mut Interpreter, (_this,): (LangObjectRef,)| {};
             let constructor = FunctionPointerObject::from(crate::lang_func!(
                 constructor,
                 crate::lang_func_metadata!(

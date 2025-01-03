@@ -4,7 +4,7 @@ use std::ptr;
 use std::rc::Rc;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataValue, OptionDataObjectRef, StructObject};
 use crate::interpreter::{conversions, Interpreter, InterpretingError};
-use crate::interpreter::data::function::{native, FunctionPointerObject};
+use crate::interpreter::data::function::FunctionPointerObject;
 use crate::interpreter::data::object::LangObject;
 use crate::lexer::CodePosition;
 use crate::utils;
@@ -398,7 +398,7 @@ pub fn op_concat(
                 let left_side_operand = left_side_operand.clone();
                 let right_side_operand = right_side_operand.clone();
 
-                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> native::Result<OptionDataObjectRef> {
+                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> OptionDataObjectRef {
                     let ret_a = interpreter.call_function_pointer(
                         &left_value,
                         left_side_operand.variable_name().as_deref(),
@@ -406,21 +406,21 @@ pub fn op_concat(
                         CodePosition::EMPTY,
                     );
 
-                    Ok(interpreter.call_function_pointer(
+                    interpreter.call_function_pointer(
                         &right_value,
                         right_side_operand.variable_name().as_deref(),
                         &[utils::none_to_lang_void(ret_a)],
                         CodePosition::EMPTY,
-                    ))
+                    )
                 }
             };
-            let func = FunctionPointerObject::from(lang_interpreter::lang_func!(
+            let func = FunctionPointerObject::from(crate::lang_func!(
                 concat_func,
                 vec![
                     Box::new(left_side_operand),
                     Box::new(right_side_operand),
                 ],
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="concat-func",
                     parameter(
                         name="&args",
@@ -520,27 +520,27 @@ pub fn op_inc(
             let auto_unpack_func = {
                 let operand = operand.clone();
 
-                move |interpreter: &mut Interpreter, (array_object, ): (DataObjectRef,)| -> native::Result<OptionDataObjectRef> {
+                move |interpreter: &mut Interpreter, (array_object, ): (DataObjectRef,)| -> OptionDataObjectRef {
                     let argument_list = array_object.array_value().unwrap().borrow().iter().
                             map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
                                 data_object.set_data(&ele.borrow())
                             }).unwrap())).
                             collect::<Box<_>>();
 
-                    Ok(interpreter.call_function_pointer(
+                    interpreter.call_function_pointer(
                         &value,
                         operand.variable_name().as_deref(),
                         &utils::separate_arguments_with_argument_separators(&argument_list),
                         CodePosition::EMPTY,
-                    ))
+                    )
                 }
             };
-            let func = FunctionPointerObject::from(lang_interpreter::lang_func!(
+            let func = FunctionPointerObject::from(crate::lang_func!(
                 auto_unpack_func,
                 vec![
                     Box::new(operand),
                 ],
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="auto-unpack-func",
                     parameter(
                         name="&array",
@@ -615,7 +615,7 @@ pub fn op_dec(
             let auto_pack_func = {
                 let operand = operand.clone();
 
-                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> native::Result<OptionDataObjectRef> {
+                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> OptionDataObjectRef {
                     let array = args.iter().
                             map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
                                 data_object.set_data(&ele.borrow())
@@ -626,20 +626,20 @@ pub fn op_dec(
                         data_object.set_array(array)
                     }).unwrap());
 
-                    Ok(interpreter.call_function_pointer(
+                    interpreter.call_function_pointer(
                         &value,
                         operand.variable_name().as_deref(),
                         &[array_value],
                         CodePosition::EMPTY,
-                    ))
+                    )
                 }
             };
-            let func = FunctionPointerObject::from(lang_interpreter::lang_func!(
+            let func = FunctionPointerObject::from(crate::lang_func!(
                 auto_pack_func,
                 vec![
                     Box::new(operand),
                 ],
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="auto-pack-func",
                     parameter(
                         name="&args",
@@ -1527,15 +1527,15 @@ pub fn op_pow(
 
             if count == 0 {
                 let pow_func = {
-                    move |_: &mut Interpreter, (_, ): (Vec<DataObjectRef>,)| -> native::Result<OptionDataObjectRef> {
-                        Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                    move |_: &mut Interpreter, (_, ): (Vec<DataObjectRef>,)| -> DataObjectRef {
+                        DataObjectRef::new(DataObject::with_update(|data_object| {
                             data_object.set_void()
-                        }).unwrap())))
+                        }).unwrap())
                     }
                 };
-                let func = FunctionPointerObject::from(lang_interpreter::lang_func!(
+                let func = FunctionPointerObject::from(crate::lang_func!(
                     pow_func,
-                    lang_interpreter::lang_func_metadata!(
+                    crate::lang_func_metadata!(
                         name="pow-func",
                         parameter(
                             name="&args",
@@ -1553,7 +1553,7 @@ pub fn op_pow(
                 let pow_func = {
                     let left_side_operand = left_side_operand.clone();
 
-                    move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> native::Result<OptionDataObjectRef> {
+                    move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> DataObjectRef {
                         let mut ret = utils::none_to_lang_void(interpreter.call_function_pointer(
                             &left_value,
                             left_side_operand.variable_name().as_deref(),
@@ -1570,16 +1570,16 @@ pub fn op_pow(
                             ));
                         }
 
-                        Ok(Some(ret))
+                        ret
                     }
                 };
-                let func = FunctionPointerObject::from(lang_interpreter::lang_func!(
+                let func = FunctionPointerObject::from(crate::lang_func!(
                     pow_func,
                     vec![
                         Box::new(count),
                         Box::new(left_side_operand),
                     ],
-                    lang_interpreter::lang_func_metadata!(
+                    crate::lang_func_metadata!(
                         name="pow-func",
                         parameter(
                             name="&args",

@@ -21,36 +21,42 @@ mod dyn_fn_lang_native_function_return_type {
     }
 
     impl ReturnType for Result<OptionDataObjectRef> {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             self
         }
     }
 
     impl ReturnType for Result<DataObjectRef> {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             self.map(Some)
         }
     }
 
     impl ReturnType for Result<()> {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             self.map(|_| None)
         }
     }
 
     impl ReturnType for OptionDataObjectRef {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             Ok(self)
         }
     }
 
     impl ReturnType for DataObjectRef {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             Ok(Some(self))
         }
     }
 
     impl ReturnType for () {
+        #[inline(always)]
         fn into(self) -> Result<OptionDataObjectRef> {
             Ok(None)
         }

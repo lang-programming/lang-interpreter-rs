@@ -32,14 +32,14 @@ pub fn add_predefined_linker_functions(funcs: &mut HashMap<Box<str>, FunctionPoi
 
 mod reset_functions {
     use std::rc::Rc;
-    use crate::interpreter::data::function::{native, Function, FunctionMetadata};
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObjectRef, OptionDataObjectRef};
     use crate::interpreter::{Interpreter, InterpretingError};
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             free_var_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="freeVar",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -59,35 +59,35 @@ mod reset_functions {
             ): (
                 DataObjectRef,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             let variable_name = dereferenced_var_pointer.variable_name();
             let Some(variable_name) = variable_name else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             if dereferenced_var_pointer.is_final_data() || dereferenced_var_pointer.is_final_data() {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             }
 
             interpreter.data_mut().var.remove(&Rc::from(variable_name));
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             free_all_vars_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="freeAllVars",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -97,15 +97,13 @@ mod reset_functions {
         fn free_all_vars_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) {
             interpreter.reset_vars();
-
-            Ok(None)
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             reset_errno_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="resetErrno",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -115,25 +113,23 @@ mod reset_functions {
         fn reset_errno_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) {
             interpreter.get_and_clear_errno_error_object();
-
-            Ok(None)
         }
     }
 }
 
 mod error_functions {
     use std::rc::Rc;
-    use crate::interpreter::data::function::{native, Function, FunctionMetadata};
-    use crate::interpreter::data::{DataObject, DataObjectRef, ErrorObject, OptionDataObjectRef};
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::data::{DataObject, DataObjectRef, ErrorObject};
     use crate::interpreter::{conversions, Interpreter};
     use crate::lexer::CodePosition;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             get_error_text_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="getErrorText",
                 return_type_constraint(
                     allowed=["TEXT"],
@@ -143,15 +139,15 @@ mod error_functions {
         fn get_error_text_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::new_text(
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::new_text(
                 interpreter.get_and_clear_errno_error_object().error_text(),
-            ))))
+            ))
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             with_error_message_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="withErrorMessage",
                 return_type_constraint(
                     allowed=["ERROR"],
@@ -176,28 +172,28 @@ mod error_functions {
                 DataObjectRef,
                 DataObjectRef,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_error(Rc::new(ErrorObject::new(
                     error_object.error_value().unwrap().err(),
                     Some(&conversions::to_text(interpreter, &text_object, CodePosition::EMPTY))
                 )))
-            })?)))
+            }).unwrap())
         }
     }
 }
 
 mod lang_functions {
-    use crate::interpreter::data::function::{native, Function, FunctionMetadata};
-    use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::data::{DataObject, DataObjectRef};
     use crate::interpreter::{Interpreter, InterpretingError};
     use crate::lexer::CodePosition;
     use crate::utils;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_lang_version_newer_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isLangVersionNewer",
                 return_type_constraint(
                     allowed=["INT"],
@@ -207,7 +203,7 @@ mod lang_functions {
         fn is_lang_version_newer_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             //If lang.version = null -> return false
             let comp_ver = {
                 let data = interpreter.data_ref();
@@ -219,21 +215,21 @@ mod lang_functions {
             };
 
             let Some(comp_ver) = comp_ver else {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return interpreter.set_errno_error_object(
                     InterpretingError::LangVerError,
                     Some("lang.version has an invalid format"),
                     CodePosition::EMPTY,
-                )));
+                );
             };
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(comp_ver.is_gt())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_lang_version_older_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isLangVersionOlder",
                 return_type_constraint(
                     allowed=["INT"],
@@ -243,7 +239,7 @@ mod lang_functions {
         fn is_lang_version_older_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             //If lang.version = null -> return false
             let comp_ver = {
                 let data = interpreter.data_ref();
@@ -255,16 +251,16 @@ mod lang_functions {
             };
 
             let Some(comp_ver) = comp_ver else {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return interpreter.set_errno_error_object(
                     InterpretingError::LangVerError,
                     Some("lang.version has an invalid format"),
                     CodePosition::EMPTY,
-                )));
+                );
             };
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(comp_ver.is_lt())
-            })?)))
+            }).unwrap())
         }
     }
 }
@@ -281,9 +277,9 @@ mod system_functions {
     use crate::utils;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             sleep_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="sleep",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -297,25 +293,25 @@ mod system_functions {
         fn sleep_function(
             interpreter: &mut Interpreter,
             (milli_seconds,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let milli_seconds = milli_seconds.number_value().unwrap();
             let milli_seconds = milli_seconds.long_value();
             if milli_seconds < 0 {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Argument 1 (\"$milliSeconds\") must be >= 0"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             thread::sleep(Duration::from_millis(milli_seconds as u64));
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             nano_time_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="nanoTime",
                 return_type_constraint(
                     allowed=["LONG"],
@@ -325,18 +321,18 @@ mod system_functions {
         fn nano_time_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             let nano_time = interpreter.origin_time.elapsed();
             let nano_time = (nano_time.as_nanos() as u64 & (i64::MAX as u64)) as i64;
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_long(nano_time)
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             current_time_millis_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="currentTimeMillis",
                 return_type_constraint(
                     allowed=["LONG"],
@@ -346,19 +342,19 @@ mod system_functions {
         fn current_time_millis_function(
             _: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> native::Result<DataObjectRef> {
             let current_time_millis = SystemTime::now().
                     duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
             let current_time_millis = current_time_millis.as_millis() as u64 as i64;
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            Ok(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_long(current_time_millis)
-            })?)))
+            })?))
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             current_unix_time_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="currentUnixTime",
                 return_type_constraint(
                     allowed=["LONG"],
@@ -368,19 +364,19 @@ mod system_functions {
         fn current_unix_time_function(
             _: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> native::Result<DataObjectRef> {
             let current_time_millis = SystemTime::now().
                     duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
             let current_time_millis = current_time_millis.as_secs() as i64;
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            Ok(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_long(current_time_millis)
-            })?)))
+            })?))
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             get_translation_value_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="getTranslationValue",
                 return_type_constraint(
                     allowed=["TEXT"],
@@ -394,7 +390,7 @@ mod system_functions {
         fn get_translation_value_function(
             interpreter: &mut Interpreter,
             (translation_key_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             let translation_key = conversions::to_text(
                 interpreter,
                 &translation_key_object,
@@ -403,15 +399,15 @@ mod system_functions {
 
             let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
             let Some(translation_value) = translation_value else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound)));
+                return interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound);
             };
 
-            Ok(Some(DataObjectRef::new(DataObject::new_text(translation_value))))
+            DataObjectRef::new(DataObject::new_text(translation_value))
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             get_translation_value_template_pluralization_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="getTranslationValueTemplatePluralization",
                 return_type_constraint(
                     allowed=["TEXT"],
@@ -435,15 +431,15 @@ mod system_functions {
                 DataObjectRef,
                 DataObjectRef,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             let count = count.number_value().unwrap();
             let count = count.int_value();
             if count < 0 {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Argument 1 (\"$count\") must be >= 0"),
                     CodePosition::EMPTY,
-                )));
+                );
             }
 
             let translation_key = conversions::to_text(
@@ -454,7 +450,7 @@ mod system_functions {
 
             let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
             let Some(translation_value) = translation_value else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound)));
+                return interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound);
             };
 
             let translation_value = utils::format_translation_template_pluralization(
@@ -462,22 +458,22 @@ mod system_functions {
             );
             match translation_value {
                 Ok(translation_value) => {
-                    Ok(Some(DataObjectRef::new(DataObject::new_text(translation_value))))
+                    DataObjectRef::new(DataObject::new_text(translation_value))
                 },
 
                 Err(e) => {
-                    Ok(Some(interpreter.set_errno_error_object(
+                    interpreter.set_errno_error_object(
                         InterpretingError::InvalidTemplateSyntax,
                         Some(e.message()),
                         CodePosition::EMPTY,
-                    )))
+                    )
                 },
             }
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             make_final_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="makeFinal",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -497,37 +493,37 @@ mod system_functions {
             ): (
                 DataObjectRef,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             let variable_name = dereferenced_var_pointer.variable_name();
             if variable_name.is_none() {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Anonymous values can not be modified"),
                     CodePosition::EMPTY,
-                )));
+                ));
             };
 
             if dereferenced_var_pointer.is_lang_var() {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::FinalVarChange,
-                )));
+                ));
             }
 
             dereferenced_var_pointer.borrow_mut().set_final_data(true);
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             as_final_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="asFinal",
                 parameter(
                     name="$value",
@@ -537,17 +533,17 @@ mod system_functions {
         fn as_final_function(
             _: &mut Interpreter,
             (value_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_copy_static_and_final_modifiers(true).
                         set_static_data(true).
                         set_data(&value_object.borrow())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_final_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isFinal",
                 return_type_constraint(
                     allowed=["INT"],
@@ -561,22 +557,22 @@ mod system_functions {
         fn is_final_function(
             interpreter: &mut Interpreter,
             (pointer_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                );
             };
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(dereferenced_var_pointer.is_final_data())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             make_static_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="makeStatic",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -596,37 +592,37 @@ mod system_functions {
             ): (
                 DataObjectRef,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             let variable_name = dereferenced_var_pointer.variable_name();
             if variable_name.is_none() {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Anonymous values can not be modified"),
                     CodePosition::EMPTY,
-                )));
+                ));
             };
 
             if dereferenced_var_pointer.is_lang_var() {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::FinalVarChange,
-                )));
+                ));
             }
 
             dereferenced_var_pointer.borrow_mut().set_static_data(true);
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             as_static_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="asStatic",
                 parameter(
                     name="$value",
@@ -636,17 +632,17 @@ mod system_functions {
         fn as_static_function(
             _: &mut Interpreter,
             (value_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_copy_static_and_final_modifiers(true).
                         set_static_data(true).
                         set_data(&value_object.borrow())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_static_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isStatic",
                 return_type_constraint(
                     allowed=["INT"],
@@ -660,22 +656,22 @@ mod system_functions {
         fn is_static_function(
             interpreter: &mut Interpreter,
             (pointer_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> DataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                );
             };
 
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(dereferenced_var_pointer.is_static_data())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             constrain_variable_allowed_types_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="constrainVariableAllowedTypes",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -704,27 +700,27 @@ mod system_functions {
                 DataObjectRef,
                 Vec<DataObjectRef>,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             let variable_name = dereferenced_var_pointer.variable_name();
             if variable_name.is_none() {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Anonymous values can not be modified"),
                     CodePosition::EMPTY,
-                )));
+                ));
             };
 
             if dereferenced_var_pointer.is_lang_var() {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::FinalVarChange,
-                )));
+                ));
             }
 
             let types = type_objects.iter().
@@ -734,19 +730,19 @@ mod system_functions {
             let ret = dereferenced_var_pointer.borrow_mut().
                     set_type_constraint(Box::new(DataTypeConstraint::from_allowed_types(&types))).err();
             if let Some(e) = ret {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some(e.message()),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             constrain_variable_not_allowed_types_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="constrainVariableNotAllowedTypes",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -775,27 +771,27 @@ mod system_functions {
                 DataObjectRef,
                 Vec<DataObjectRef>,
             ),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::InvalidArguments,
-                )));
+                ));
             };
 
             let variable_name = dereferenced_var_pointer.variable_name();
             if variable_name.is_none() {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some("Anonymous values can not be modified"),
                     CodePosition::EMPTY,
-                )));
+                ));
             };
 
             if dereferenced_var_pointer.is_lang_var() {
-                return Ok(Some(interpreter.set_errno_error_object_error_only(
+                return Some(interpreter.set_errno_error_object_error_only(
                     InterpretingError::FinalVarChange,
-                )));
+                ));
             }
 
             let types = type_objects.iter().
@@ -805,19 +801,19 @@ mod system_functions {
             let ret = dereferenced_var_pointer.borrow_mut().
                     set_type_constraint(Box::new(DataTypeConstraint::from_not_allowed_types(&types))).err();
             if let Some(e) = ret {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some(e.message()),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             exec_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="exec",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -831,7 +827,7 @@ mod system_functions {
         fn exec_function(
             interpreter: &mut Interpreter,
             (text_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
            let lines = &conversions::to_text(
                 interpreter,
                 &text_object,
@@ -863,12 +859,12 @@ mod system_functions {
             //Update call stack
             interpreter.pop_stack_element();
 
-            Ok(ret_tmp)
+            ret_tmp
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_terminal_available_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isTerminalAvailable",
                 return_type_constraint(
                     allowed=["INT"],
@@ -878,15 +874,15 @@ mod system_functions {
         fn is_terminal_available_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(interpreter.term.is_some())
-            })?)))
+            }).unwrap())
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             is_callable_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="isCallable",
                 return_type_constraint(
                     allowed=["INT"],
@@ -899,10 +895,10 @@ mod system_functions {
         fn is_callable_function(
             _: &mut Interpreter,
             (value_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
-            Ok(Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(utils::is_callable(&value_object))
-            })?)))
+            }).unwrap())
         }
 
         //TODO
@@ -911,16 +907,16 @@ mod system_functions {
 
 mod lang_test_functions {
     use std::rc::Rc;
-    use crate::interpreter::data::function::{native, Function, FunctionMetadata};
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObjectRef, DataType, OptionDataObjectRef};
     use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
     use crate::interpreter::lang_test::AssertResult;
     use crate::lexer::CodePosition;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             test_unit_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="testUnit",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -934,13 +930,13 @@ mod lang_test_functions {
         fn test_unit_function(
             interpreter: &mut Interpreter,
             (text_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
                     Some("langTest functions can only be used if the langTest flag is true"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             let text = &conversions::to_text(
@@ -951,12 +947,12 @@ mod lang_test_functions {
 
             interpreter.lang_test_store.add_unit(text);
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             test_sub_unit_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="testSubUnit",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -970,13 +966,13 @@ mod lang_test_functions {
         fn test_sub_unit_function(
             interpreter: &mut Interpreter,
             (text_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
                     Some("langTest functions can only be used if the langTest flag is true"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             let text = &conversions::to_text(
@@ -987,20 +983,20 @@ mod lang_test_functions {
 
             let ret = interpreter.lang_test_store.add_sub_unit(text);
             if let Err(e) = ret {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some(e.message()),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
-            Ok(None)
+            None
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertError",
                     has_info=true,
                     return_type_constraint(
@@ -1017,13 +1013,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (error_object, ): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, error_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertError",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1048,7 +1044,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, error_object, Some(message_object))
             }
 
@@ -1056,13 +1052,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 error_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let lang_errno = interpreter.get_and_clear_errno_error_object();
@@ -1082,14 +1078,14 @@ mod lang_test_functions {
                     expected_error,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1112,13 +1108,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1146,7 +1142,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1155,13 +1151,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1197,14 +1193,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1227,13 +1223,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1261,7 +1257,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1270,13 +1266,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1312,14 +1308,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertLessThan",
                     has_info=true,
                     return_type_constraint(
@@ -1342,13 +1338,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertLessThan",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1376,7 +1372,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1385,13 +1381,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1427,14 +1423,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertLessThanOrEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1457,13 +1453,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertLessThanOrEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1491,7 +1487,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1500,13 +1496,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1542,14 +1538,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertGreaterThan",
                     has_info=true,
                     return_type_constraint(
@@ -1572,13 +1568,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertGreaterThan",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1606,7 +1602,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1615,13 +1611,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1657,14 +1653,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertGreaterThanOrEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1687,13 +1683,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertGreaterThanOrEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1721,7 +1717,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1730,13 +1726,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1772,14 +1768,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStrictEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1802,13 +1798,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStrictEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1836,7 +1832,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1845,13 +1841,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -1887,14 +1883,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStrictNotEquals",
                     has_info=true,
                     return_type_constraint(
@@ -1917,13 +1913,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStrictNotEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -1951,7 +1947,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
 
@@ -1960,13 +1956,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2002,14 +1998,14 @@ mod lang_test_functions {
                     &expected_value_object.borrow(), &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationValueEquals",
                     has_info=true,
                     return_type_constraint(
@@ -2032,13 +2028,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationValueEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2066,7 +2062,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, Some(message_object))
             }
 
@@ -2075,13 +2071,13 @@ mod lang_test_functions {
                 translation_key_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let translation_key = conversions::to_text(
@@ -2115,14 +2111,14 @@ mod lang_test_functions {
                     &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationValueNotEquals",
                     has_info=true,
                     return_type_constraint(
@@ -2145,13 +2141,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationValueNotEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2179,7 +2175,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, Some(message_object))
             }
 
@@ -2188,13 +2184,13 @@ mod lang_test_functions {
                 translation_key_object: DataObjectRef,
                 expected_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let translation_key = conversions::to_text(
@@ -2228,14 +2224,14 @@ mod lang_test_functions {
                     &expected_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationKeyFound",
                     has_info=true,
                     return_type_constraint(
@@ -2249,13 +2245,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (translation_key_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationKeyFound",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2278,7 +2274,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, Some(message_object))
             }
 
@@ -2286,13 +2282,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 translation_key_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let translation_key = conversions::to_text(
@@ -2319,14 +2315,14 @@ mod lang_test_functions {
                     translation_value.as_deref(),
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationKeyNotFound",
                     has_info=true,
                     return_type_constraint(
@@ -2340,13 +2336,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (translation_key_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTranslationKeyNotFound",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2369,7 +2365,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, Some(message_object))
             }
 
@@ -2377,13 +2373,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 translation_key_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let translation_key = conversions::to_text(
@@ -2410,14 +2406,14 @@ mod lang_test_functions {
                     translation_value.as_deref(),
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTypeEquals",
                     has_info=true,
                     return_type_constraint(
@@ -2443,13 +2439,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTypeEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2480,7 +2476,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, Some(message_object))
             }
 
@@ -2489,13 +2485,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_type_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2522,14 +2518,14 @@ mod lang_test_functions {
                     expected_type,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTypeNotEquals",
                     has_info=true,
                     return_type_constraint(
@@ -2555,13 +2551,13 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertTypeNotEquals",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2592,7 +2588,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, Some(message_object))
             }
 
@@ -2601,13 +2597,13 @@ mod lang_test_functions {
                 actual_value_object: DataObjectRef,
                 expected_type_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2634,14 +2630,14 @@ mod lang_test_functions {
                     expected_type,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNull",
                     has_info=true,
                     return_type_constraint(
@@ -2655,13 +2651,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNull",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2684,7 +2680,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -2692,13 +2688,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2722,14 +2718,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotNull",
                     has_info=true,
                     return_type_constraint(
@@ -2743,13 +2739,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotNull",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2772,7 +2768,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -2780,13 +2776,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2810,14 +2806,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertVoid",
                     has_info=true,
                     return_type_constraint(
@@ -2831,13 +2827,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertVoid",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2860,7 +2856,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -2868,13 +2864,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2898,14 +2894,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotVoid",
                     has_info=true,
                     return_type_constraint(
@@ -2919,13 +2915,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotVoid",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -2948,7 +2944,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -2956,13 +2952,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -2986,14 +2982,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertFinal",
                     has_info=true,
                     return_type_constraint(
@@ -3007,13 +3003,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertFinal",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3036,7 +3032,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -3044,13 +3040,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -3074,14 +3070,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotFinal",
                     has_info=true,
                     return_type_constraint(
@@ -3095,13 +3091,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotFinal",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3124,7 +3120,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -3132,13 +3128,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -3162,14 +3158,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStatic",
                     has_info=true,
                     return_type_constraint(
@@ -3183,13 +3179,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertStatic",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3212,7 +3208,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -3220,13 +3216,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -3250,14 +3246,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotStatic",
                     has_info=true,
                     return_type_constraint(
@@ -3271,13 +3267,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (actual_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNotStatic",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3300,7 +3296,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
 
@@ -3308,13 +3304,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 actual_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let actual_value_object_text = conversions::to_text(
@@ -3338,14 +3334,14 @@ mod lang_test_functions {
                     &actual_value_object.borrow(), &actual_value_object_text,
                 ));
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertThrow",
                     has_info=true,
                     return_type_constraint(
@@ -3362,13 +3358,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (expected_thrown_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_thrown_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertThrow",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3394,7 +3390,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_thrown_value_object, Some(message_object))
             }
 
@@ -3402,13 +3398,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 expected_thrown_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let expected_error = expected_thrown_value_object.error_value().unwrap().err();
@@ -3423,14 +3419,14 @@ mod lang_test_functions {
                 interpreter.lang_test_expected_throw_value = Some(expected_error);
                 interpreter.lang_test_message_for_last_test_result = message;
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertReturn",
                     has_info=true,
                     return_type_constraint(
@@ -3444,13 +3440,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 (expected_return_value_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_return_value_object, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertReturn",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3473,7 +3469,7 @@ mod lang_test_functions {
                     DataObjectRef,
                     DataObjectRef,
                 ),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_return_value_object, Some(message_object))
             }
 
@@ -3481,13 +3477,13 @@ mod lang_test_functions {
                 interpreter: &mut Interpreter,
                 expected_return_value_object: DataObjectRef,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let message = message_object.map(|message_object| conversions::to_text(
@@ -3500,14 +3496,14 @@ mod lang_test_functions {
                 interpreter.lang_test_expected_return_value = Some(expected_return_value_object);
                 interpreter.lang_test_message_for_last_test_result = message;
 
-                Ok(None)
+                None
             }
         }
 
         {
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_without_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNoReturn",
                     has_info=true,
                     return_type_constraint(
@@ -3518,13 +3514,13 @@ mod lang_test_functions {
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
                 _: (),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, None)
             }
 
-            functions.push(lang_interpreter::lang_func!(
+            functions.push(crate::lang_func!(
                 test_assert_with_message_function,
-                lang_interpreter::lang_func_metadata!(
+                crate::lang_func_metadata!(
                     name="testAssertNoReturn",
                     return_type_constraint(
                         allowed=["VOID"],
@@ -3538,20 +3534,20 @@ mod lang_test_functions {
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
                 (message_object,): (DataObjectRef,),
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, Some(message_object))
             }
 
             fn test_assert_internal_function(
                 interpreter: &mut Interpreter,
                 message_object: OptionDataObjectRef,
-            ) -> native::Result<OptionDataObjectRef> {
+            ) -> OptionDataObjectRef {
                 if !interpreter.execution_flags.lang_test {
-                    return Ok(Some(interpreter.set_errno_error_object(
+                    return Some(interpreter.set_errno_error_object(
                         InterpretingError::FunctionNotSupported,
                         Some("langTest functions can only be used if the langTest flag is true"),
                         CodePosition::EMPTY,
-                    )));
+                    ));
                 }
 
                 let message = message_object.map(|message_object| conversions::to_text(
@@ -3564,13 +3560,13 @@ mod lang_test_functions {
                 interpreter.lang_test_expected_no_return_value = true;
                 interpreter.lang_test_message_for_last_test_result = message;
 
-                Ok(None)
+                None
             }
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             test_assert_fail_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="testAssertFail",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -3584,13 +3580,13 @@ mod lang_test_functions {
         fn test_assert_fail_function(
             interpreter: &mut Interpreter,
             (message_object,): (DataObjectRef,),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
                     Some("langTest functions can only be used if the langTest flag is true"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             let message = &conversions::to_text(
@@ -3604,12 +3600,12 @@ mod lang_test_functions {
                 Some(message),
             ));
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             test_clear_all_translations_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="testClearAllTranslations",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -3619,23 +3615,23 @@ mod lang_test_functions {
         fn test_clear_all_translations_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
                     Some("langTest functions can only be used if the langTest flag is true"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             interpreter.data_mut().lang.retain(|translation_key, _| translation_key.starts_with("lang."));
 
-            Ok(None)
+            None
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             test_print_results_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="testPrintResults",
                 return_type_constraint(
                     allowed=["VOID"],
@@ -3645,13 +3641,13 @@ mod lang_test_functions {
         fn test_print_results_function(
             interpreter: &mut Interpreter,
             _: (),
-        ) -> native::Result<OptionDataObjectRef> {
+        ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
-                return Ok(Some(interpreter.set_errno_error_object(
+                return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
                     Some("langTest functions can only be used if the langTest flag is true"),
                     CodePosition::EMPTY,
-                )));
+                ));
             }
 
             if let Some(term) = &mut interpreter.term {
@@ -3660,7 +3656,7 @@ mod lang_test_functions {
                 println!("{}", interpreter.lang_test_store.print_results());
             }
 
-            Ok(None)
+            None
         }
     }
 }
@@ -3801,9 +3797,9 @@ mod linker_functions {
     }
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             bind_library_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="bindLibrary",
                 info="Executes a lang file and copy all variables to the current scope",
                 linker_function=true,
@@ -3847,9 +3843,9 @@ mod linker_functions {
             )
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             link_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="link",
                 info="Executes a lang file and copy all translation to the main scope",
                 linker_function=true,
@@ -3891,9 +3887,9 @@ mod linker_functions {
             )
         }
 
-        functions.push(lang_interpreter::lang_func!(
+        functions.push(crate::lang_func!(
             include_function,
-            lang_interpreter::lang_func_metadata!(
+            crate::lang_func_metadata!(
                 name="include",
                 info="Executes a lang file and copy all variables to the current scope and all translations to the main scope",
                 linker_function=true,

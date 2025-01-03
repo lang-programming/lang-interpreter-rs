@@ -806,7 +806,7 @@ impl DataObject {
     /// for native function parameters with the "number" parameter type
     ///
     /// This method does not convert the data object into a number if it is none.
-    /// A data object can be converted with [conversions::to_number](lang_interpreter::interpreter::conversions::to_number)
+    /// A data object can be converted with [conversions::to_number](crate::interpreter::conversions::to_number)
     pub fn number_value(&self) -> Option<Number> {
         match self.value {
             DataValue::Int(value) => Some(value.into()),
@@ -822,7 +822,7 @@ impl DataObject {
     /// for native function parameters with the "boolean" parameter type
     ///
     /// This method does not convert the data object into a boolean if it is none.
-    /// A data object can be converted with [conversions::to_bool](lang_interpreter::interpreter::conversions::to_bool)
+    /// A data object can be converted with [conversions::to_bool](crate::interpreter::conversions::to_bool)
     pub fn bool_value(&self) -> Option<bool> {
         match self.value {
             DataValue::Int(value) => Some(value != 0),
