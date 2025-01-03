@@ -16,4 +16,5 @@ extern crate lang_interpreter_macros;
 pub use lang_interpreter_macros::lang_func_id;
 pub use lang_interpreter_macros::lang_func_metadata;
 pub use lang_interpreter_macros::lang_func_adapter;
-use lang_interpreter_macros::internal_tuple_from_lang_args;
+use lang_interpreter_macros::internal_tuple_from_lang_args_impl;
+use lang_interpreter_macros::internal_native_function_adapter_impl;

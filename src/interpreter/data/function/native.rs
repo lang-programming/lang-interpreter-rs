@@ -73,20 +73,19 @@ pub trait FromLangArgs: Sized {
     fn is_method() -> bool;
 }
 
-#[doc(hidden)]
 mod tuple_from_lang_args {
     use std::mem;
     use super::*;
 
-    crate::internal_tuple_from_lang_args! { 1 }
-    crate::internal_tuple_from_lang_args! { 2 }
-    crate::internal_tuple_from_lang_args! { 3 }
-    crate::internal_tuple_from_lang_args! { 4 }
-    crate::internal_tuple_from_lang_args! { 5 }
-    crate::internal_tuple_from_lang_args! { 6 }
-    crate::internal_tuple_from_lang_args! { 7 }
-    crate::internal_tuple_from_lang_args! { 8 }
-    crate::internal_tuple_from_lang_args! { 9 }
+    crate::internal_tuple_from_lang_args_impl! { 1 }
+    crate::internal_tuple_from_lang_args_impl! { 2 }
+    crate::internal_tuple_from_lang_args_impl! { 3 }
+    crate::internal_tuple_from_lang_args_impl! { 4 }
+    crate::internal_tuple_from_lang_args_impl! { 5 }
+    crate::internal_tuple_from_lang_args_impl! { 6 }
+    crate::internal_tuple_from_lang_args_impl! { 7 }
+    crate::internal_tuple_from_lang_args_impl! { 8 }
+    crate::internal_tuple_from_lang_args_impl! { 9 }
 
     //No args
     impl FromLangArgs for () {
@@ -189,6 +188,10 @@ mod private {
     pub trait Sealed {}
 }
 
+pub trait ConvertToFuncTrait<F> {
+    fn func_trait(self) -> F;
+}
+
 pub trait NativeFunctionAdapter: private::Sealed {
     fn lang_call(
         &self,
@@ -201,64 +204,61 @@ pub trait NativeFunctionAdapter: private::Sealed {
     fn is_method(&self) -> bool;
 }
 
-impl<
-    Args: FromLangArgs,
-    Ret: ReturnType,
-> NativeFunctionAdapter for Box<DynFnLangNativeFunction<Args, Ret>> {
-    fn lang_call(
-        &self,
-        interpreter: &mut Interpreter,
-        this_object: OptionLangObjectRef,
-        args: Vec<DataObjectRef>,
-    ) -> Result<OptionDataObjectRef> {
-        self(interpreter, Args::from_lang_args(this_object, args)?).into()
+mod native_function_adapter {
+    use super::*;
+
+    crate::internal_native_function_adapter_impl! { 1 }
+    crate::internal_native_function_adapter_impl! { 2 }
+    crate::internal_native_function_adapter_impl! { 3 }
+    crate::internal_native_function_adapter_impl! { 4 }
+    crate::internal_native_function_adapter_impl! { 5 }
+    crate::internal_native_function_adapter_impl! { 6 }
+    crate::internal_native_function_adapter_impl! { 7 }
+    crate::internal_native_function_adapter_impl! { 8 }
+    crate::internal_native_function_adapter_impl! { 9 }
+
+    impl<
+        Ret: ReturnType,
+        F: Fn(&mut Interpreter) -> Ret + 'static,
+    > ConvertToFuncTrait<Box<dyn Fn(&mut Interpreter) -> Ret + 'static>> for F {
+        #[inline(always)]
+        fn func_trait(self) -> Box<dyn Fn(&mut Interpreter) -> Ret + 'static> {
+            Box::new(self)
+        }
     }
 
-    fn lang_parameter_count(&self) -> usize {
-        Args::lang_parameter_count()
+    impl<
+        Ret: ReturnType,
+    > NativeFunctionAdapter for Box<dyn Fn(&mut Interpreter) -> Ret> {
+        fn lang_call(
+            &self,
+            interpreter: &mut Interpreter,
+            this_object: OptionLangObjectRef,
+            args: Vec<DataObjectRef>,
+        ) -> Result<OptionDataObjectRef> {
+            <()>::from_lang_args(this_object, args)?;
+
+            self(interpreter).into()
+        }
+
+        fn lang_parameter_count(&self) -> usize {
+            <()>::lang_parameter_count()
+        }
+
+        fn is_method(&self) -> bool {
+            <()>::is_method()
+        }
     }
 
-    fn is_method(&self) -> bool {
-        Args::is_method()
-    }
+    impl<
+        Ret: ReturnType,
+    > private::Sealed for Box<dyn Fn(&mut Interpreter) -> Ret> {}
 }
-
-impl<
-    Args: FromLangArgs,
-    Ret: ReturnType,
-> private::Sealed for Box<DynFnLangNativeFunction<Args, Ret>> {}
 
 impl Debug for dyn NativeFunctionAdapter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Native function at {:p}", self)
     }
-}
-
-#[inline(always)]
-fn func_trait<F, Args, Ret>(func: Box<F>) -> Box<DynFnLangNativeFunction<Args, Ret>> where
-        Args: FromLangArgs,
-        Ret: ReturnType,
-        F: Fn(&mut Interpreter, Args) -> Ret + 'static,
-{
-    func
-}
-
-#[inline(always)]
-fn create_native_function_adapter_from_func_trait<'a, F, Args, Ret>(func: F) -> Box<dyn NativeFunctionAdapter + 'a> where
-        Args: FromLangArgs,
-        Ret: ReturnType,
-        F: Fn(&mut Interpreter, Args) -> Ret + NativeFunctionAdapter + 'a,
-{
-    Box::new(func)
-}
-
-#[inline(always)]
-pub fn create_native_function_adapter<F, Args, Ret>(func: F) -> Box<dyn NativeFunctionAdapter + 'static> where
-        Args: FromLangArgs + 'static,
-        Ret: ReturnType + 'static,
-        F: Fn(&mut Interpreter, Args) -> Ret + 'static,
-{
-    create_native_function_adapter_from_func_trait(func_trait(Box::new(func)))
 }
 
 pub fn create_native_function(

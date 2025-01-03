@@ -398,7 +398,7 @@ pub fn op_concat(
                 let left_side_operand = left_side_operand.clone();
                 let right_side_operand = right_side_operand.clone();
 
-                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> OptionDataObjectRef {
+                move |interpreter: &mut Interpreter, args: Vec<DataObjectRef>| -> OptionDataObjectRef {
                     let ret_a = interpreter.call_function_pointer(
                         &left_value,
                         left_side_operand.variable_name().as_deref(),
@@ -520,7 +520,7 @@ pub fn op_inc(
             let auto_unpack_func = {
                 let operand = operand.clone();
 
-                move |interpreter: &mut Interpreter, (array_object, ): (DataObjectRef,)| -> OptionDataObjectRef {
+                move |interpreter: &mut Interpreter, array_object: DataObjectRef| -> OptionDataObjectRef {
                     let argument_list = array_object.array_value().unwrap().borrow().iter().
                             map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
                                 data_object.set_data(&ele.borrow())
@@ -615,7 +615,7 @@ pub fn op_dec(
             let auto_pack_func = {
                 let operand = operand.clone();
 
-                move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> OptionDataObjectRef {
+                move |interpreter: &mut Interpreter, args: Vec<DataObjectRef>| -> OptionDataObjectRef {
                     let array = args.iter().
                             map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
                                 data_object.set_data(&ele.borrow())
@@ -1527,7 +1527,7 @@ pub fn op_pow(
 
             if count == 0 {
                 let pow_func = {
-                    move |_: &mut Interpreter, (_, ): (Vec<DataObjectRef>,)| -> DataObjectRef {
+                    move |_: &mut Interpreter, _: Vec<DataObjectRef>| -> DataObjectRef {
                         DataObjectRef::new(DataObject::with_update(|data_object| {
                             data_object.set_void()
                         }).unwrap())
@@ -1553,7 +1553,7 @@ pub fn op_pow(
                 let pow_func = {
                     let left_side_operand = left_side_operand.clone();
 
-                    move |interpreter: &mut Interpreter, (args, ): (Vec<DataObjectRef>,)| -> DataObjectRef {
+                    move |interpreter: &mut Interpreter, args: Vec<DataObjectRef>| -> DataObjectRef {
                         let mut ret = utils::none_to_lang_void(interpreter.call_function_pointer(
                             &left_value,
                             left_side_operand.variable_name().as_deref(),

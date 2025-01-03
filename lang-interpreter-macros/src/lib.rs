@@ -174,7 +174,7 @@ pub fn lang_func_metadata(
             #func_info,
 
             #has_info,
-            
+
             #combinator_function,
 
             #linker_function,
@@ -210,8 +210,13 @@ pub fn lang_func_adapter(
     let func_ident = &data[0];
     let metadata = &data[1];
 
+    let box_path: proc_macro2::TokenStream = "::std::boxed::Box".parse().unwrap();
+
     let lang_func_id_macro_path: proc_macro2::TokenStream = "::lang_interpreter::lang_func_id!".parse().unwrap();
-    let create_native_function_adapter_path: proc_macro2::TokenStream = "::lang_interpreter::interpreter::data::function::native::create_native_function_adapter".parse().unwrap();
+    let func_trait_path: proc_macro2::TokenStream =
+            "::lang_interpreter::interpreter::data::function::native::ConvertToFuncTrait::func_trait".parse().unwrap();
+    let native_function_adapter_path: proc_macro2::TokenStream =
+            "::lang_interpreter::interpreter::data::function::native::NativeFunctionAdapter".parse().unwrap();
 
     let span = Span::mixed_site();
 
@@ -220,7 +225,7 @@ pub fn lang_func_adapter(
 
         (
             #metadata,
-            #create_native_function_adapter_path(#func_ident),
+            #box_path::new(#func_trait_path(#func_ident)) as #box_path<dyn #native_function_adapter_path + 'static>,
             *FUNC_ID,
         )
     }).into()
@@ -228,7 +233,7 @@ pub fn lang_func_adapter(
 
 #[doc(hidden)]
 #[proc_macro]
-pub fn internal_tuple_from_lang_args(
+pub fn internal_tuple_from_lang_args_impl(
     args: TokenStream,
 ) -> TokenStream {
     let count = syn::parse_macro_input!(args as syn::LitInt).base10_parse::<usize>();
@@ -445,5 +450,76 @@ pub fn internal_tuple_from_lang_args(
                 true
             }
         }
+    })
+}
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn internal_native_function_adapter_impl(
+    args: TokenStream,
+) -> TokenStream {
+    let count = syn::parse_macro_input!(args as syn::LitInt).base10_parse::<usize>();
+    let count = match count {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(e.into_compile_error());
+        }
+    };
+
+    let index_literal_tokens = (0..count).
+            map(proc_macro2::Literal::usize_unsuffixed).
+            collect::<Vec<_>>();
+
+    let generic_type_tokens = (0..count).
+            map(|i| proc_macro2::Ident::new(
+                &format!("T{}", i + 1),
+                Span::mixed_site(),
+            )).
+            collect::<Vec<_>>();
+
+    TokenStream::from(quote! {
+        impl<
+            #(#generic_type_tokens,)*
+            Ret: ReturnType,
+            F: Fn(&mut Interpreter, #(#generic_type_tokens,)*) -> Ret + 'static,
+        > ConvertToFuncTrait<Box<dyn Fn(&mut Interpreter, #(#generic_type_tokens,)*) -> Ret + 'static>> for F {
+            #[inline(always)]
+            fn func_trait(self) -> Box<dyn Fn(&mut Interpreter, #(#generic_type_tokens,)*) -> Ret + 'static> {
+                Box::new(self)
+            }
+        }
+
+        impl<
+            #(#generic_type_tokens,)*
+            Ret: ReturnType,
+        > NativeFunctionAdapter for Box<dyn Fn(&mut Interpreter, #(#generic_type_tokens,)*) -> Ret> where
+                (#(#generic_type_tokens,)*): FromLangArgs,
+        {
+            fn lang_call(
+                &self,
+                interpreter: &mut Interpreter,
+                this_object: OptionLangObjectRef,
+                args: Vec<DataObjectRef>,
+            ) -> Result<OptionDataObjectRef> {
+                let args = <(#(#generic_type_tokens,)*)>::from_lang_args(this_object, args)?;
+
+                self(interpreter, #(args.#index_literal_tokens,)*).into()
+            }
+
+            fn lang_parameter_count(&self) -> usize {
+                <(#(#generic_type_tokens,)*)>::lang_parameter_count()
+            }
+
+            fn is_method(&self) -> bool {
+                <(#(#generic_type_tokens,)*)>::is_method()
+            }
+        }
+
+        impl<
+            #(#generic_type_tokens,)*
+            Ret: ReturnType,
+        > private::Sealed for Box<dyn Fn(&mut Interpreter, #(#generic_type_tokens,)*) -> Ret> where
+                (#(#generic_type_tokens,)*): FromLangArgs,
+        {}
     })
 }

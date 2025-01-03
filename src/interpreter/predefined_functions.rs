@@ -54,11 +54,7 @@ mod reset_functions {
         ));
         fn free_var_function(
             interpreter: &mut Interpreter,
-            (
-                pointer_object,
-            ): (
-                DataObjectRef,
-            ),
+            pointer_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -96,7 +92,6 @@ mod reset_functions {
         ));
         fn free_all_vars_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) {
             interpreter.reset_vars();
         }
@@ -112,7 +107,6 @@ mod reset_functions {
         ));
         fn reset_errno_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) {
             interpreter.get_and_clear_errno_error_object();
         }
@@ -138,7 +132,6 @@ mod error_functions {
         ));
         fn get_error_text_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::new_text(
                 interpreter.get_and_clear_errno_error_object().error_text(),
@@ -165,13 +158,8 @@ mod error_functions {
         ));
         fn with_error_message_function(
             interpreter: &mut Interpreter,
-            (
-                error_object,
-                text_object,
-            ): (
-                DataObjectRef,
-                DataObjectRef,
-            ),
+            error_object: DataObjectRef,
+            text_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_error(Rc::new(ErrorObject::new(
@@ -202,7 +190,6 @@ mod lang_functions {
         ));
         fn is_lang_version_newer_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             //If lang.version = null -> return false
             let comp_ver = {
@@ -238,7 +225,6 @@ mod lang_functions {
         ));
         fn is_lang_version_older_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             //If lang.version = null -> return false
             let comp_ver = {
@@ -293,7 +279,7 @@ mod system_functions {
         ));
         fn sleep_function(
             interpreter: &mut Interpreter,
-            (milli_seconds,): (DataObjectRef,),
+            milli_seconds: DataObjectRef,
         ) -> OptionDataObjectRef {
             let milli_seconds = milli_seconds.number_value().unwrap();
             let milli_seconds = milli_seconds.long_value();
@@ -321,7 +307,6 @@ mod system_functions {
         ));
         fn nano_time_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             let nano_time = interpreter.origin_time.elapsed();
             let nano_time = (nano_time.as_nanos() as u64 & (i64::MAX as u64)) as i64;
@@ -342,7 +327,6 @@ mod system_functions {
         ));
         fn current_time_millis_function(
             _: &mut Interpreter,
-            _: (),
         ) -> native::Result<DataObjectRef> {
             let current_time_millis = SystemTime::now().
                     duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
@@ -364,7 +348,6 @@ mod system_functions {
         ));
         fn current_unix_time_function(
             _: &mut Interpreter,
-            _: (),
         ) -> native::Result<DataObjectRef> {
             let current_time_millis = SystemTime::now().
                     duration_since(UNIX_EPOCH).map_err(NativeError::apply)?;
@@ -390,7 +373,7 @@ mod system_functions {
         ));
         fn get_translation_value_function(
             interpreter: &mut Interpreter,
-            (translation_key_object,): (DataObjectRef,),
+            translation_key_object: DataObjectRef,
         ) -> DataObjectRef {
             let translation_key = conversions::to_text(
                 interpreter,
@@ -425,13 +408,8 @@ mod system_functions {
         ));
         fn get_translation_value_template_pluralization_function(
             interpreter: &mut Interpreter,
-            (
-                count,
-                translation_key_object,
-            ): (
-                DataObjectRef,
-                DataObjectRef,
-            ),
+            count: DataObjectRef,
+            translation_key_object: DataObjectRef,
         ) -> DataObjectRef {
             let count = count.number_value().unwrap();
             let count = count.int_value();
@@ -489,11 +467,7 @@ mod system_functions {
         ));
         fn make_final_function(
             interpreter: &mut Interpreter,
-            (
-                pointer_object,
-            ): (
-                DataObjectRef,
-            ),
+            pointer_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -533,7 +507,7 @@ mod system_functions {
         ));
         fn as_final_function(
             _: &mut Interpreter,
-            (value_object,): (DataObjectRef,),
+            value_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_copy_static_and_final_modifiers(true).
@@ -557,7 +531,7 @@ mod system_functions {
         ));
         fn is_final_function(
             interpreter: &mut Interpreter,
-            (pointer_object,): (DataObjectRef,),
+            pointer_object: DataObjectRef,
         ) -> DataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -588,11 +562,7 @@ mod system_functions {
         ));
         fn make_static_function(
             interpreter: &mut Interpreter,
-            (
-                pointer_object,
-            ): (
-                DataObjectRef,
-            ),
+            pointer_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -632,7 +602,7 @@ mod system_functions {
         ));
         fn as_static_function(
             _: &mut Interpreter,
-            (value_object,): (DataObjectRef,),
+            value_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_copy_static_and_final_modifiers(true).
@@ -656,7 +626,7 @@ mod system_functions {
         ));
         fn is_static_function(
             interpreter: &mut Interpreter,
-            (pointer_object,): (DataObjectRef,),
+            pointer_object: DataObjectRef,
         ) -> DataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -694,13 +664,8 @@ mod system_functions {
         ));
         fn constrain_variable_allowed_types_function(
             interpreter: &mut Interpreter,
-            (
-                pointer_object,
-                type_objects,
-            ): (
-                DataObjectRef,
-                Vec<DataObjectRef>,
-            ),
+            pointer_object: DataObjectRef,
+            type_objects: Vec<DataObjectRef>,
         ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -765,13 +730,8 @@ mod system_functions {
         ));
         fn constrain_variable_not_allowed_types_function(
             interpreter: &mut Interpreter,
-            (
-                pointer_object,
-                type_objects,
-            ): (
-                DataObjectRef,
-                Vec<DataObjectRef>,
-            ),
+            pointer_object: DataObjectRef,
+            type_objects: Vec<DataObjectRef>,
         ) -> OptionDataObjectRef {
             let dereferenced_var_pointer = pointer_object.var_pointer_value();
             let Some(dereferenced_var_pointer) = dereferenced_var_pointer else {
@@ -827,7 +787,7 @@ mod system_functions {
         ));
         fn exec_function(
             interpreter: &mut Interpreter,
-            (text_object,): (DataObjectRef,),
+            text_object: DataObjectRef,
         ) -> OptionDataObjectRef {
            let lines = &conversions::to_text(
                 interpreter,
@@ -874,7 +834,6 @@ mod system_functions {
         ));
         fn is_terminal_available_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(interpreter.term.is_some())
@@ -895,7 +854,7 @@ mod system_functions {
         ));
         fn is_callable_function(
             _: &mut Interpreter,
-            (value_object,): (DataObjectRef,),
+            value_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_bool(utils::is_callable(&value_object))
@@ -924,13 +883,8 @@ mod system_functions {
             ));
             fn is_instance_of_function(
                 _: &mut Interpreter,
-                (
-                    value_object,
-                    type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                value_object: DataObjectRef,
+                type_object: DataObjectRef,
             ) -> DataObjectRef {
                 DataObjectRef::new(DataObject::with_update(|data_object| {
                     data_object.set_bool(value_object.data_type() == type_object.type_value().unwrap())
@@ -960,13 +914,8 @@ mod system_functions {
             ));
             fn is_instance_of_with_struct_parameters_function(
                 interpreter: &mut Interpreter,
-                (
-                    value_object,
-                    type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                value_object: DataObjectRef,
+                type_object: DataObjectRef,
             ) -> DataObjectRef {
                 let value_struct = value_object.struct_value().unwrap();
                 let type_struct = type_object.struct_value().unwrap();
@@ -1011,13 +960,8 @@ mod system_functions {
             ));
             fn is_instance_of_with_struct_type_parameter_function(
                 interpreter: &mut Interpreter,
-                (
-                    _,
-                    type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                _: DataObjectRef,
+                type_object: DataObjectRef,
             ) -> DataObjectRef {
                 let type_struct = type_object.struct_value().unwrap();
 
@@ -1057,13 +1001,8 @@ mod system_functions {
             ));
             fn is_instance_of_with_object_parameters_function(
                 interpreter: &mut Interpreter,
-                (
-                    value_object,
-                    type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                value_object: DataObjectRef,
+                type_object: DataObjectRef,
             ) -> DataObjectRef {
                 let lang_object = value_object.object_value().unwrap();
                 let type_object = type_object.object_value().unwrap();
@@ -1107,13 +1046,8 @@ mod system_functions {
             ));
             fn is_instance_of_with_object_type_parameter_function(
                 interpreter: &mut Interpreter,
-                (
-                    _,
-                    type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                _: DataObjectRef,
+                type_object: DataObjectRef,
             ) -> DataObjectRef {
                 let type_object = type_object.object_value().unwrap();
 
@@ -1145,7 +1079,7 @@ mod system_functions {
         ));
         fn type_of_function(
             _: &mut Interpreter,
-            (value_object,): (DataObjectRef,),
+            value_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_type(value_object.data_type())
@@ -1163,7 +1097,6 @@ mod system_functions {
         ));
         fn get_current_stack_trace_element_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             let current_stack_element = &interpreter.call_stack[interpreter.call_stack.len() - 1];
 
@@ -1210,7 +1143,6 @@ mod system_functions {
         ));
         fn get_stack_trace_elements_element_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             let stack_trace_elements = interpreter.call_stack_elements();
             let array = stack_trace_elements.iter().
@@ -1264,7 +1196,6 @@ mod system_functions {
         ));
         fn get_stack_trace_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::new_text(interpreter.print_stack_trace(CodePosition::EMPTY)))
         }
@@ -1295,7 +1226,7 @@ mod lang_test_functions {
         ));
         fn test_unit_function(
             interpreter: &mut Interpreter,
-            (text_object,): (DataObjectRef,),
+            text_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
                 return Some(interpreter.set_errno_error_object(
@@ -1331,7 +1262,7 @@ mod lang_test_functions {
         ));
         fn test_sub_unit_function(
             interpreter: &mut Interpreter,
-            (text_object,): (DataObjectRef,),
+            text_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
                 return Some(interpreter.set_errno_error_object(
@@ -1378,7 +1309,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (error_object, ): (DataObjectRef,),
+                error_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, error_object, None)
             }
@@ -1403,13 +1334,8 @@ mod lang_test_functions {
             ));
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    error_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                error_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, error_object, Some(message_object))
             }
@@ -1467,13 +1393,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -1499,15 +1420,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -1582,13 +1497,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -1614,15 +1524,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -1697,13 +1601,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -1729,15 +1628,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -1812,13 +1705,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -1844,15 +1732,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -1927,13 +1809,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -1959,15 +1836,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -2042,13 +1913,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -2074,15 +1940,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -2157,13 +2017,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -2189,15 +2044,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -2272,13 +2121,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, None)
             }
@@ -2304,15 +2148,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_value_object, Some(message_object))
             }
@@ -2387,13 +2225,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, None)
             }
@@ -2419,15 +2252,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, Some(message_object))
             }
@@ -2500,13 +2327,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    expected_value_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, None)
             }
@@ -2532,15 +2354,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    expected_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                expected_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, expected_value_object, Some(message_object))
             }
@@ -2610,7 +2426,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (translation_key_object,): (DataObjectRef,),
+                translation_key_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, None)
             }
@@ -2633,13 +2449,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, Some(message_object))
             }
@@ -2701,7 +2512,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (translation_key_object,): (DataObjectRef,),
+                translation_key_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, None)
             }
@@ -2724,13 +2535,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    translation_key_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                translation_key_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, translation_key_object, Some(message_object))
             }
@@ -2798,13 +2604,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_type_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, None)
             }
@@ -2833,15 +2634,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_type_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_type_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, Some(message_object))
             }
@@ -2910,13 +2705,8 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_type_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_type_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, None)
             }
@@ -2945,15 +2735,9 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    expected_type_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                expected_type_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, expected_type_object, Some(message_object))
             }
@@ -3016,7 +2800,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3039,13 +2823,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3104,7 +2883,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3127,13 +2906,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3192,7 +2966,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3215,13 +2989,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3280,7 +3049,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3303,13 +3072,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3368,7 +3132,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3391,13 +3155,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3456,7 +3215,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3479,13 +3238,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3544,7 +3298,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3567,13 +3321,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3632,7 +3381,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (actual_value_object,): (DataObjectRef,),
+                actual_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, None)
             }
@@ -3655,13 +3404,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    actual_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                actual_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, actual_value_object, Some(message_object))
             }
@@ -3723,7 +3467,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (expected_thrown_value_object,): (DataObjectRef,),
+                expected_thrown_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_thrown_value_object, None)
             }
@@ -3749,13 +3493,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    expected_thrown_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                expected_thrown_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_thrown_value_object, Some(message_object))
             }
@@ -3805,7 +3544,7 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                (expected_return_value_object,): (DataObjectRef,),
+                expected_return_value_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_return_value_object, None)
             }
@@ -3828,13 +3567,8 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (
-                    expected_return_value_object,
-                    message_object,
-                ): (
-                    DataObjectRef,
-                    DataObjectRef,
-                ),
+                expected_return_value_object: DataObjectRef,
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, expected_return_value_object, Some(message_object))
             }
@@ -3879,7 +3613,6 @@ mod lang_test_functions {
             ));
             fn test_assert_without_message_function(
                 interpreter: &mut Interpreter,
-                _: (),
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, None)
             }
@@ -3899,7 +3632,7 @@ mod lang_test_functions {
 
             fn test_assert_with_message_function(
                 interpreter: &mut Interpreter,
-                (message_object,): (DataObjectRef,),
+                message_object: DataObjectRef,
             ) -> OptionDataObjectRef {
                 test_assert_internal_function(interpreter, Some(message_object))
             }
@@ -3945,7 +3678,7 @@ mod lang_test_functions {
         ));
         fn test_assert_fail_function(
             interpreter: &mut Interpreter,
-            (message_object,): (DataObjectRef,),
+            message_object: DataObjectRef,
         ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
                 return Some(interpreter.set_errno_error_object(
@@ -3980,7 +3713,6 @@ mod lang_test_functions {
         ));
         fn test_clear_all_translations_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
                 return Some(interpreter.set_errno_error_object(
@@ -4006,7 +3738,6 @@ mod lang_test_functions {
         ));
         fn test_print_results_function(
             interpreter: &mut Interpreter,
-            _: (),
         ) -> OptionDataObjectRef {
             if !interpreter.execution_flags.lang_test {
                 return Some(interpreter.set_errno_error_object(
@@ -4182,13 +3913,8 @@ mod linker_functions {
         ));
         fn bind_library_function(
             interpreter: &mut Interpreter,
-            (
-                file_name_object,
-                args,
-            ): (
-                DataObjectRef,
-                Vec<DataObjectRef>,
-            ),
+            file_name_object: DataObjectRef,
+            args: Vec<DataObjectRef>,
         ) -> native::Result<OptionDataObjectRef> {
             let lang_file_name = conversions::to_text(interpreter, &file_name_object, CodePosition::EMPTY);
 
@@ -4228,13 +3954,8 @@ mod linker_functions {
         ));
         fn link_function(
             interpreter: &mut Interpreter,
-            (
-                file_name_object,
-                args,
-            ): (
-                DataObjectRef,
-                Vec<DataObjectRef>,
-            ),
+            file_name_object: DataObjectRef,
+            args: Vec<DataObjectRef>,
         ) -> native::Result<OptionDataObjectRef> {
             let lang_file_name = conversions::to_text(interpreter, &file_name_object, CodePosition::EMPTY);
 
@@ -4272,13 +3993,8 @@ mod linker_functions {
         ));
         fn include_function(
             interpreter: &mut Interpreter,
-            (
-                file_name_object,
-                args,
-            ): (
-                DataObjectRef,
-                Vec<DataObjectRef>,
-            ),
+            file_name_object: DataObjectRef,
+            args: Vec<DataObjectRef>,
         ) -> native::Result<OptionDataObjectRef> {
             let lang_file_name = conversions::to_text(interpreter, &file_name_object, CodePosition::EMPTY);
 
