@@ -430,7 +430,7 @@ impl Interpreter {
         &mut self,
         module_name: Option<Box<str>>,
         variable_name: String,
-        variable_names: HashSet<Rc<str>>,
+        variable_names: Box<[Rc<str>]>,
         variable_prefix_append_after_search: &str,
         supports_pointer_dereferencing_and_referencing: bool,
         pos: CodePosition,
@@ -438,7 +438,7 @@ impl Interpreter {
         let variable_names = if let Some(module_name) = &module_name {
             let module = self.modules.get(module_name);
             if let Some(module) = module {
-                HashSet::from_iter(module.exported_variables().keys().cloned())
+                Box::from_iter(module.exported_variables().keys().cloned())
             }else {
                 self.set_errno(InterpretingError::ModuleLoadUnloadErr, Some(&format!(
                     "The module \"{module_name}\" is not loaded!",
@@ -646,7 +646,7 @@ impl Interpreter {
                             keys().
                             filter(|key| key.starts_with("mp.")).
                             map(|key| Rc::from(&**key)).
-                            collect::<HashSet<_>>();
+                            collect::<Box<_>>();
 
                     return self.convert_variable_name_to_variable_name_node_or_composition(
                         module_name,
@@ -663,7 +663,7 @@ impl Interpreter {
                             keys().
                             filter(|key| key.starts_with("op:")).
                             map(|key| Rc::from(&**key)).
-                            collect::<HashSet<_>>();
+                            collect::<Box<_>>();
 
                     return self.convert_variable_name_to_variable_name_node_or_composition(
                         module_name,
@@ -680,7 +680,7 @@ impl Interpreter {
                             keys().
                             filter(|key| key.starts_with("to:")).
                             map(|key| Rc::from(&**key)).
-                            collect::<HashSet<_>>();
+                            collect::<Box<_>>();
 
                     return self.convert_variable_name_to_variable_name_node_or_composition(
                         module_name,
@@ -698,19 +698,19 @@ impl Interpreter {
                 variable_name.starts_with("fp.") {
             let variable_names = if let Some(composite_type) = &composite_type {
                 if composite_type.error_value().is_some() {
-                    HashSet::from([
+                    Box::from([
                         Rc::from("$text"),
                         Rc::from("$code"),
                         Rc::from("$message"),
                     ])
                 }else if let Some(struct_data) = composite_type.struct_value() {
-                    HashSet::from_iter(struct_data.member_names().into_iter().
+                    Box::from_iter(struct_data.member_names().into_iter().
                             map(Rc::from))
                 }else if let Some(object_data) = composite_type.object_value() {
                     let mut variable_names = object_data.borrow().static_members().iter().
                             filter_map(|data_object| data_object.variable_name()).
                             map(Rc::from).
-                            collect::<HashSet<_>>();
+                            collect::<Vec<_>>();
 
                     if !object_data.borrow().is_class() {
                         if let Some(members) = object_data.borrow().members() {
@@ -721,7 +721,7 @@ impl Interpreter {
                         }
                     }
 
-                    variable_names
+                    variable_names.into_boxed_slice()
                 }else {
                     self.set_errno(InterpretingError::InvalidArguments, Some("Invalid composite type"), node.pos());
 
@@ -730,7 +730,7 @@ impl Interpreter {
             }else {
                 self.data_ref().var.keys().
                         cloned().
-                        collect::<HashSet<_>>()
+                        collect::<Box<_>>()
             };
 
             let supports_pointer_dereferencing_rand_referencing = variable_name.starts_with("$");
@@ -784,7 +784,7 @@ impl Interpreter {
         let variable_names = self.funcs.iter().
                 filter(|(_, func)| func.linker_function() == is_linker_function).
                 map(|(func_name, _)| Rc::from(&**func_name)).
-                collect::<HashSet<_>>();
+                collect::<Box<_>>();
 
         self.convert_variable_name_to_variable_name_node_or_composition(
             None,
