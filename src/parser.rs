@@ -2304,14 +2304,14 @@ impl Parser {
                                 };
 
                                 if con_expression == "con.repeat" {
-                                    nodes.push(Node::new_loop_statement_part_repeat_node(
+                                    loop_statement_parts.push(Node::new_loop_statement_part_repeat_node(
                                         CodePosition::EMPTY,
                                         loop_body,
                                         var_pointer_node.unwrap(),
                                         repeat_count_or_array_or_text_node,
                                     ));
                                 }else {
-                                    nodes.push(Node::new_loop_statement_part_for_each_node(
+                                    loop_statement_parts.push(Node::new_loop_statement_part_for_each_node(
                                         CodePosition::EMPTY,
                                         loop_body,
                                         var_pointer_node.unwrap(),
