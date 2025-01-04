@@ -2883,7 +2883,7 @@ impl Parser {
                 //TODO check for matching brackets ("<" and ">")
 
                 let mut parent_class_end_index = None;
-                for i in token_count_first_line - 1..0 {
+                for i in (0..token_count_first_line).into_iter().rev() {
                     if matches!(tokens[i].token_type(), TokenType::Operator) &&
                             tokens[i].value() == ">" && ends_with_opening_bracket {
                         parent_class_end_index = Some(i);
@@ -2903,7 +2903,7 @@ impl Parser {
                 };
 
                 let parent_class_tokens = utils::split_off_arguments(tokens, parent_class_end_index);
-                token_count_first_line -= parent_class_end_index;
+                token_count_first_line -= parent_class_end_index + 1;
 
                 if matches!(tokens[0].token_type(), TokenType::Whitespace) {
                     tokens.pop_front();
