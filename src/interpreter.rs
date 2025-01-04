@@ -481,9 +481,9 @@ impl Interpreter {
         }
 
         if supports_pointer_dereferencing_and_referencing {
-            let dereferences;
-            let start_index;
-            let mut modified_variable_name;
+            let mut dereferences = None;
+            let mut start_index = None;
+            let mut modified_variable_name = variable_name.clone();
             let mut returned_node = None;
             let mut text = None;
 
@@ -513,88 +513,90 @@ impl Interpreter {
                         pos,
                     ));
                 }
+            }
 
-                //Check dereferenced variable name
-                if modified_variable_name.contains("[") && modified_variable_name.contains("]") {
-                    let index_opening_bracket = modified_variable_name.find("[").unwrap();
-                    let index_matching_bracket = utils::get_index_of_matching_bracket_str(
-                        &modified_variable_name, index_opening_bracket,
-                        usize::MAX, b'[', b']',
-                    );
+            //Check dereferenced variable name
+            if modified_variable_name.contains("[") && modified_variable_name.contains("]") {
+                let index_opening_bracket = modified_variable_name.find("[").unwrap();
+                let index_matching_bracket = utils::get_index_of_matching_bracket_str(
+                    &modified_variable_name, index_opening_bracket,
+                    usize::MAX, b'[', b']',
+                );
 
-                    if let Some(index_matching_bracket) = index_matching_bracket {
-                        //Remove all "[" "]" pairs
-                        let mut current_index = index_opening_bracket;
-                        let mut current_index_matching_bracket = index_matching_bracket;
+                if let Some(index_matching_bracket) = index_matching_bracket {
+                    //Remove all "[" "]" pairs
+                    let mut current_index = index_opening_bracket;
+                    let mut current_index_matching_bracket = index_matching_bracket;
 
-                        //"&" both "++" and "--" must be executed
-                        while modified_variable_name.as_bytes()[current_index] == b'[' &&
-                                modified_variable_name.as_bytes()[current_index_matching_bracket] == b']' {
-                            current_index += 1;
-                            current_index_matching_bracket -= 1;
-                        }
+                    //"&" both "++" and "--" must be executed
+                    while modified_variable_name.as_bytes()[current_index] == b'[' &&
+                            modified_variable_name.as_bytes()[current_index_matching_bracket] == b']' {
+                        current_index += 1;
+                        current_index_matching_bracket -= 1;
+                    }
 
-                        if index_matching_bracket != modified_variable_name.len() - 1 {
-                            text = Some(modified_variable_name[index_matching_bracket + 1..].to_string());
-                            modified_variable_name = modified_variable_name[..index_matching_bracket + 1].to_string();
-                        }
+                    if index_matching_bracket != modified_variable_name.len() - 1 {
+                        text = Some(modified_variable_name[index_matching_bracket + 1..].to_string());
+                        modified_variable_name = modified_variable_name[..index_matching_bracket + 1].to_string();
+                    }
 
-                        if !modified_variable_name[current_index..].contains("[") {
-                            returned_node = Some(self.convert_variable_name_to_variable_name_node_or_composition(
-                                module_name.clone(),
-                                String::new() + &modified_variable_name[..index_opening_bracket] +
-                                        &modified_variable_name[current_index..current_index_matching_bracket + 1],
-                                variable_names.clone(),
-                                "",
-                                supports_pointer_dereferencing_and_referencing,
-                                pos,
-                            ));
-                        }
+                    if !modified_variable_name[current_index..].contains("[") {
+                        returned_node = Some(self.convert_variable_name_to_variable_name_node_or_composition(
+                            module_name.clone(),
+                            String::new() + &modified_variable_name[..index_opening_bracket] +
+                                    &modified_variable_name[current_index..current_index_matching_bracket + 1],
+                            variable_names.clone(),
+                            "",
+                            supports_pointer_dereferencing_and_referencing,
+                            pos,
+                        ));
                     }
                 }
+            }
 
-                if let Some(returned_node) = returned_node {
-                    if let Some(dereferences) = dereferences {
-                        modified_variable_name = String::new() + &modified_variable_name[..start_index] +
-                                dereferences + &modified_variable_name[start_index..];
-                    }
+            if let Some(returned_node) = returned_node {
+                if let Some(dereferences) = dereferences {
+                    let start_index = start_index.unwrap();
+                    
+                    modified_variable_name = String::new() + &modified_variable_name[..start_index] +
+                            dereferences + &modified_variable_name[start_index..];
+                }
 
-                    match returned_node.node_data() {
-                        //Variable was found without additional text -> valid pointer reference
-                        NodeData::VariableName { .. } => {
-                            let Some(text) = text else {
-                                return Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
-                                    format!("[[{module_name}]]::{variable_prefix_append_after_search}{variable_name}")
-                                }else {
-                                    format!("{variable_prefix_append_after_search}{variable_name}")
-                                }, None);
-                            };
-
-                            //Variable composition
-                            return Node::new_list_node(vec![
-                                Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
-                                    format!("[[{module_name}]]::{variable_prefix_append_after_search}{modified_variable_name}")
-                                }else {
-                                    format!("{variable_prefix_append_after_search}{modified_variable_name}")
-                                }, None),
-                                Node::new_text_value_node(pos, text),
-                            ]);
-                        },
-
-                        NodeData::List |
-                        NodeData::TextValue(..) => {
-                            //List: Variable was found with additional text -> no valid pointer reference
-                            //TextValue: Variable was not found
-
+                match returned_node.node_data() {
+                    //Variable was found without additional text -> valid pointer reference
+                    NodeData::VariableName { .. } => {
+                        let Some(text) = text else {
                             return Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
                                 format!("[[{module_name}]]::{variable_prefix_append_after_search}{variable_name}")
                             }else {
                                 format!("{variable_prefix_append_after_search}{variable_name}")
                             }, None);
-                        },
+                        };
 
-                        _ => panic!("Invalid node"),
-                    }
+                        //Variable composition
+                        return Node::new_list_node(vec![
+                            Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
+                                format!("[[{module_name}]]::{variable_prefix_append_after_search}{modified_variable_name}")
+                            }else {
+                                format!("{variable_prefix_append_after_search}{modified_variable_name}")
+                            }, None),
+                            Node::new_text_value_node(pos, text),
+                        ]);
+                    },
+
+                    NodeData::List |
+                    NodeData::TextValue(..) => {
+                        //List: Variable was found with additional text -> no valid pointer reference
+                        //TextValue: Variable was not found
+
+                        return Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
+                            format!("[[{module_name}]]::{variable_prefix_append_after_search}{variable_name}")
+                        }else {
+                            format!("{variable_prefix_append_after_search}{variable_name}")
+                        }, None);
+                    },
+
+                    _ => panic!("Invalid node"),
                 }
             }
         }
@@ -3296,7 +3298,7 @@ impl Interpreter {
         let variable_name_orig = variable_name;
         let mut variable_name = variable_name_orig.clone();
 
-        let is_module_variable = composite_type.is_none() && variable_name.contains("[[");
+        let is_module_variable = composite_type.is_none() && variable_name.starts_with("[[");
         let module_name = if is_module_variable {
             let index_module_identifier_end = variable_name.find("]]::");
             let Some(index_module_identifier_end) = index_module_identifier_end else {
@@ -4430,7 +4432,7 @@ impl Interpreter {
             }
         }
 
-        let is_module_variable = composite_type.is_none() && function_name.contains("[[");
+        let is_module_variable = composite_type.is_none() && function_name.starts_with("[[");
         let variables = if is_module_variable {
             let index_module_identifier_end = function_name.find("]]::");
             let Some(index_module_identifier_end) = index_module_identifier_end else {
