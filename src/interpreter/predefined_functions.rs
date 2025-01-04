@@ -14,6 +14,9 @@ pub fn add_predefined_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObj
     operation_functions::add_functions(&mut functions);
     math_functions::add_functions(&mut functions);
     //TODO
+    byte_buffer_functions::add_functions(&mut functions);
+    array_functions::add_functions(&mut functions);
+    //TODO
     lang_test_functions::add_functions(&mut functions);
 
     let functions = FunctionPointerObject::create_function_pointer_objects_from_native_functions(functions);
@@ -792,7 +795,7 @@ mod system_functions {
             interpreter: &mut Interpreter,
             text_object: DataObjectRef,
         ) -> OptionDataObjectRef {
-           let lines = &conversions::to_text(
+            let lines = &conversions::to_text(
                 interpreter,
                 &text_object,
                 CodePosition::EMPTY
@@ -2116,6 +2119,112 @@ mod math_functions {
 
             ret
         }
+    }
+}
+
+mod byte_buffer_functions {
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::{Interpreter, InterpretingError};
+    use crate::interpreter::data::{DataObject, DataObjectRef};
+
+    pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
+        functions.push(crate::lang_func!(
+            byte_buffer_create_function,
+            crate::lang_func_metadata!(
+                name="byteBufferCreate",
+                return_type_constraint(
+                    allowed=["BYTE_BUFFER"],
+                ),
+                parameter(
+                    name="$length",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn byte_buffer_create_function(
+            interpreter: &mut Interpreter,
+            length_number: DataObjectRef,
+        ) -> DataObjectRef {
+            let length_number = length_number.number_value().unwrap();
+            let length = length_number.int_value();
+            if length < 0 {
+                return interpreter.set_errno_error_object_error_only(InterpretingError::NegativeArrayLen);
+            }
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_byte_buffer(vec![0; length as usize].into_boxed_slice())
+            }).unwrap())
+        }
+    }
+}
+
+mod array_functions {
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::{Interpreter, InterpretingError};
+    use crate::interpreter::data::{DataObject, DataObjectRef};
+
+    pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
+        functions.push(crate::lang_func!(
+            array_create_function,
+            crate::lang_func_metadata!(
+                name="arrayCreate",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="$length",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn array_create_function(
+            interpreter: &mut Interpreter,
+            length_number: DataObjectRef,
+        ) -> DataObjectRef {
+            let length_number = length_number.number_value().unwrap();
+            let length = length_number.int_value();
+            if length < 0 {
+                return interpreter.set_errno_error_object_error_only(InterpretingError::NegativeArrayLen);
+            }
+
+            let arr = (0..length).
+                    map(|_| DataObjectRef::new(DataObject::new())).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(arr)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_of_function,
+            crate::lang_func_metadata!(
+                name="arrayOf",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&elements",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn array_of_function(
+            _: &mut Interpreter,
+            elements: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let arr = elements.iter().
+                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap())).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(arr)
+            }).unwrap())
+        }
+
+        //TODO
     }
 }
 

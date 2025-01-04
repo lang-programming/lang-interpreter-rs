@@ -373,7 +373,7 @@ impl Display for Unit {
         }
 
         if self.sub_units.len() > 1 {
-            out += "SubUnits:";
+            out += "SubUnits:\n";
 
             for sub_unit in &self.sub_units {
                 out += &sub_unit.print_results();
