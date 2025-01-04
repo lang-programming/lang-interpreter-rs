@@ -34,14 +34,17 @@ pub(crate) fn get_os_arch() -> String {
 }
 
 pub(crate) mod math {
+    #[cfg(test)]
+    mod tests;
+
     pub trait SpecialDiv {
         fn wrapping_floor_div(self, rhs: Self) -> Self;
         fn wrapping_ceil_div(self, rhs: Self) -> Self;
     }
 
     macro_rules! impl_special_div {
-        ( $ty:ty ) => {
-            impl SpecialDiv for $ty {
+        ( $selfT:ty ) => {
+            impl SpecialDiv for $selfT {
                 fn wrapping_floor_div(self, rhs: Self) -> Self {
                     let mut ret = self.wrapping_div(rhs);
 
@@ -62,6 +65,44 @@ pub(crate) mod math {
 
     impl_special_div! { i32 }
     impl_special_div! { i64 }
+
+    pub trait ToNumberBase {
+        fn to_number_base(self, radix: u32) -> String;
+    }
+
+    macro_rules! impl_to_number_base {
+        ( $selfT:ty, $unsignedT:ty ) => {
+            impl ToNumberBase for $selfT {
+                fn to_number_base(self, radix: u32) -> String {
+                    const DIGITS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+
+                    if !(2..=36).contains(&radix) {
+                        panic!("Radix must be between 2 and 36");
+                    }
+
+                    let is_negative = self < 0;
+                    let mut i = self.unsigned_abs();
+
+                    let mut string = String::new();
+
+                    while i >= radix as $unsignedT {
+                        string.push(DIGITS[i as usize % radix as usize] as char);
+                        i /= radix as $unsignedT;
+                    }
+                    string.push(DIGITS[i as usize] as char);
+
+                    if is_negative {
+                        string.push('-');
+                    }
+
+                    string.chars().rev().collect::<String>()
+                }
+            }
+        };
+    }
+
+    impl_to_number_base! { i32, u32 }
+    impl_to_number_base! { i64, u64 }
 }
 
 pub(crate) fn remove_dots_from_file_path(file: &str) -> String {
