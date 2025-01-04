@@ -7074,7 +7074,7 @@ impl Interpreter {
 
         lang_vars::add_essential_lang_vars(self, None);
 
-        let lang_standard_implementation = str::from_utf8(file.contents()).map_err(NativeError::apply)?;
+        let lang_standard_implementation = String::from_utf8_lossy(file.contents());
 
         //Interpret lang standard implementation lang code
         self.interpret_lines(lang_standard_implementation);
@@ -7238,6 +7238,7 @@ impl Interpreter {
         }
     }
 
+    #[must_use]
     fn set_errno_error_object_error_only(
         &mut self,
         error: InterpretingError,
@@ -7245,6 +7246,7 @@ impl Interpreter {
         self.set_errno_error_object(error, None, CodePosition::EMPTY)
     }
 
+    #[must_use]
     fn set_errno_error_object(
         &mut self,
         error: InterpretingError,
@@ -7254,6 +7256,7 @@ impl Interpreter {
         self.set_errno_error_object_internal(error, message, pos, false)
     }
 
+    #[must_use]
     fn set_errno_error_object_internal(
         &mut self,
         error: InterpretingError,

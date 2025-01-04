@@ -20,6 +20,21 @@ pub enum Level {
 }
 
 impl Level {
+    pub(crate) const VALUES: [Self; 8] = [
+        Self::NotSet,
+        Self::User,
+        Self::Debug,
+        Self::Config,
+        Self::Info,
+        Self::Warning,
+        Self::Error,
+        Self::Critical,
+    ];
+
+    pub fn level(&self) -> i8 {
+        *self as i8
+    }
+
     pub fn name(&self) -> String {
         match self {
             Level::NotSet => "Not set",
@@ -86,7 +101,11 @@ impl TerminalIO {
         print!("{log}");
         
         if let Some(file) = &mut self.file {
-            write!(file, "{log}").unwrap();
+            let err = write!(file, "{log}");
+            if let Err(e) = err {
+                //Doesn't use the log_stack_trace method to avoid a stack overflow
+                eprintln!("{e}");
+            }
         }
     }
     
