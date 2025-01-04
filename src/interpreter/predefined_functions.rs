@@ -12,6 +12,7 @@ pub fn add_predefined_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObj
     system_functions::add_functions(&mut functions);
     io_functions::add_functions(&mut functions);
     number_functions::add_functions(&mut functions);
+    text_functions::add_functions(&mut functions);
     //TODO
     operation_functions::add_functions(&mut functions);
     math_functions::add_functions(&mut functions);
@@ -2212,6 +2213,38 @@ mod number_functions {
                 data_object.set_bool(is_nan)
             }).unwrap())
         }
+    }
+}
+
+mod text_functions {
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::{conversions, Interpreter};
+    use crate::interpreter::data::{DataObject, DataObjectRef};
+    use crate::lexer::CodePosition;
+
+    pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
+        functions.push(crate::lang_func!(
+            to_upper_function,
+            crate::lang_func_metadata!(
+                name="toUpper",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="$text",
+                ),
+            ),
+        ));
+        fn to_upper_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::new_text(
+                conversions::to_text(interpreter, &text_object, CodePosition::EMPTY).to_uppercase(),
+            ))
+        }
+        
+        //TODO
     }
 }
 

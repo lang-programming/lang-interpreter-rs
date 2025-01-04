@@ -557,7 +557,7 @@ impl Interpreter {
             if let Some(returned_node) = returned_node {
                 if let Some(dereferences) = dereferences {
                     let start_index = start_index.unwrap();
-                    
+
                     modified_variable_name = String::new() + &modified_variable_name[..start_index] +
                             dereferences + &modified_variable_name[start_index..];
                 }
