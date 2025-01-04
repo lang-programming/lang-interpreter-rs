@@ -614,7 +614,7 @@ impl Interpreter {
         };
 
         if self.execution_flags.raw_variable_names {
-            return Node::new_variable_name_node(node.pos(), variable_name, None);
+            return Node::new_variable_name_node(node.pos(), variable_name.clone(), None);
         }
 
         let mut variable_name = variable_name.to_string();
@@ -2855,7 +2855,7 @@ impl Interpreter {
             },
 
             NodeData::UnprocessedVariableName(variable_name) => {
-                let mut variable_name = variable_name.clone();
+                let mut variable_name = variable_name.to_string();
 
                 let is_module_variable = variable_name.starts_with("[[");
                 let module_name = if is_module_variable {
@@ -2996,7 +2996,7 @@ impl Interpreter {
     }
 
     /**
-     * Will create a variable if doesn't exist or returns an error object, or returns None if shouldCreateDataObject is set to false and variable doesn't exist
+     * Will create a variable if it doesn't exist or returns an error object, or returns None if shouldCreateDataObject is set to false and variable doesn't exist
      * @param supportsPointerReferencing If true, this node will return pointer reference as DataObject<br>
      *                                   (e.g. $[abc] is not in variableNames, but $abc is -> $[abc] will return a DataObject)
      * @param flags Will set by this method in format: [error, created]
@@ -3296,7 +3296,7 @@ impl Interpreter {
         };
 
         let variable_name_orig = variable_name;
-        let mut variable_name = variable_name_orig.clone();
+        let mut variable_name = variable_name_orig.to_string();
 
         let is_module_variable = composite_type.is_none() && variable_name.starts_with("[[");
         let module_name = if is_module_variable {
@@ -3510,7 +3510,7 @@ impl Interpreter {
         };
 
         DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_argument_separator(original_text.as_str())
+            data_object.set_argument_separator(original_text)
         }).unwrap())
     }
 
@@ -4278,7 +4278,7 @@ impl Interpreter {
             //Composite type unpacking
             if let NodeData::UnprocessedVariableName(variable_name) = argument.node_data() {
                 if variable_name.contains("&") && variable_name.ends_with("...") {
-                    let mut variable_name = variable_name.clone();
+                    let mut variable_name = variable_name.to_string();
 
                     let is_module_variable = variable_name.starts_with("[[");
                     let module_name = if is_module_variable {
@@ -4395,7 +4395,7 @@ impl Interpreter {
             panic!("Invalid AST node");
         };
         let original_function_name = function_name;
-        let mut function_name = function_name.clone();
+        let mut function_name = function_name.to_string();
 
         if function_name.starts_with("mp.") {
             let Some(composite_type) = &composite_type else {
@@ -4826,7 +4826,7 @@ impl Interpreter {
             let parameter_type;
             let parameter_type_constraint;
             if let Some(type_constraint) = type_constraint {
-                match type_constraint.as_str() {
+                match &**type_constraint {
                     "bool" => {
                         parameter_type_constraint = None;
                         parameter_type = ParameterType::Boolean;

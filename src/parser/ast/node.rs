@@ -385,16 +385,16 @@ impl Operator {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDefinition {
-    function_name: Option<String>,
+    function_name: Option<Box<str>>,
     overloaded: bool,
     combinator: bool,
-    doc_comment: Option<String>,
-    return_value_type_constraint: Option<String>,
+    doc_comment: Option<Box<str>>,
+    return_value_type_constraint: Option<Box<str>>,
     function_body: AST,
 }
 
 impl FunctionDefinition {
-    pub fn new(function_name: Option<String>, overloaded: bool, combinator: bool, doc_comment: Option<String>, return_value_type_constraint: Option<String>, function_body: AST) -> Self {
+    pub fn new(function_name: Option<Box<str>>, overloaded: bool, combinator: bool, doc_comment: Option<Box<str>>, return_value_type_constraint: Option<Box<str>>, function_body: AST) -> Self {
         Self { function_name, overloaded, combinator, doc_comment, return_value_type_constraint, function_body }
     }
 
@@ -425,12 +425,12 @@ impl FunctionDefinition {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructMember {
-    name: String,
-    type_constraint: Option<String>,
+    name: Box<str>,
+    type_constraint: Option<Box<str>>,
 }
 
 impl StructMember {
-    pub fn new(name: String, type_constraint: Option<String>) -> Self {
+    pub fn new(name: Box<str>, type_constraint: Option<Box<str>>) -> Self {
         Self { name, type_constraint }
     }
 
@@ -445,13 +445,13 @@ impl StructMember {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructDefinition {
-    struct_name: Option<String>,
+    struct_name: Option<Box<str>>,
 
     members: Vec<StructMember>,
 }
 
 impl StructDefinition {
-    pub fn new(struct_name: Option<String>, members: Vec<StructMember>) -> Self {
+    pub fn new(struct_name: Option<Box<str>>, members: Vec<StructMember>) -> Self {
         Self { struct_name, members }
     }
 
@@ -503,15 +503,15 @@ impl Visibility {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClassMember {
-    name: String,
-    type_constraint: Option<String>,
+    name: Box<str>,
+    type_constraint: Option<Box<str>>,
     value: Option<Node>,
     final_flag: bool,
     visibility: Visibility,
 }
 
 impl ClassMember {
-    pub fn new(name: String, type_constraint: Option<String>, value: Option<Node>, final_flag: bool, visibility: Visibility) -> Self {
+    pub fn new(name: Box<str>, type_constraint: Option<Box<str>>, value: Option<Node>, final_flag: bool, visibility: Visibility) -> Self {
         Self { name, type_constraint, value, final_flag, visibility }
     }
 
@@ -538,14 +538,14 @@ impl ClassMember {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Method {
-    name: String,
+    name: Box<str>,
     body: Node,
     override_flag: bool,
     visibility: Visibility,
 }
 
 impl Method {
-    pub fn new(name: String, definition: Node, override_flag: bool, visibility: Visibility) -> Self {
+    pub fn new(name: Box<str>, definition: Node, override_flag: bool, visibility: Visibility) -> Self {
         Self { name, body: definition, override_flag, visibility }
     }
 
@@ -588,7 +588,7 @@ impl Constructor {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClassDefinition {
-    class_name: Option<String>,
+    class_name: Option<Box<str>>,
 
     static_members: Vec<ClassMember>,
 
@@ -609,7 +609,7 @@ pub struct ClassDefinition {
 
 impl ClassDefinition {
     pub fn new(
-        class_name: Option<String>,
+        class_name: Option<Box<str>>,
         static_members: Vec<ClassMember>,
         members: Vec<ClassMember>,
         methods: Vec<Method>,
@@ -756,26 +756,26 @@ pub enum NodeData {
 
     ParsingError {
         error: ParsingError,
-        message: String,
+        message: Box<str>,
     },
 
     Assignment,
 
     EscapeSequence(char),
-    UnicodeEscapeSequence(String),
+    UnicodeEscapeSequence(Box<str>),
 
-    UnprocessedVariableName(String),
+    UnprocessedVariableName(Box<str>),
     VariableName {
-        variable_name: String,
-        type_constraint: Option<String>,
+        variable_name: Box<str>,
+        type_constraint: Option<Box<str>>,
     },
 
-    ArgumentSeparator(String),
+    ArgumentSeparator(Box<str>),
 
-    FunctionCall(String),
+    FunctionCall(Box<str>),
     FunctionCallPreviousNodeValue {
-        leading_whitespace: String,
-        trailing_whitespace: String,
+        leading_whitespace: Box<str>,
+        trailing_whitespace: Box<str>,
     },
 
     FunctionDefinition(Box<FunctionDefinition>),
@@ -837,7 +837,7 @@ pub enum NodeData {
     FloatValue(f32),
     DoubleValue(f64),
     CharValue(char),
-    TextValue(String),
+    TextValue(Box<str>),
     NullValue,
     VoidValue,
     ArrayValue,
@@ -869,7 +869,7 @@ impl Node {
         }
     }
 
-    pub fn new_parsing_error_node(pos: CodePosition, error: ParsingError, message: impl Into<String>) -> Node {
+    pub fn new_parsing_error_node(pos: CodePosition, error: ParsingError, message: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -900,7 +900,7 @@ impl Node {
         }
     }
 
-    pub fn new_unicode_escape_sequence_node(pos: CodePosition, hex_codepoint: impl Into<String>) -> Node {
+    pub fn new_unicode_escape_sequence_node(pos: CodePosition, hex_codepoint: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -908,7 +908,7 @@ impl Node {
         }
     }
 
-    pub fn new_unprocessed_variable_name_node(pos: CodePosition, variable_name: impl Into<String>) -> Node {
+    pub fn new_unprocessed_variable_name_node(pos: CodePosition, variable_name: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -916,7 +916,7 @@ impl Node {
         }
     }
 
-    pub fn new_variable_name_node(pos: CodePosition, variable_name: impl Into<String>, type_constraint: Option<String>) -> Node {
+    pub fn new_variable_name_node(pos: CodePosition, variable_name: impl Into<Box<str>>, type_constraint: Option<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -927,7 +927,7 @@ impl Node {
         }
     }
 
-    pub fn new_argument_separator_node(pos: CodePosition, original_text: impl Into<String>) -> Node {
+    pub fn new_argument_separator_node(pos: CodePosition, original_text: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -935,7 +935,7 @@ impl Node {
         }
     }
 
-    pub fn new_function_call_node(pos: CodePosition, argument_list: Vec<Node>, function_name: impl Into<String>) -> Node {
+    pub fn new_function_call_node(pos: CodePosition, argument_list: Vec<Node>, function_name: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: argument_list,
@@ -945,8 +945,8 @@ impl Node {
 
     pub fn new_function_call_previous_node_value_node(
         pos: CodePosition,
-        leading_whitespace: impl Into<String>,
-        trailing_whitespace: impl Into<String>,
+        leading_whitespace: impl Into<Box<str>>,
+        trailing_whitespace: impl Into<Box<str>>,
         argument_list: Vec<Node>,
     ) -> Node {
         Self {
@@ -1240,7 +1240,7 @@ impl Node {
         }
     }
 
-    pub fn new_text_value_node(pos: CodePosition, value: impl Into<String>) -> Node {
+    pub fn new_text_value_node(pos: CodePosition, value: impl Into<Box<str>>) -> Node {
         Self {
             pos,
             child_nodes: Default::default(),
@@ -1436,7 +1436,7 @@ impl Node {
             if let NodeData::EscapeSequence(char) = nodes[i].node_data() {
                 builder = Self::try_evaluate_escape_sequence(*char);
             }else if let NodeData::TextValue(str) = nodes[i].node_data() {
-                builder = Some(str.clone());
+                builder = Some(str.to_string());
             }else if let NodeData::CharValue(char) = nodes[i].node_data() {
                 builder = Some(char.to_string());
             }

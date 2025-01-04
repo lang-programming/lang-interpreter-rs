@@ -1401,7 +1401,7 @@ impl Parser {
                     let array_unpacking_operator_token = tokens.pop_front().unwrap();
                     left_nodes.push(Node::new_unprocessed_variable_name_node(
                         ret.pos().combine(&array_unpacking_operator_token.pos()),
-                        variable_name.clone() + array_unpacking_operator_token.value(),
+                        variable_name.to_string() + array_unpacking_operator_token.value(),
                     ));
                 }else {
                     left_nodes.push(ret);
@@ -3169,8 +3169,8 @@ impl Parser {
                             CodePosition::EMPTY,
                             FunctionDefinition::new(
                                 None, false, false,
-                                self.lang_doc_comment.take(),
-                                return_type_constraint,
+                                self.lang_doc_comment.take().map(Box::from),
+                                return_type_constraint.map(Box::from),
                                 self.parse_tokens_internal(tokens).unwrap(),
                             ),
                             parameter_list,
@@ -3183,8 +3183,8 @@ impl Parser {
                             CodePosition::EMPTY,
                             FunctionDefinition::new(
                                 None, false, false,
-                                self.lang_doc_comment.take(),
-                                return_type_constraint,
+                                self.lang_doc_comment.take().map(Box::from),
+                                return_type_constraint.map(Box::from),
                                 self.parse_tokens_internal(&mut function_body).unwrap(),
                             ),
                             parameter_list,
@@ -3274,11 +3274,11 @@ impl Parser {
         nodes.push(Node::new_function_definition_node(
             CodePosition::EMPTY,
             FunctionDefinition::new(
-                function_name,
+                function_name.map(Box::from),
                 overloaded,
                 combinator,
-                self.lang_doc_comment.take(),
-                return_value_type_constraint,
+                self.lang_doc_comment.take().map(Box::from),
+                return_value_type_constraint.map(Box::from),
                 self.parse_tokens_internal(tokens).unwrap(),
             ),
             parameter_list_nodes,
@@ -3395,7 +3395,7 @@ impl Parser {
                         return ast;
                     };
 
-                    members.push(StructMember::new(identifier_token.value().to_string(), type_constraint));
+                    members.push(StructMember::new(Box::from(identifier_token.value()), type_constraint.map(Box::from)));
                 },
 
                 TokenType::LexerError => {
@@ -3439,7 +3439,7 @@ impl Parser {
         }
 
         nodes.push(Node::new_struct_definition_node(pos, StructDefinition::new(
-            struct_name,
+            struct_name.map(Box::from),
             members,
         )));
 
@@ -3666,7 +3666,7 @@ impl Parser {
                         tokens.pop_front();
 
                         methods.push(Method::new(
-                            method_name.to_string(),
+                            Box::from(method_name),
                             self.parse_lrvalue(tokens, true).into_node(),
                             is_override_method,
                             visibility,
@@ -3725,7 +3725,7 @@ impl Parser {
                         tokens.pop_front();
 
                         methods.push(Method::new(
-                            method_name.to_string(),
+                            Box::from(method_name),
                             self.parse_lrvalue(tokens, true).into_node(),
                             is_override_method,
                             visibility,
@@ -3763,7 +3763,7 @@ impl Parser {
                         tokens.pop_front();
 
                         methods.push(Method::new(
-                            method_name.to_string(),
+                            Box::from(method_name),
                             self.parse_lrvalue(tokens, true).into_node(),
                             is_override_method,
                             visibility,
@@ -4006,8 +4006,8 @@ impl Parser {
                         }
 
                         static_members.push(ClassMember::new(
-                            member_name.to_string(),
-                            type_constraint,
+                            Box::from(member_name),
+                            type_constraint.map(Box::from),
                             static_member_value,
                             is_final_member,
                             visibility,
@@ -4017,8 +4017,8 @@ impl Parser {
                     }
 
                     members.push(ClassMember::new(
-                        member_name.to_string(),
-                        type_constraint,
+                        Box::from(member_name),
+                        type_constraint.map(Box::from),
                         None,
                         is_final_member,
                         visibility,
@@ -4066,7 +4066,7 @@ impl Parser {
         }
 
         nodes.push(Node::new_class_definition_node(pos, ClassDefinition::new(
-            class_name,
+            class_name.map(Box::from),
             static_members,
             members,
             methods,
@@ -4590,7 +4590,7 @@ impl Parser {
                         nodes.push(Node::new_variable_name_node(
                             pos,
                             variable_name,
-                            type_constraint,
+                            type_constraint.map(Box::from),
                         ));
                     },
 
