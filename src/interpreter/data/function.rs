@@ -909,16 +909,19 @@ impl FunctionPointerObject {
                             (metadata, InternalFunction::new(Rc::new(function)))).
                     unzip();
 
-            if functions.len() == 1 && metadata.iter().
-                    map(|metadata| metadata.has_info as u32).
-                    sum::<u32>() > 0 {
-                panic!("has_info can only be used if there are at least two functions (Invalid for function: {function_name})");
-            }
+            #[cfg(debug_assertions)]
+            {
+                if functions.len() == 1 && metadata.iter().
+                        map(|metadata| metadata.has_info as u32).
+                        sum::<u32>() > 0 {
+                    panic!("has_info can only be used if there are at least two functions (Invalid for function: {function_name})");
+                }
 
-            if functions.len() > 1 && metadata.iter().
-                    map(|metadata| metadata.has_info as u32).
-                    sum::<u32>() != 1 {
-                panic!("has_info can only be once (Invalid for function: {function_name})");
+                if functions.len() > 1 && metadata.iter().
+                        map(|metadata| metadata.has_info as u32).
+                        sum::<u32>() != 1 {
+                    panic!("has_info can only be once (Invalid for function: {function_name})");
+                }
             }
 
             function_map.insert(function_name, FunctionPointerObject::new_with_functions(
