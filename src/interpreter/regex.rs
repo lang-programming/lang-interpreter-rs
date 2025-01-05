@@ -19,7 +19,18 @@ pub fn split(text: &str, regex: &str, limit: Option<usize>) -> Result<Vec<String
     if limit == 0 {
         let match_result = regex.split(text).map(|str| str.to_string());
 
-        Ok(match_result.collect::<Vec<_>>())
+        let mut result = match_result.collect::<Vec<_>>();
+
+        //Remove trailing empty values
+        for i in (0..result.len()).rev() {
+            if !result[i].is_empty() {
+                break;
+            }
+
+            result.pop();
+        }
+
+        Ok(result)
     }else {
         let match_result = regex.splitn(text, limit).map(|str| str.to_string());
 
