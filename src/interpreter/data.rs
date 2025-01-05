@@ -335,6 +335,19 @@ impl DataObject {
         }
     }
 
+    pub fn new_void() -> Self {
+        Self {
+            value: DataValue::Void,
+
+            type_constraint: Box::new(CONSTRAINT_NORMAL.clone()),
+
+            variable_name: None,
+            flags: 0,
+            member_of_class_id: -1,
+            member_visibility: None,
+        }
+    }
+
     pub fn new_text(str: impl Into<Rc<str>>) -> Self {
         Self {
             value: DataValue::Text(str.into()),

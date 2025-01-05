@@ -919,9 +919,7 @@ impl Interpreter {
             },
 
             NodeData::VoidValue => {
-                DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap())
+                DataObjectRef::new(DataObject::new_void())
             },
 
             _ => {
@@ -1696,15 +1694,11 @@ impl Interpreter {
         //Allow None values in slice and replace with Lang VOID values
         if matches!(operation.operator(), Operator::Slice | Operator::OptionalSlice) {
             if middle_operand.is_none() {
-                middle_operand = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap()));
+                middle_operand = Some(DataObjectRef::new(DataObject::new_void()));
             }
 
             if right_side_operand.is_none() {
-                right_side_operand = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap()));
+                right_side_operand = Some(DataObjectRef::new(DataObject::new_void()));
             }
         }
 
@@ -1842,9 +1836,7 @@ impl Interpreter {
                     Operator::OptionalMemberAccess => {
                         let left_side_operand = left_side_operand.unwrap();
                         if matches!(left_side_operand.data_type(), DataType::NULL | DataType::VOID) {
-                            return Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                                data_object.set_void()
-                            }).unwrap()));
+                            return Some(DataObjectRef::new(DataObject::new_void()));
                         }
 
                         if !utils::is_member_access_allowed(&left_side_operand) {
@@ -4116,9 +4108,7 @@ impl Interpreter {
                         }).unwrap()))
                     }
                 }else {
-                    Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap()))
+                    Some(DataObjectRef::new(DataObject::new_void()))
                 }
             },
         }
@@ -4853,9 +4843,7 @@ impl Interpreter {
                     },
 
                     _ => {
-                        let mut error_out = DataObject::with_update(|data_object| {
-                            data_object.set_void()
-                        }).unwrap();
+                        let mut error_out = DataObject::new_void();
                         parameter_type_constraint = Some(self.interpret_type_constraint(
                             type_constraint, &mut error_out, child.pos(),
                         ));
@@ -4924,9 +4912,7 @@ impl Interpreter {
         }
 
         let return_value_type_constraint = if let Some(return_value_type_constraint) = function_definition.return_value_type_constraint() {
-            let mut error_out = DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap();
+            let mut error_out = DataObject::new_void();
             let return_value_type_constraint = self.interpret_type_constraint(
                 return_value_type_constraint, &mut error_out, node.pos(),
             );
@@ -5140,9 +5126,7 @@ impl Interpreter {
         let mut interpreted_members = Vec::new();
         for member in members {
             let type_constraint = if let Some(type_constraint) = member.type_constraint() {
-                let mut error_out = DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap();
+                let mut error_out = DataObject::new_void();
                 let type_constraint = self.interpret_type_constraint(
                     type_constraint, &mut error_out, node.pos(),
                 );
@@ -5310,9 +5294,7 @@ impl Interpreter {
                 }
 
                 let type_constraint = if let Some(type_constraint) = static_member.type_constraint() {
-                    let mut error_out = DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap();
+                    let mut error_out = DataObject::new_void();
                     let type_constraint = self.interpret_type_constraint(
                         type_constraint, &mut error_out, node.pos(),
                     );
@@ -5328,11 +5310,8 @@ impl Interpreter {
 
                 let static_member_data_object = DataObject::with_update(|data_object| {
                     let value = static_member.value().
-                            map(|value| self.interpret_node(None, value).unwrap_or_else(|| DataObjectRef::new(
-                                DataObject::with_update(|data_object| {
-                                    data_object.set_void()
-                                }).unwrap()),
-                            )).
+                            map(|value| self.interpret_node(None, value).
+                                    unwrap_or_else(|| DataObjectRef::new(DataObject::new_void()))).
                             unwrap_or_else(|| DataObjectRef::new(DataObject::new()));
 
                     data_object.set_data(&value.borrow())?;
@@ -5390,9 +5369,7 @@ impl Interpreter {
                 }
 
                 let type_constraint = if let Some(type_constraint) = member.type_constraint() {
-                    let mut error_out = DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap();
+                    let mut error_out = DataObject::new_void();
                     let type_constraint = self.interpret_type_constraint(
                         type_constraint, &mut error_out, node.pos(),
                     );
@@ -6274,9 +6251,7 @@ impl Interpreter {
                 constructors.function_name(),
                 argument_list,
                 pos,
-            ).unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()));
+            ).unwrap_or_else(|| DataObjectRef::new(DataObject::new_void()));
 
             if ret.data_type() != DataType::VOID {
                 return self.set_errno_error_object(
@@ -6318,9 +6293,7 @@ impl Interpreter {
                 constructors.function_name(),
                 argument_list,
                 pos,
-            ).unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()));
+            ).unwrap_or_else(|| DataObjectRef::new(DataObject::new_void()));
 
             if ret.data_type() != DataType::VOID {
                 return self.set_errno_error_object(
@@ -6475,9 +6448,7 @@ impl Interpreter {
             super_constructors.function_name(),
             argument_list,
             pos,
-        ).unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap()));
+        ).unwrap_or_else(|| DataObjectRef::new(DataObject::new_void()));
 
         if ret.data_type() != DataType::VOID {
             return self.set_errno_error_object(

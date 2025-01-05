@@ -88,9 +88,7 @@ fn call_operator_method(
 
     let ret = interpreter.call_function_pointer(&method, Some(method_name), argument_list, pos);
 
-    Some(ret.unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-        data_object.set_void()
-    }).unwrap())))
+    Some(ret.unwrap_or_else(|| DataObjectRef::new(DataObject::new_void())))
 }
 
 //General operation functions
@@ -1528,9 +1526,7 @@ pub fn op_pow(
             if count == 0 {
                 let pow_func = {
                     move |_: &mut Interpreter, _: Vec<DataObjectRef>| -> DataObjectRef {
-                        DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_void()
-                        }).unwrap())
+                        DataObjectRef::new(DataObject::new_void())
                     }
                 };
                 let func = FunctionPointerObject::from(crate::lang_func!(
@@ -3551,9 +3547,7 @@ pub fn op_optional_get_item(
     pos: CodePosition,
 ) -> OptionDataObjectRef {
     if matches!(left_side_operand.data_type(), DataType::NULL | DataType::VOID) {
-        Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap()))
+        Some(DataObjectRef::new(DataObject::new_void()))
     }else {
         op_get_item(interpreter, left_side_operand, right_side_operand, pos)
     }
@@ -3864,9 +3858,7 @@ pub fn op_optional_slice(
     pos: CodePosition,
 ) -> OptionDataObjectRef {
     if matches!(left_side_operand.data_type(), DataType::NULL | DataType::VOID) {
-        Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap()))
+        Some(DataObjectRef::new(DataObject::new_void()))
     }else {
         op_slice(interpreter, left_side_operand, middle_operand, right_side_operand, pos)
     }
@@ -3921,9 +3913,7 @@ pub fn op_set_item(
 
             left_value.borrow_mut()[index as usize] = value;
 
-            Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()))
+            Some(DataObjectRef::new(DataObject::new_void()))
         },
 
         DataValue::Array(left_value) => {
@@ -3950,9 +3940,7 @@ pub fn op_set_item(
 
             left_value.borrow_mut()[index as usize] = value;
 
-            Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()))
+            Some(DataObjectRef::new(DataObject::new_void()))
         },
 
         DataValue::List(left_value) => {
@@ -3979,9 +3967,7 @@ pub fn op_set_item(
 
             left_value.borrow_mut()[index as usize] = value;
 
-            Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()))
+            Some(DataObjectRef::new(DataObject::new_void()))
         },
 
         DataValue::Struct(left_value) => {
@@ -3995,9 +3981,7 @@ pub fn op_set_item(
                     pos,
                 ))
             }else {
-                Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap()))
+                Some(DataObjectRef::new(DataObject::new_void()))
             }
         },
 
@@ -4224,9 +4208,7 @@ pub fn op_call(
                 constructors.function_name(),
                 argument_list,
                 pos,
-            ).unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_void()
-            }).unwrap()));
+            ).unwrap_or_else(|| DataObjectRef::new(DataObject::new_void()));
 
             if ret.data_type() != DataType::VOID {
                 return Some(interpreter.set_errno_error_object(

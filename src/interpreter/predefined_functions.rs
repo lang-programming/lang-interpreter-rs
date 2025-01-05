@@ -3406,9 +3406,7 @@ mod math_functions {
             ) -> DataObjectRef {
                 let arr = array_object.array_value().unwrap();
                 if arr.borrow().is_empty() {
-                    return DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap());
+                    return DataObjectRef::new(DataObject::new_void());
                 }
 
                 let arr = arr.borrow();
@@ -3435,9 +3433,7 @@ mod math_functions {
             ) -> DataObjectRef {
                 let list = list_object.array_value().unwrap();
                 if list.borrow().is_empty() {
-                    return DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap());
+                    return DataObjectRef::new(DataObject::new_void());
                 }
 
                 let list = list.borrow();
@@ -3465,9 +3461,7 @@ mod math_functions {
                 let struct_value = struct_object.struct_value().unwrap();
                 let member_names = struct_value.member_names();
                 if member_names.is_empty() {
-                    return DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap());
+                    return DataObjectRef::new(DataObject::new_void());
                 }
 
                 let index = interpreter.ran.gen_range(0..member_names.len());
@@ -3494,9 +3488,7 @@ mod math_functions {
                 args: Vec<DataObjectRef>,
             ) -> DataObjectRef {
                 if args.is_empty() {
-                    return DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_void()
-                    }).unwrap());
+                    return DataObjectRef::new(DataObject::new_void());
                 }
 
                 let index = interpreter.ran.gen_range(0..args.len());

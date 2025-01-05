@@ -15,7 +15,7 @@ fn call_conversion_method(
     operand: &DataObjectRef,
     pos: CodePosition,
 ) -> OptionDataObjectRef {
-    let method_name = &*format!("to:{conversion_name}");
+    let method_name = &*("to:".to_string() + conversion_name);
 
     let operand = operand.object_value()?;
 
@@ -27,9 +27,7 @@ fn call_conversion_method(
 
     let ret = interpreter.call_function_pointer(&method, Some(method_name), &[], pos);
 
-    Some(ret.unwrap_or_else(|| DataObjectRef::new(DataObject::with_update(|data_object| {
-        data_object.set_void()
-    }).unwrap())))
+    Some(ret.unwrap_or_else(|| DataObjectRef::new(DataObject::new_void())))
 }
 
 //DataType conversion methods

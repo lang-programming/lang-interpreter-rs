@@ -170,9 +170,7 @@ pub(crate) fn remove_dots_from_file_path(file: &str) -> String {
  */
 pub fn none_to_lang_void(data_object: OptionDataObjectRef) -> DataObjectRef {
     data_object.unwrap_or_else(|| {
-        DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap())
+        DataObjectRef::new(DataObject::new_void())
     })
 }
 
@@ -199,9 +197,7 @@ pub fn combine_data_objects(
 
     //Return a single void object if every data object is a void object
     if data_objects.is_empty() {
-        return Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap()));
+        return Some(DataObjectRef::new(DataObject::new_void()));
     }
 
     if data_objects.len() == 1 {
@@ -231,9 +227,7 @@ pub fn combine_arguments_without_argument_separators(
     for current_data_object in argument_list {
         if current_data_object.data_type() == DataType::ARGUMENT_SEPARATOR {
             if argument_tmp_list.is_empty() {
-                argument_tmp_list.push(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_void()
-                }).unwrap()));
+                argument_tmp_list.push(DataObjectRef::new(DataObject::new_void()));
             }
 
             combined_argument_list.push(combine_data_objects(&argument_tmp_list, interpreter, pos).unwrap());
@@ -246,9 +240,7 @@ pub fn combine_arguments_without_argument_separators(
     }
 
     if argument_tmp_list.is_empty() {
-        argument_tmp_list.push(DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_void()
-        }).unwrap()));
+        argument_tmp_list.push(DataObjectRef::new(DataObject::new_void()));
     }
 
     combined_argument_list.push(combine_data_objects(&argument_tmp_list, interpreter, pos).unwrap());
