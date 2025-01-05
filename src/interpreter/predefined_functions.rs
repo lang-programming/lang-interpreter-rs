@@ -2219,7 +2219,7 @@ mod number_functions {
 mod text_functions {
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{conversions, Interpreter, InterpretingError};
-    use crate::interpreter::data::{DataObject, DataObjectRef};
+    use crate::interpreter::data::{DataObject, DataObjectRef, Number};
     use crate::interpreter::regex;
     use crate::lexer::CodePosition;
     use crate::utils;
@@ -2706,8 +2706,307 @@ mod text_functions {
                 DataObjectRef::new(DataObject::new_number(-1_i32))
             }
         }
-        
-        //TODO
+
+        functions.push(crate::lang_func!(
+            starts_with_index_function,
+            crate::lang_func_metadata!(
+                name="startsWith",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$text",
+                ),
+                parameter(
+                    name="$prefix",
+                ),
+            ),
+        ));
+        fn starts_with_index_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+            prefix_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+            let prefix = conversions::to_text(interpreter, &prefix_object, CodePosition::EMPTY);
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(text.starts_with(&*prefix))
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            ends_with_index_function,
+            crate::lang_func_metadata!(
+                name="endsWith",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$text",
+                ),
+                parameter(
+                    name="$suffix",
+                ),
+            ),
+        ));
+        fn ends_with_index_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+            suffix_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+            let suffix = conversions::to_text(interpreter, &suffix_object, CodePosition::EMPTY);
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_bool(text.ends_with(&*suffix))
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            matches_function,
+            crate::lang_func_metadata!(
+                name="matches",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="$text",
+                ),
+                parameter(
+                    name="$regex",
+                ),
+            ),
+        ));
+        fn matches_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+            regex_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+            let regex = conversions::to_text(interpreter, &regex_object, CodePosition::EMPTY);
+
+            let ret = regex::matches(&text, &regex);
+            match ret {
+                Ok(ret) => {
+                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_bool(ret)
+                    }).unwrap())
+                },
+
+                Err(e) => {
+                    interpreter.set_errno_error_object(
+                        InterpretingError::InvalidRegexSyntax,
+                        Some(e.message()),
+                        CodePosition::EMPTY,
+                    )
+                },
+            }
+        }
+
+        functions.push(crate::lang_func!(
+            repeat_text_function,
+            crate::lang_func_metadata!(
+                name="repeatText",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="$count",
+                    parameter_type(number),
+                ),
+                parameter(
+                    name="$text",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn repeat_text_function(
+            interpreter: &mut Interpreter,
+            count: DataObjectRef,
+            text_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let count = count.number_value().unwrap();
+            if count.int_value() < 0 {
+                return interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArguments,
+                    Some("Count must be >= 0"),
+                    CodePosition::EMPTY,
+                );
+            }
+
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+
+            let mut builder = String::new();
+            for _ in 0..count.int_value() {
+                builder += &text;
+            }
+
+            DataObjectRef::new(DataObject::new_text(builder))
+        }
+
+        functions.push(crate::lang_func!(
+            chars_of_function,
+            crate::lang_func_metadata!(
+                name="charsOf",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="$text",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn chars_of_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+
+            let arr = text.chars().
+                    map(|char| {
+                        DataObjectRef::new(DataObject::with_update(|data_object| {
+                            data_object.set_char(char)
+                        }).unwrap())
+                    }).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(arr)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            join_function,
+            crate::lang_func_metadata!(
+                name="join",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="$text",
+                    parameter_type(var_args),
+                ),
+                parameter(
+                    name="&collection",
+                    type_constraint(
+                        allowed=["ARRAY", "LIST"],
+                    ),
+                ),
+            ),
+        ));
+        fn join_function(
+            interpreter: &mut Interpreter,
+            text_object: DataObjectRef,
+            collection_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+
+            let joined_text = if let Some(array) = collection_object.array_value() {
+                array.borrow().iter().
+                        map(|data_object| conversions::to_text(interpreter, data_object, CodePosition::EMPTY)).
+                        collect::<Vec<_>>().
+                        join(&text)
+            }else {
+                collection_object.list_value().unwrap().borrow().iter().
+                        map(|data_object| conversions::to_text(interpreter, data_object, CodePosition::EMPTY)).
+                        collect::<Vec<_>>().
+                        join(&text)
+            };
+
+            DataObjectRef::new(DataObject::new_text(joined_text))
+        }
+
+        {
+            functions.push(crate::lang_func!(
+                split_without_max_split_count_function,
+                crate::lang_func_metadata!(
+                    name="split",
+                    has_info=true,
+                    return_type_constraint(
+                        allowed=["ARRAY"],
+                    ),
+                    parameter(
+                        name="$text",
+                    ),
+                    parameter(
+                        name="$regex",
+                    ),
+                ),
+            ));
+            fn split_without_max_split_count_function(
+                interpreter: &mut Interpreter,
+                text_object: DataObjectRef,
+                regex_object: DataObjectRef,
+            ) -> DataObjectRef {
+                split_internal_function(interpreter, text_object, regex_object, None)
+            }
+
+            functions.push(crate::lang_func!(
+                split_with_max_split_count_function,
+                crate::lang_func_metadata!(
+                    name="split",
+                    return_type_constraint(
+                        allowed=["ARRAY"],
+                    ),
+                    parameter(
+                        name="$text",
+                    ),
+                    parameter(
+                        name="$regex",
+                    ),
+                    parameter(
+                        name="$maxSplitCount",
+                        parameter_type(number),
+                    ),
+                ),
+            ));
+            fn split_with_max_split_count_function(
+                interpreter: &mut Interpreter,
+                text_object: DataObjectRef,
+                regex_object: DataObjectRef,
+                max_split_count: DataObjectRef,
+            ) -> DataObjectRef {
+                split_internal_function(interpreter, text_object, regex_object, Some(max_split_count.number_value().unwrap()))
+            }
+
+            fn split_internal_function(
+                interpreter: &mut Interpreter,
+                text_object: DataObjectRef,
+                regex_object: DataObjectRef,
+                max_split_count: Option<Number>,
+            ) -> DataObjectRef {
+                let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
+                let regex = conversions::to_text(interpreter, &regex_object, CodePosition::EMPTY);
+
+                let max_split_count = max_split_count.and_then(|number| {
+                    let number = number.int_value();
+
+                    (number > 0).then_some(number as usize)
+                });
+
+                let ret = regex::split(&text, &regex, max_split_count);
+                let arr = match ret {
+                    Ok(ret) => ret,
+                    Err(e) => {
+                        return interpreter.set_errno_error_object(
+                            InterpretingError::InvalidRegexSyntax,
+                            Some(e.message()),
+                            CodePosition::EMPTY,
+                        );
+                    },
+                };
+
+                let arr = arr.into_iter().
+                        map(|ele| DataObjectRef::new(DataObject::new_text(ele))).
+                        collect::<Box<_>>();
+
+                DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_array(arr)
+                }).unwrap())
+            }
+        }
     }
 }
 

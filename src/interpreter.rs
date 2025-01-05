@@ -3761,7 +3761,7 @@ impl Interpreter {
 
                                     //Remove trailing arguments
                                     for _ in 0..arg_count - i - 1 {
-                                        for k in argument_list_copy.len()..=0 {
+                                        for k in (0..argument_list_copy.len()).rev() {
                                             if argument_list_copy.remove(k).
                                                     is_some_and(|val| val.
                                                             data_type() == DataType::ARGUMENT_SEPARATOR) {
