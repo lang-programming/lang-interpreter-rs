@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::rc::Rc;
+use ahash::AHashMap;
 use crate::interpreter::data::function::FunctionPointerObject;
 use crate::interpreter::data::FunctionPointerObjectRef;
 
-pub fn add_predefined_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObjectRef>) {
+pub fn add_predefined_functions(funcs: &mut AHashMap<Box<str>, FunctionPointerObjectRef>) {
     let mut functions = Vec::new();
 
     reset_functions::add_functions(&mut functions);
@@ -20,6 +20,7 @@ pub fn add_predefined_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObj
     func_ptr_functions::add_functions(&mut functions);
     byte_buffer_functions::add_functions(&mut functions);
     array_functions::add_functions(&mut functions);
+    list_functions::add_functions(&mut functions);
     //TODO
     lang_test_functions::add_functions(&mut functions);
 
@@ -29,7 +30,7 @@ pub fn add_predefined_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObj
     }
 }
 
-pub fn add_predefined_linker_functions(funcs: &mut HashMap<Box<str>, FunctionPointerObjectRef>) {
+pub fn add_predefined_linker_functions(funcs: &mut AHashMap<Box<str>, FunctionPointerObjectRef>) {
     let mut functions = Vec::new();
 
     linker_functions::add_functions(&mut functions);
@@ -41,7 +42,6 @@ pub fn add_predefined_linker_functions(funcs: &mut HashMap<Box<str>, FunctionPoi
 }
 
 mod reset_functions {
-    use std::rc::Rc;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObjectRef, OptionDataObjectRef};
     use crate::interpreter::{Interpreter, InterpretingError};
@@ -86,7 +86,7 @@ mod reset_functions {
                 ));
             }
 
-            interpreter.data_mut().var.remove(&Rc::from(variable_name));
+            interpreter.data_mut().var.remove(&*variable_name);
 
             None
         }
@@ -391,7 +391,7 @@ mod system_functions {
                 CodePosition::EMPTY
             );
 
-            let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+            let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
             let Some(translation_value) = translation_value else {
                 return interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound);
             };
@@ -437,7 +437,7 @@ mod system_functions {
                 CodePosition::EMPTY
             );
 
-            let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+            let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
             let Some(translation_value) = translation_value else {
                 return interpreter.set_errno_error_object_error_only(InterpretingError::TransKeyNotFound);
             };
@@ -5073,6 +5073,8 @@ mod array_functions {
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef};
+    use crate::lexer::CodePosition;
+    use crate::utils;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         functions.push(crate::lang_func!(
@@ -5135,12 +5137,190 @@ mod array_functions {
             }).unwrap())
         }
 
+        functions.push(crate::lang_func!(
+            array_generate_from_function,
+            crate::lang_func_metadata!(
+                name="arrayGenerateFrom",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="fp.func",
+                    parameter_type(var_args),
+                ),
+                parameter(
+                    name="$count",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn array_generate_from_function(
+            interpreter: &mut Interpreter,
+            func_pointer_object: DataObjectRef,
+            count_number: DataObjectRef,
+        ) -> DataObjectRef {
+            let count_number = count_number.number_value().unwrap();
+            let count = count_number.int_value();
+            if count < 0 {
+                return interpreter.set_errno_error_object_error_only(InterpretingError::NegativeArrayLen);
+            }
+
+            let function_pointer = func_pointer_object.function_pointer_value().unwrap();
+
+            let arr = (0..count).
+                    map(|i| {
+                        utils::none_to_lang_void(interpreter.call_function_pointer(
+                            &function_pointer,
+                            func_pointer_object.variable_name().as_deref(),
+                            &[
+                                DataObjectRef::new(DataObject::new_number(i)),
+                            ],
+                            CodePosition::EMPTY,
+                        ))
+                    }).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(arr)
+            }).unwrap())
+        }
+
+        //TODO
+    }
+}
+
+mod list_functions {
+    use std::collections::VecDeque;
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
+    use crate::interpreter::{operators, Interpreter, InterpretingError};
+    use crate::interpreter::data::{DataObject, DataObjectRef};
+    use crate::lexer::CodePosition;
+    use crate::utils;
+
+    pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
+        functions.push(crate::lang_func!(
+            list_create_function,
+            crate::lang_func_metadata!(
+                name="listCreate",
+                return_type_constraint(
+                    allowed=["LIST"],
+                ),
+            ),
+        ));
+        fn list_create_function(
+            _: &mut Interpreter,
+        ) -> DataObjectRef {
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_list(VecDeque::new())
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            list_of_function,
+            crate::lang_func_metadata!(
+                name="listOf",
+                return_type_constraint(
+                    allowed=["LIST"],
+                ),
+                parameter(
+                    name="&elements",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn list_of_function(
+            _: &mut Interpreter,
+            elements: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let list = elements.iter().
+                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap())).
+                    collect::<VecDeque<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_list(list)
+            }).unwrap())
+        }
+
+        //TODO
+
+        functions.push(crate::lang_func!(
+            list_count_of_function,
+            crate::lang_func_metadata!(
+                name="listCountOf",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&list",
+                    type_constraint(
+                        allowed=["LIST"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn list_count_of_function(
+            interpreter: &mut Interpreter,
+            list_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let list = list_object.list_value().unwrap().borrow().clone();
+
+            let count = list.iter().
+                    filter(|ele| operators::is_strict_equals(
+                        interpreter, ele, &value_object, CodePosition::EMPTY,
+                    )).count();
+
+            DataObjectRef::new(DataObject::new_number(count as i32))
+        }
+
+        //TODO
+
+        functions.push(crate::lang_func!(
+            list_remove_at_function,
+            crate::lang_func_metadata!(
+                name="listRemoveAt",
+                parameter(
+                    name="&list",
+                    type_constraint(
+                        allowed=["LIST"]
+                    ),
+                ),
+                parameter(
+                    name="$index",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn list_remove_at_function(
+            interpreter: &mut Interpreter,
+            list_object: DataObjectRef,
+            index_number: DataObjectRef,
+        ) -> DataObjectRef {
+            let list = list_object.list_value().unwrap();
+
+            let index_number = index_number.number_value().unwrap();
+            let index = index_number.int_value();
+
+            let mut list = list.borrow_mut();
+
+            let index = utils::wrap_index(index, list.len());
+            let Some(index) = index else {
+                return interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds);
+            };
+
+            list.remove(index).unwrap()
+        }
+
         //TODO
     }
 }
 
 mod lang_test_functions {
-    use std::rc::Rc;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObjectRef, DataType, OptionDataObjectRef};
     use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
@@ -6216,7 +6396,7 @@ mod lang_test_functions {
                     CodePosition::EMPTY,
                 );
 
-                let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+                let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
 
                 let expected_value_object_text = conversions::to_text(
                     interpreter,
@@ -6318,7 +6498,7 @@ mod lang_test_functions {
                     CodePosition::EMPTY,
                 );
 
-                let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+                let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
 
                 let expected_value_object_text = conversions::to_text(
                     interpreter,
@@ -6411,7 +6591,7 @@ mod lang_test_functions {
                     CodePosition::EMPTY,
                 );
 
-                let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+                let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
 
                 let message = message_object.map(|message_object| conversions::to_text(
                     interpreter,
@@ -6497,7 +6677,7 @@ mod lang_test_functions {
                     CodePosition::EMPTY,
                 );
 
-                let translation_value = interpreter.data_ref().lang.get(&Rc::from(&*translation_key)).cloned();
+                let translation_value = interpreter.data_ref().lang.get(&*translation_key).cloned();
 
                 let message = message_object.map(|message_object| conversions::to_text(
                     interpreter,

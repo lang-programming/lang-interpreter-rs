@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::rc::Rc;
+use ahash::AHashMap;
 use crate::interpreter::data::DataObjectRef;
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ impl Module {
         todo!()
     }
 
-    pub fn exported_variables(&self) -> &HashMap<Rc<str>, DataObjectRef> {
+    pub fn exported_variables(&self) -> &AHashMap<Rc<str>, DataObjectRef> {
         todo!()
     }
 }

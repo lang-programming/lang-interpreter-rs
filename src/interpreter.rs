@@ -19,6 +19,7 @@ use std::{ptr, str};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Instant;
+use ahash::AHashMap;
 use include_dir::{include_dir, Dir};
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
@@ -89,13 +90,13 @@ pub struct Interpreter {
     execution_flags: ExecutionFlags,
 
     //DATA
-    data: HashMap<usize, Rc<RefCell<Data>>>,
+    data: Vec<Rc<RefCell<Data>>>,
 
     //Lang Standard implementation data
-    standard_types: HashMap<Box<str>, DataObjectRef>,
+    standard_types: AHashMap<Box<str>, DataObjectRef>,
 
     //Predefined functions & linker functions (= Predefined functions)
-    funcs: HashMap<Box<str>, FunctionPointerObjectRef>,
+    funcs: AHashMap<Box<str>, FunctionPointerObjectRef>,
 }
 
 impl Interpreter {
@@ -148,11 +149,11 @@ impl Interpreter {
             execution_state: ExecutionState::new(),
             execution_flags: ExecutionFlags::new(),
 
-            data: HashMap::new(),
+            data: Vec::new(),
 
-            standard_types: HashMap::new(),
+            standard_types: AHashMap::new(),
 
-            funcs: HashMap::new(),
+            funcs: AHashMap::new(),
         };
 
         interpreter.init_lang_standard();
@@ -199,19 +200,19 @@ impl Interpreter {
     fn data(&self) -> &Rc<RefCell<Data>> {
         let scope_id = self.scope_id as usize;
 
-        &self.data[&scope_id]
+        &self.data[scope_id]
     }
 
     pub fn data_ref(&self) -> Ref<Data> {
         let scope_id = self.scope_id as usize;
 
-        self.data[&scope_id].borrow()
+        self.data[scope_id].borrow()
     }
 
     pub fn data_mut(&mut self) -> RefMut<Data> {
         let scope_id = self.scope_id as usize;
 
-        self.data[&scope_id].borrow_mut()
+        self.data[scope_id].borrow_mut()
     }
 
     //TODO
@@ -2603,7 +2604,7 @@ impl Interpreter {
                 };
 
                 match comp_ver {
-                    Ordering::Less => {
+                    Ordering::Greater => {
                         self.set_errno(
                             InterpretingError::LangVerWarning,
                             Some("Lang file's version is older than this version! The Lang file could not be executed correctly"),
@@ -2611,7 +2612,7 @@ impl Interpreter {
                         );
                     },
 
-                    Ordering::Greater => {
+                    Ordering::Less => {
                         self.set_errno(
                             InterpretingError::LangVerError,
                             Some("Lang file's version is newer than this version! The Lang file will not be executed correctly!"),
@@ -3013,56 +3014,50 @@ impl Interpreter {
         flags: &mut [bool; 2],
         pos: CodePosition,
     ) -> OptionDataObjectRef {
-        let variables = if let Some(composite_type) = &composite_type {
+        let ret = if let Some(composite_type) = &composite_type {
             match composite_type.data_type() {
                 DataType::ERROR => {
                     let error_value = composite_type.error_value().unwrap();
 
-                    HashMap::from([
-                        (
-                            Rc::from("$text"),
-                            DataObjectRef::new(DataObject::with_update_final(|data_object| {
-                                data_object.
-                                        set_text(error_value.err().error_text())?.
-                                        set_variable_name(Some("$text"))?.
-                                        set_type_constraint(Box::new(DataTypeConstraint::from_single_allowed_type(
-                                            DataType::TEXT,
-                                        )))
-                            }).unwrap()),
-                        ),
-                        (
-                            Rc::from("$code"),
-                            DataObjectRef::new(DataObject::with_update_final(|data_object| {
-                                data_object.
-                                        set_int(error_value.err().error_code())?.
-                                        set_variable_name(Some("$code"))?.
-                                        set_type_constraint(Box::new(DataTypeConstraint::from_single_allowed_type(
-                                            DataType::INT,
-                                        )))
-                            }).unwrap()),
-                        ),
-                        (
-                            Rc::from("$message"),
-                            DataObjectRef::new(DataObject::with_update_final(|data_object| {
-                                if let Some(message) = error_value.message() {
-                                    data_object.set_text(message)?;
-                                }
+                    match variable_name {
+                        "$text" => Some(DataObjectRef::new(DataObject::with_update_final(|data_object| {
+                            data_object.
+                                    set_text(error_value.err().error_text())?.
+                                    set_variable_name(Some("$text"))?.
+                                    set_type_constraint(Box::new(DataTypeConstraint::from_single_allowed_type(
+                                        DataType::TEXT,
+                                    )))
+                        }).unwrap())),
 
-                                data_object.
-                                        set_variable_name(Some("$message"))?.
-                                        set_type_constraint(Box::new(DataTypeConstraint::from_allowed_types(&[
-                                            DataType::NULL, DataType::TEXT,
-                                        ])))
-                            }).unwrap()),
-                        ),
-                    ])
+                        "$code" => Some(DataObjectRef::new(DataObject::with_update_final(|data_object| {
+                            data_object.
+                                    set_int(error_value.err().error_code())?.
+                                    set_variable_name(Some("$code"))?.
+                                    set_type_constraint(Box::new(DataTypeConstraint::from_single_allowed_type(
+                                        DataType::INT,
+                                    )))
+                        }).unwrap())),
+
+                        "$message" => Some(DataObjectRef::new(DataObject::with_update_final(|data_object| {
+                            if let Some(message) = error_value.message() {
+                                data_object.set_text(message)?;
+                            }
+
+                            data_object.
+                                    set_variable_name(Some("$message"))?.
+                                    set_type_constraint(Box::new(DataTypeConstraint::from_allowed_types(&[
+                                        DataType::NULL, DataType::TEXT,
+                                    ])))
+                        }).unwrap())),
+
+                        _ => None,
+                    }
                 },
 
                 DataType::STRUCT => {
-                    let mut variables = HashMap::new();
-
                     let struct_value = composite_type.struct_value().unwrap();
 
+                    let mut ret = None;
                     for member_name in struct_value.member_names() {
                         let member = struct_value.get_member(&member_name);
 
@@ -3080,48 +3075,58 @@ impl Interpreter {
                             },
                         };
 
-                        variables.insert(Rc::from(member_name), member);
+                        if *member_name == *variable_name {
+                            ret = Some(member);
+                            break;
+                        }
                     }
 
-                    variables
+                    ret
                 },
 
                 DataType::OBJECT => {
-                    let mut variables = HashMap::new();
-
                     let object_value = composite_type.object_value().unwrap();
 
-                    let variable_name_prefix = &variable_name[..3];
-
-                    if matches!(variable_name_prefix, "mp." | "op:" | "to:") {
-                        for (function_name, functions) in object_value.borrow().methods().iter().
-                                filter(|(key, _)| key.starts_with(variable_name_prefix)) {
-                            variables.insert(Rc::from(&**function_name), DataObjectRef::new(DataObject::with_update_final(|data_object| {
-                                data_object.
-                                        set_function_pointer(Rc::new(
-                                            functions.copy_with_function_name(function_name),
-                                        ))?.
-                                        set_variable_name(Some(function_name))
-                            }).unwrap()));
-                        }
+                    if variable_name.starts_with("mp.") || variable_name.starts_with("op:") || variable_name.starts_with("to:") {
+                        object_value.borrow().methods().iter().
+                                find(|(function_name, _)| ***function_name == *variable_name).
+                                map(|(function_name, functions)| {
+                                    DataObjectRef::new(DataObject::with_update_final(|data_object| {
+                                        data_object.
+                                                set_function_pointer(Rc::new(
+                                                    functions.copy_with_function_name(function_name),
+                                                ))?.
+                                                set_variable_name(Some(function_name))
+                                    }).unwrap())
+                                })
                     }else {
+                        let mut ret = None;
+
                         for static_member in object_value.borrow().static_members() {
-                            let variable_name = static_member.variable_name().unwrap();
+                            let member_name = static_member.variable_name().unwrap();
 
-                            variables.insert(Rc::from(variable_name), static_member.clone());
-                        }
-
-                        if let Some(members) = object_value.borrow().members() {
-                            //If a static member and a member have the same variable name, the static member will be shadowed
-                            for member in members {
-                                let variable_name = member.variable_name().unwrap();
-
-                                variables.insert(Rc::from(variable_name), member.clone());
+                            if *member_name == *variable_name {
+                                ret = Some(static_member.clone());
+                                break;
                             }
                         }
-                    }
 
-                    variables
+                        if ret.is_none() {
+                            if let Some(members) = object_value.borrow().members() {
+                                //If a static member and a member have the same variable name, the static member will be shadowed
+                                for member in members {
+                                    let member_name = member.variable_name().unwrap();
+
+                                    if *member_name == *variable_name {
+                                        ret = Some(member.clone());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        ret
+                    }
                 },
 
                 _ => {
@@ -3147,12 +3152,12 @@ impl Interpreter {
                 ));
             };
 
-            module.exported_variables().clone()
+            module.exported_variables().get(variable_name).cloned()
         }else {
-            self.data_ref().var.clone()
+            self.data_ref().var.get(variable_name).cloned()
         };
 
-        if let Some(ret) = variables.get(variable_name) {
+        if let Some(ret) = ret {
             if !ret.is_accessible(self.current_call_stack_element.lang_class()) {
                 flags[0] = true;
 
@@ -4433,7 +4438,7 @@ impl Interpreter {
         }
 
         let is_module_variable = composite_type.is_none() && function_name.starts_with("[[");
-        let variables = if is_module_variable {
+        let (ret, ret_with_fp_prefix) = if is_module_variable {
             let index_module_identifier_end = function_name.find("]]::");
             let Some(index_module_identifier_end) = index_module_identifier_end else {
                 return Some(self.set_errno_error_object(
@@ -4454,7 +4459,7 @@ impl Interpreter {
 
             function_name = function_name[index_module_identifier_end + 4..].to_string();
 
-            let module = self.modules.get(&Box::from(&*module_name));
+            let module = self.modules.get(&*module_name);
 
             let Some(module) = module else {
                 return Some(self.set_errno_error_object(
@@ -4464,9 +4469,17 @@ impl Interpreter {
                 ));
             };
 
-            module.exported_variables().clone()
+            let variables = module.exported_variables();
+            (
+                variables.get(&*function_name).cloned(),
+                variables.get(&*("fp.".to_string() + &function_name)).cloned(),
+            )
         }else {
-            self.data_ref().var.clone()
+            let variables = &self.data_ref().var;
+            (
+                variables.get(&*function_name).cloned(),
+                variables.get(&*("fp.".to_string() + &function_name)).cloned(),
+            )
         };
 
         let fp = if let Some(composite_type) = composite_type {
@@ -4594,8 +4607,6 @@ impl Interpreter {
             let func = ret.1;
             Rc::new(func.copy_with_function_name(original_function_name))
         }else if Self::is_var_name_func_ptr_without_prefix(&function_name) {
-            let ret = variables.get(&Rc::from(&*function_name));
-
             let Some(fp) = ret.and_then(|ret| ret.function_pointer_value()) else {
                 return Some(self.set_errno_error_object(
                     InterpretingError::InvalidFuncPtr,
@@ -4609,8 +4620,7 @@ impl Interpreter {
             //Function call without prefix
 
             //Function pointer
-            let ret = variables.get(&Rc::from("fp.".to_string() + &function_name));
-            if let Some(ret) = ret {
+            if let Some(ret) = ret_with_fp_prefix {
                 let Some(fp) = ret.function_pointer_value() else {
                     return Some(self.set_errno_error_object(
                         InterpretingError::InvalidFuncPtr,
@@ -4760,7 +4770,7 @@ impl Interpreter {
 
             if function_pointer_data_object.is_final_data() || function_pointer_data_object.is_lang_var() {
                 if flags[1] {
-                    self.data_mut().var.remove(&Rc::from(variable_name));
+                    self.data_mut().var.remove(&*variable_name);
                 }
 
                 return Some(self.set_errno_error_object(
@@ -5002,7 +5012,7 @@ impl Interpreter {
         };
         if ret.is_err() {
             if flags[1] {
-                self.data_mut().var.remove(&Rc::from(function_pointer_data_object.variable_name().unwrap()));
+                self.data_mut().var.remove(&*function_pointer_data_object.variable_name().unwrap());
             }
 
             return Some(self.set_errno_error_object(
@@ -5087,7 +5097,7 @@ impl Interpreter {
 
             if struct_data_object.is_final_data() || struct_data_object.is_lang_var() {
                 if flags[1] {
-                    self.data_mut().var.remove(&Rc::from(variable_name));
+                    self.data_mut().var.remove(&*variable_name);
                 }
 
                 return Some(self.set_errno_error_object(
@@ -5165,7 +5175,7 @@ impl Interpreter {
             });
             if ret.is_err() {
                 if flags[1] {
-                    self.data_mut().var.remove(&Rc::from(data_object.variable_name().unwrap()));
+                    self.data_mut().var.remove(&*data_object.variable_name().unwrap());
                 }
 
                 return Some(self.set_errno_error_object(
@@ -5244,7 +5254,7 @@ impl Interpreter {
 
                 if class_data_object.is_final_data() || class_data_object.is_lang_var() {
                     if flags[1] {
-                        self.data_mut().var.remove(&Rc::from(variable_name));
+                        self.data_mut().var.remove(&*variable_name);
                     }
 
                     break 'early_ret Some(self.set_errno_error_object(
@@ -5560,7 +5570,7 @@ impl Interpreter {
                 });
                 if ret.is_err() {
                     if flags[1] {
-                        self.data_mut().var.remove(&Rc::from(data_object.variable_name().unwrap()));
+                        self.data_mut().var.remove(&*data_object.variable_name().unwrap());
                     }
 
                     break 'early_ret Some(self.set_errno_error_object(
@@ -6042,9 +6052,18 @@ impl Interpreter {
                         Some(output)
                     }else {
                         let mut output = if let Some(decimal_places_count) = decimal_places_count {
-                            format!("{:.*}", decimal_places_count, value)
+                            if decimal_places_count == 0 {
+                                value.round().to_string()
+                            }else {
+                                format!("{:.*}", decimal_places_count, value)
+                            }
                         }else {
-                            format!("{}", value)
+                            let ret = value.to_string();
+                            if ret.contains(".") {
+                                ret
+                            }else {
+                                format!("{ret}.0")
+                            }
                         };
 
                         if force_sign && output.as_bytes()[0] != b'-' {
@@ -6093,7 +6112,7 @@ impl Interpreter {
 
                 b't' => {
                     let translation_key = conversions::to_text(self, data_object, CodePosition::EMPTY).to_string();
-                    let translation_value = self.data_ref().lang.get(&Rc::from(translation_key.as_str())).cloned();
+                    let translation_value = self.data_ref().lang.get(&*translation_key).cloned();
 
                     let Some(output) = translation_value else {
                         return Err(FormatSequenceError::TranslationKeyNotFound(Box::from(format!("For translation key \"{translation_key}\""))));
@@ -6343,7 +6362,7 @@ impl Interpreter {
         let fp = {
             let lang_object = lang_object.borrow();
             let methods = method_name.and_then(|method_name| lang_object.methods().
-                    get(&Box::from(method_name)).cloned());
+                    get(&*method_name).cloned());
 
             if let Some(methods) = methods {
                 methods
@@ -6495,7 +6514,7 @@ impl Interpreter {
             "mp.".to_string() + raw_method_name
         };
 
-        let methods = lang_object.borrow().super_methods().get(&Box::from(method_name)).cloned();
+        let methods = lang_object.borrow().super_methods().get(&*method_name).cloned();
         let Some(methods) = methods else {
             return Some(self.set_errno_error_object(
                 InterpretingError::InvalidArguments,
@@ -7099,7 +7118,7 @@ impl Interpreter {
     fn enter_scope(&mut self, lang_args: Option<Vec<Box<str>>>) {
         self.scope_id += 1;
 
-        self.data.insert(self.scope_id as usize, Rc::new(RefCell::new(Data::new())));
+        self.data.push(Rc::new(RefCell::new(Data::new())));
 
         if let Some(lang_args) = lang_args {
             let lang_args = lang_args.into_iter().
@@ -7117,7 +7136,7 @@ impl Interpreter {
 
         if self.scope_id > 0 {
             //Copy translation map (except "lang.* = *") to the new scope's translation map
-            for (k, v) in &self.data[&(self.scope_id as usize - 1)].clone().borrow().lang {
+            for (k, v) in &self.data[self.scope_id as usize - 1].clone().borrow().lang {
                 if !k.starts_with("lang.") {
                     self.data_mut().lang.insert(k.clone(), v.clone());
                 }
@@ -7153,7 +7172,7 @@ impl Interpreter {
             return;
         }
 
-        self.data.remove(&(self.scope_id as usize));
+        self.data.remove(self.scope_id as usize);
 
         self.scope_id -= 1;
     }
@@ -7673,23 +7692,23 @@ impl InterpretingError {
 
 #[derive(Debug)]
 pub struct Data {
-    lang: HashMap<Rc<str>, Rc<str>>,
-    var: HashMap<Rc<str>, DataObjectRef>,
+    lang: AHashMap<Rc<str>, Rc<str>>,
+    var: AHashMap<Rc<str>, DataObjectRef>,
 }
 
 impl Data {
     fn new() -> Self {
         Self {
-            lang: HashMap::new(),
-            var: HashMap::new(),
+            lang: AHashMap::new(),
+            var: AHashMap::new(),
         }
     }
 
-    pub fn lang(&self) -> &HashMap<Rc<str>, Rc<str>> {
+    pub fn lang(&self) -> &AHashMap<Rc<str>, Rc<str>> {
         &self.lang
     }
 
-    pub fn var(&self) -> &HashMap<Rc<str>, DataObjectRef> {
+    pub fn var(&self) -> &AHashMap<Rc<str>, DataObjectRef> {
         &self.var
     }
 }

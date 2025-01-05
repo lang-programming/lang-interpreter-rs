@@ -23,7 +23,7 @@ fn call_conversion_method(
         return None;
     }
 
-    let method = operand.borrow().methods().get(&Box::from(method_name))?.clone();
+    let method = operand.borrow().methods().get(method_name)?.clone();
 
     let ret = interpreter.call_function_pointer(&method, Some(method_name), &[], pos);
 
@@ -233,11 +233,21 @@ pub fn to_text_internal(
         },
 
         DataValue::Float(value) => {
-            value.to_string()
+            let ret = value.to_string();
+            if ret.contains(".") {
+                ret
+            }else {
+                format!("{ret}.0")
+            }
         },
 
         DataValue::Double(value) => {
-            value.to_string()
+            let ret = value.to_string();
+            if ret.contains(".") {
+                ret
+            }else {
+                format!("{ret}.0")
+            }
         },
 
         DataValue::Char(value) => {

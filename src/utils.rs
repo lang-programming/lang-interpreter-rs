@@ -105,6 +105,46 @@ pub(crate) mod math {
     impl_to_number_base! { i64, u64 }
 }
 
+/// Converts negative indices to positive indices (e.g. `-1` => `len - 1` => last element)
+///
+/// This function will return None if the converted index is `< 0` or `>= len`
+/// The returned value is guaranteed to be `< len`
+pub fn wrap_index(index: i32, len: usize) -> Option<usize> {
+    let index = index as isize;
+
+    let index = if index < 0 {
+        index.wrapping_add(len as isize)
+    }else {
+        index
+    };
+
+    if index < 0 || index as usize >= len {
+        None
+    }else {
+        Some(index as usize)
+    }
+}
+
+/// Converts negative indices to positive indices (e.g. `-1` => `len - 1` => last element)
+///
+/// This function will return None if the converted index is `< 0` or `> len`
+/// The returned value is guaranteed to be `<= len`
+pub fn wrap_index_allow_len(index: i32, len: usize) -> Option<usize> {
+    let index = index as isize;
+
+    let index = if index < 0 {
+        index.wrapping_add(len as isize)
+    }else {
+        index
+    };
+
+    if index < 0 || index as usize > len {
+        None
+    }else {
+        Some(index as usize)
+    }
+}
+
 pub(crate) fn remove_dots_from_file_path(file: &str) -> String {
     let mut file = file.to_string();
 
@@ -771,7 +811,7 @@ pub fn format_translation_template_pluralization_with_template(
 
     let mut templates = Vec::with_capacity(template_tokens.len());
     for (i, mut template_token) in template_tokens.iter().
-            map(|str| str.as_str()).
+            map(|str| &**str).
             enumerate() {
         if template_token.is_empty() || template_token.as_bytes()[0] != b'[' {
             return Err(InvalidTranslationTemplateSyntaxError::new("Pluralization template token must start with \"[\""));

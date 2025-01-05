@@ -19,7 +19,7 @@ fn call_operator_method_1_arg(
     call_operator_method(
         interpreter,
         operand,
-        &format!("op:{operator_name}"),
+        &("op:".to_string() + operator_name),
         &[],
         pos,
     )
@@ -36,7 +36,7 @@ fn call_operator_method_2_arg(
     let ret = call_operator_method(
         interpreter,
         left_side_operand,
-        &format!("op:{operator_name}"),
+        &("op:".to_string() + operator_name),
         &[right_side_operand.clone()],
         pos,
     );
@@ -48,7 +48,7 @@ fn call_operator_method_2_arg(
     call_operator_method(
         interpreter,
         right_side_operand,
-        &format!("op-r:{operator_name}"),
+        &("op:r-".to_string() + operator_name),
         &[left_side_operand.clone()],
         pos,
     )
@@ -65,7 +65,7 @@ fn call_operator_method_3_arg(
     call_operator_method(
         interpreter,
         left_side_operand,
-        &format!("op:{operator_name}"),
+        &("op:".to_string() + operator_name),
         &[middle_operand.clone(), right_side_operand.clone()],
         pos,
     )
@@ -84,7 +84,7 @@ fn call_operator_method(
         return None;
     }
 
-    let method = lang_object.borrow().methods().get(&Box::from(method_name))?.clone();
+    let method = lang_object.borrow().methods().get(method_name)?.clone();
 
     let ret = interpreter.call_function_pointer(&method, Some(method_name), argument_list, pos);
 
