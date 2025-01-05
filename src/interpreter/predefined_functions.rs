@@ -3963,10 +3963,9 @@ mod math_functions {
 }
 
 mod combinator_functions {
-    use std::rc::Rc;
-    use crate::interpreter::data::function::{Function, FunctionMetadata, FunctionPointerObject};
+    use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{operators, Interpreter, InterpretingError};
-    use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
+    use crate::interpreter::data::{DataObjectRef, OptionDataObjectRef};
     use crate::lexer::CodePosition;
     use crate::utils;
 
@@ -4653,133 +4652,6 @@ mod combinator_functions {
             }
 
             ret
-        }
-
-        functions.push(crate::lang_func!(
-            comb_y_function,
-            crate::lang_func_metadata!(
-                name="combY",
-                combinator_function=true,
-                info="Combinator execution: (x -> f(x(x)))(x -> f(x(x)))",
-                parameter(
-                    name="$f",
-                    parameter_type(callable),
-                ),
-            ),
-        ));
-        fn comb_y_function(
-            interpreter: &mut Interpreter,
-            f: DataObjectRef,
-        ) -> OptionDataObjectRef {
-            let anon_func = {
-                let f = f.clone();
-
-                move |_: &mut Interpreter, x: DataObjectRef| -> DataObjectRef {
-                    let f = f.clone();
-                    let x = x.clone();
-
-                    let func = {
-                        let f = f.clone();
-                        let x = x.clone();
-
-                        move |interpreter: &mut Interpreter, args: Vec<DataObjectRef>| -> OptionDataObjectRef {
-                            let ret_x = utils::none_to_lang_void(
-                                operators::op_call(interpreter, &x, &[x.clone()], CodePosition::EMPTY),
-                            );
-
-                            let ret_f = utils::none_to_lang_void(
-                                operators::op_call(interpreter, &f, &[ret_x.clone()], CodePosition::EMPTY),
-                            );
-
-                            if !utils::is_callable(&ret_f) {
-                                return Some(interpreter.set_errno_error_object(
-                                    InterpretingError::InvalidFuncPtr,
-                                    Some(
-                                        "The value returned by $f() must be callable\n\
-                                        The implementation of the function provided to \"func.combY\" is incorrect!",
-                                    ),
-                                    CodePosition::EMPTY,
-                                ));
-                            }
-
-                            let args = args.iter().
-                                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
-                                        data_object.set_data(&ele.borrow())
-                                    }).unwrap())).
-                                    collect::<Box<_>>();
-                            let args = utils::separate_arguments_with_argument_separators(
-                                &args
-                            );
-
-                            operators::op_call(interpreter, &ret_f, &args, CodePosition::EMPTY)
-                        }
-                    };
-                    let func = crate::lang_func!(
-                        func,
-                        vec![
-                            Box::new(f.clone()),
-                            Box::new(x.clone()),
-                        ],
-                        crate::lang_func_metadata!(
-                            name="combY:anon:inner",
-                            parameter(
-                                name="&args",
-                                parameter_type(var_args),
-                            ),
-                        ),
-                    ).1;
-
-                    let function_name = if let Some(function_value) = x.function_pointer_value() {
-                        let function_name = function_value.function_name();
-                        if let Some(function_name) = function_name {
-                            function_name.to_string()
-                        }else {
-                            x.variable_name().map(|str| str.to_string()).unwrap_or_else(|| "null".to_string())
-                        }
-                    }else {
-                        "<arg>".to_string()
-                    };
-
-                    DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_function_pointer(Rc::new(FunctionPointerObject::new(
-                            &FunctionMetadata::new(
-                                Some(&format!("<combY:anon:inner-func({function_name})>")),
-                                None,
-                                false,
-                                false,
-                                false,
-                                None,
-                                vec![],
-                                None,
-                            ),
-                            func,
-                        )))
-                    }).unwrap())
-                }
-            };
-            let anon_func = crate::lang_func!(
-                anon_func,
-                vec![
-                    Box::new(f),
-                ],
-                crate::lang_func_metadata!(
-                    name="combY:anon",
-                    combinator_function=true,
-                    parameter(
-                        name="$x",
-                        parameter_type(callable),
-                    ),
-                ),
-            ).1;
-
-            let ret_anon_func_1 = anon_func.call_native_func(
-                interpreter, None, vec![], vec![],
-            ).unwrap();
-            let ret_anon_func_2 = anon_func.call_native_func(
-                interpreter, None, vec![], vec![],
-            ).unwrap();
-
-            operators::op_call(interpreter, &ret_anon_func_1, &[ret_anon_func_2], CodePosition::EMPTY)
         }
     }
 }
