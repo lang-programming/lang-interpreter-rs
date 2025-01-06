@@ -84,6 +84,9 @@ mod tuple_from_lang_args {
     crate::internal_tuple_from_lang_args_impl! { 7 }
     crate::internal_tuple_from_lang_args_impl! { 8 }
     crate::internal_tuple_from_lang_args_impl! { 9 }
+    crate::internal_tuple_from_lang_args_impl! { 10 }
+    crate::internal_tuple_from_lang_args_impl! { 11 }
+    crate::internal_tuple_from_lang_args_impl! { 12 }
 
     //No args
     impl FromLangArgs for () {
@@ -214,6 +217,9 @@ mod native_function_adapter {
     crate::internal_native_function_adapter_impl! { 7 }
     crate::internal_native_function_adapter_impl! { 8 }
     crate::internal_native_function_adapter_impl! { 9 }
+    crate::internal_native_function_adapter_impl! { 10 }
+    crate::internal_native_function_adapter_impl! { 11 }
+    crate::internal_native_function_adapter_impl! { 12 }
 
     impl<
         Ret: ReturnType,
