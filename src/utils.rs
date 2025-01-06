@@ -432,7 +432,7 @@ fn get_most_restrictive_function_signature_index_internal(
 /**
  * @return Returns the version as a tuple or None if the version is invalid
  */
-pub fn get_version_components(version: &str) -> Option<(u32, u32, u32)> {
+pub fn get_version_components(version: &str) -> Option<(i32, i32, i32)> {
     if version.is_empty() {
         return None;
     }
@@ -454,11 +454,15 @@ pub fn get_version_components(version: &str) -> Option<(u32, u32, u32)> {
     let minor_str = &version[major_minor_separator_index + 1..minor_bugfix_separator_index];
     let bugfix_str = &version[minor_bugfix_separator_index + 1..];
 
-    let major = u32::from_str(major_str).ok()?;
-    let minor = u32::from_str(minor_str).ok()?;
-    let bugfix = u32::from_str(bugfix_str).ok()?;
+    let major = i32::from_str(major_str).ok()?;
+    let minor = i32::from_str(minor_str).ok()?;
+    let bugfix = i32::from_str(bugfix_str).ok()?;
 
-    Some((major, minor, bugfix))
+    if major < 0 || minor < 0 || bugfix < 0 {
+        None
+    }else {
+        Some((major, minor, bugfix))
+    }
 }
 
 /**
@@ -466,7 +470,7 @@ pub fn get_version_components(version: &str) -> Option<(u32, u32, u32)> {
  * returns Equal if versionA is newer than versionB<br>
  * returns None if versionA is equalsTo versionB<br>
  */
-pub fn compare_versions_components(version_a: (u32, u32, u32), version_b: (u32, u32, u32)) -> Ordering {
+pub fn compare_versions_components(version_a: (i32, i32, i32), version_b: (i32, i32, i32)) -> Ordering {
     if version_a.0 != version_b.0 {
         return version_a.0.cmp(&version_b.0);
     }
