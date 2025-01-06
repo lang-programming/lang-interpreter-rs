@@ -48,6 +48,7 @@
 /// );
 /// ```
 ///
+/// `FunctionPointerObject::new` can be used to create a [FunctionPointerObject](crate::interpreter::data::function::FunctionPointerObject) with a single non-overloaded function:
 /// ```
 /// # use lang_interpreter::interpreter::data::{DataObject, DataObjectRef};
 /// # use lang_interpreter::interpreter::data::function::{Function, FunctionMetadata, Parameter, ParameterType};
@@ -81,7 +82,6 @@
 ///
 /// //`(metadata, function)` is used from the example above
 ///
-/// // FunctionPointerObject::new can be used to create a FunctionPointerObject with a single non-overloaded function
 /// let fp: FunctionPointerObject = FunctionPointerObject::new(&metadata, function);
 ///
 /// assert_eq!(fp.function_name(), Some("trim"));
@@ -89,6 +89,7 @@
 /// assert_eq!(fp.functions().len(), 1);
 /// ```
 ///
+/// Overloaded functions can be created with `FunctionPointerObject::create_function_pointer_objects_from_native_functions`:
 /// ```
 /// # use lang_interpreter::interpreter::data::{DataObject, DataObjectRef};
 /// # use lang_interpreter::interpreter::data::function::{Function, FunctionMetadata, Parameter, ParameterType};
@@ -123,7 +124,6 @@
 ///
 /// //`(metadata, function)` is used from the example above
 ///
-/// //Overloaded functions can be created with `FunctionPointerObject::create_function_pointer_objects_from_native_functions`
 /// let overloaded_functions: HashMap<Box<str>, FunctionPointerObject> = FunctionPointerObject::create_function_pointer_objects_from_native_functions(vec![
 ///     (metadata, function),
 /// ]);
