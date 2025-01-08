@@ -3384,7 +3384,7 @@ mod math_functions {
                 );
             }
 
-            DataObjectRef::new(DataObject::new_number(interpreter.ran.gen_range(0..=bound)))
+            DataObjectRef::new(DataObject::new_number(interpreter.ran.gen_range(0..bound)))
         }
 
         {
