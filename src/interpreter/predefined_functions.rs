@@ -3432,7 +3432,7 @@ mod math_functions {
                 interpreter: &mut Interpreter,
                 list_object: DataObjectRef,
             ) -> DataObjectRef {
-                let list = list_object.array_value().unwrap();
+                let list = list_object.list_value().unwrap();
                 if list.borrow().is_empty() {
                     return DataObjectRef::new(DataObject::new_void());
                 }
