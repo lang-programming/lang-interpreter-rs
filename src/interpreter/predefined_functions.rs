@@ -5065,7 +5065,7 @@ mod byte_buffer_functions {
 mod array_functions {
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{Interpreter, InterpretingError};
-    use crate::interpreter::data::{DataObject, DataObjectRef};
+    use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
     use crate::lexer::CodePosition;
     use crate::utils;
 
@@ -5139,7 +5139,9 @@ mod array_functions {
                 ),
                 parameter(
                     name="fp.func",
-                    parameter_type(var_args),
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"],
+                    ),
                 ),
                 parameter(
                     name="$count",
@@ -5176,6 +5178,245 @@ mod array_functions {
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_array(arr)
             }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_zip_function,
+            crate::lang_func_metadata!(
+                name="arrayZip",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&arrays",
+                    type_constraint(
+                        allowed=["ARRAY"],
+                    ),
+                   parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn array_zip_function(
+            interpreter: &mut Interpreter,
+            arrays: Vec<DataObjectRef>,
+        ) -> DataObjectRef {
+            let mut len = 0;
+            for (i, len_test) in arrays.
+                    iter().
+                    map(|array| array.array_value().unwrap().borrow().len()).
+                    enumerate() {
+                if i == 0 {
+                    len = len_test;
+
+                    continue;
+                }
+
+                if len != len_test {
+                    return interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some(&format!(
+                            "The size of argument {} (for var args parameter \"&arrays\") must be {}",
+                            i + 1,
+                            len,
+                        )),
+                        CodePosition::EMPTY,
+                    );
+                }
+            }
+
+            let zipped_array = (0..len).
+                    map(|i| {
+                        let arr = arrays.iter().
+                                map(|array| array.array_value().unwrap()).
+                                map(|array| {
+                                    DataObjectRef::new(DataObject::with_update(|data_object| {
+                                        data_object.set_data(&array.borrow()[i].borrow())
+                                    }).unwrap())
+                                }).collect();
+
+                        DataObjectRef::new(DataObject::with_update(|data_object| {
+                            data_object.set_array(arr)
+                        }).unwrap())
+                    }).collect();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(zipped_array)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_set_function,
+            crate::lang_func_metadata!(
+                name="arraySet",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$index",
+                    parameter_type(number),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_set_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            index_number: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> OptionDataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let index_number = index_number.number_value().unwrap();
+            let index = index_number.int_value();
+
+            let mut arr = arr.borrow_mut();
+
+            let index = utils::wrap_index(index, arr.len());
+            let Some(index) = index else {
+                return Some(interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds));
+            };
+
+            arr[index] = DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_data(&value_object.borrow())
+            }).unwrap());
+
+            None
+        }
+
+        functions.push(crate::lang_func!(
+            array_set_all_single_value_function,
+            crate::lang_func_metadata!(
+                name="arraySet",
+                has_info=true,
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_set_all_single_value_function(
+            _: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) {
+            let arr = array_object.array_value().unwrap();
+
+            let mut arr = arr.borrow_mut();
+            arr.iter_mut().for_each(|ele| {
+                *ele = DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_data(&value_object.borrow())
+                }).unwrap());
+            });
+        }
+
+        functions.push(crate::lang_func!(
+            array_set_all_var_args_value_function,
+            crate::lang_func_metadata!(
+                name="arraySet",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="&values",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn array_set_all_var_args_value_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            values: Vec<DataObjectRef>,
+        ) -> OptionDataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let mut arr = arr.borrow_mut();
+
+            if values.len() < arr.len() {
+                return Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArgCount,
+                    Some(&format!(
+                        "The var args argument (\"&values\") has not enough values ({} needed)",
+                        arr.len(),
+                    )),
+                    CodePosition::EMPTY,
+                ));
+            }
+            if values.len() > arr.len() {
+                return Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArgCount,
+                    Some(&format!(
+                        "The var args argument (\"&values\") has too many values ({} needed)",
+                        arr.len(),
+                    )),
+                    CodePosition::EMPTY,
+                ));
+            }
+
+            arr.iter_mut().zip(values.iter()).for_each(|(ele, value)| {
+                *ele = DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_data(&value.borrow())
+                }).unwrap());
+            });
+
+            None
+        }
+
+        functions.push(crate::lang_func!(
+            array_get_function,
+            crate::lang_func_metadata!(
+                name="arrayGet",
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$index",
+                    parameter_type(number),
+                ),
+            ),
+        ));
+        fn array_get_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            index_number: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let index_number = index_number.number_value().unwrap();
+            let index = index_number.int_value();
+
+            let arr = arr.borrow();
+
+            let index = utils::wrap_index(index, arr.len());
+            let Some(index) = index else {
+                return interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds);
+            };
+
+            arr[index].clone()
         }
 
         //TODO
