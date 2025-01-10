@@ -9,6 +9,8 @@ pub struct Module {
 
 impl Module {
     pub fn new() -> Self {
+        #![allow(clippy::new_without_default)]
+
         Self {
             //TODO
         }

@@ -48,7 +48,7 @@ impl DataType {
         Self::ERROR, Self::NULL, Self::VOID, Self::ARGUMENT_SEPARATOR, Self::TYPE,
     ];
 
-    pub fn from_str(str: &str) -> Option<Self> {
+    pub fn from_string(str: &str) -> Option<Self> {
         match str {
             "TEXT" => Some(Self::TEXT),
             "CHAR" => Some(Self::CHAR),

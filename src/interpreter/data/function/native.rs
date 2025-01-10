@@ -338,11 +338,11 @@ impl<T: 'static + PartialEq> AnyWithEq for T where T: Debug {
     }
 
     fn is_equals(&self, other: &dyn AnyWithEq, _interpreter: &mut Interpreter, _pos: CodePosition) -> bool {
-        other.as_any().downcast_ref::<T>().map_or(false, |o| self == o)
+        other.as_any().downcast_ref::<T>().is_some_and(|o| self == o)
     }
 
     fn is_strict_equals(&self, other: &dyn AnyWithEq, _interpreter: &mut Interpreter, _pos: CodePosition) -> bool {
-        other.as_any().downcast_ref::<T>().map_or(false, |o| self == o)
+        other.as_any().downcast_ref::<T>().is_some_and(|o| self == o)
     }
 }
 
@@ -353,7 +353,7 @@ impl AnyWithEq for DataObjectRef {
 
     fn is_equals(&self, other: &dyn AnyWithEq, interpreter: &mut Interpreter, pos: CodePosition) -> bool {
         other.as_any().downcast_ref::<Self>().
-                map_or(false, |o| operators::is_equals(
+                is_some_and(|o| operators::is_equals(
                     interpreter,
                     &self.clone(),
                     &o.clone(),
@@ -363,7 +363,7 @@ impl AnyWithEq for DataObjectRef {
 
     fn is_strict_equals(&self, other: &dyn AnyWithEq, interpreter: &mut Interpreter, pos: CodePosition) -> bool {
         other.as_any().downcast_ref::<Self>().
-                map_or(false, |o| operators::is_strict_equals(
+                is_some_and(|o| operators::is_strict_equals(
                     interpreter,
                     &self.clone(),
                     &o.clone(),

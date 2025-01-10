@@ -878,7 +878,7 @@ impl Lexer {
                 let from_column = self.column;
                 self.column += operator.chars().count();
 
-                tokens.push(Token::new(self.get_code_position(from_column), *operator, TokenType::Operator));
+                tokens.push(Token::new(self.get_code_position(from_column), operator, TokenType::Operator));
 
                 return Some(current_line.to_string())
             }
@@ -934,7 +934,7 @@ impl Lexer {
             }
         }
 
-        if current_line.starts_with(" = ") {
+        if let Some(end) = current_line.strip_prefix(" = ") {
             let token = &current_line[..3];
 
             let from_column = self.column;
@@ -942,7 +942,7 @@ impl Lexer {
 
             tokens.push(Token::new(self.get_code_position(from_column), token, TokenType::Assignment));
 
-            return Some(current_line[3..].to_string())
+            return Some(end.to_string())
         }else if current_line == " =" {
             let token = &current_line[..2];
 
@@ -952,7 +952,7 @@ impl Lexer {
             tokens.push(Token::new(self.get_code_position(from_column), token, TokenType::Assignment));
 
             return Some(current_line[2..].to_string())
-        }else if current_line.starts_with("=") {
+        }else if let Some(end) = current_line.strip_prefix("=") {
             let token = &current_line[..1];
 
             let from_column = self.column;
@@ -960,7 +960,7 @@ impl Lexer {
 
             tokens.push(Token::new(self.get_code_position(from_column), token, TokenType::Assignment));
 
-            return Some(current_line[1..].to_string())
+            return Some(end.to_string())
         }
 
         None

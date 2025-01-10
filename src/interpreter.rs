@@ -3814,9 +3814,7 @@ impl Interpreter {
                                     }
                                 }else {
                                     //Array varargs
-                                    let var_args_argument_list = combined_argument_list.iter().
-                                            skip(i).
-                                            take(combined_argument_list.len() + i + 1 - arg_count).
+                                    let var_args_argument_list = combined_argument_list[i..combined_argument_list.len() + i + 1 - arg_count].iter().
                                             map(|data_object| DataObjectRef::new(DataObject::with_update(|new_data_object|
                                                     new_data_object.set_data(&data_object.borrow())
                                             ).unwrap())).collect::<Vec<_>>();
@@ -5619,7 +5617,7 @@ impl Interpreter {
                     map(|pipe_index| &type_constraint[pipe_index + 1..]).
                     unwrap_or("");
 
-            let data_type = DataType::from_str(type_value);
+            let data_type = DataType::from_string(type_value);
             if let Some(data_type) = data_type {
                 type_values.push(data_type);
             }else {

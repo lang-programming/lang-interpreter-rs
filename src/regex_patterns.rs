@@ -66,3 +66,6 @@ pub static STARTS_WITH_FUNCTION_IDENTIFIER: LazyLock<Regex, fn() -> Regex> =
 
 pub static STARTS_WITH_ASSIGNMENT_OPERATOR: LazyLock<Regex, fn() -> Regex> =
     LazyLock::new(|| Regex::new(r"^ [^\\= ]{1,3}= ").unwrap());
+
+pub static UTILS_PARENT_FOLDER: LazyLock<Regex, fn() -> Regex> =
+    LazyLock::new(|| Regex::new(r"\/([^/]|[^/.][^/]|[^/][^/.]|[^/]{3,})\/\.\.\/").unwrap());

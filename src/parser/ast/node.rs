@@ -1575,10 +1575,8 @@ impl Node {
                 }
             },
 
-            NodeData::ContinueBreakStatement { number_node, .. } => {
-                if let Some(number_node) = number_node {
-                    Self::optimize_node(number_node);
-                }
+            NodeData::ContinueBreakStatement { number_node: Some(number_node), .. } => {
+                Self::optimize_node(number_node);
             },
 
             NodeData::Operation(operation_expression) |

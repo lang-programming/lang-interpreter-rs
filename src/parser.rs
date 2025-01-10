@@ -415,7 +415,7 @@ impl Parser {
                             let node = self.parse_operator_expr(&mut function_call_tokens, operator_type).unwrap();
                             left_nodes.push(Node::new_function_call_previous_node_value_node(
                                 pos, "", "",
-                                self.convert_comma_operators_to_argument_separators(node),
+                                Self::convert_comma_operators_to_argument_separators(node),
                             ));
                         }
 
@@ -631,7 +631,7 @@ impl Parser {
                             let node = self.parse_operator_expr(&mut tokens_list, operator_type).unwrap();
                             left_nodes.push(Node::new_array_value_node(
                                 pos,
-                                self.convert_comma_operators_to_argument_separators(node),
+                                Self::convert_comma_operators_to_argument_separators(node),
                             ));
 
                             if tokens.is_empty() {
@@ -1412,7 +1412,7 @@ impl Parser {
         }
     }
 
-    fn convert_comma_operators_to_argument_separators(&mut self, operator_node: Node) -> Vec<Node> {
+    fn convert_comma_operators_to_argument_separators(operator_node: Node) -> Vec<Node> {
         let mut nodes = Vec::new();
 
         if let Some(operator) = operator_node.operator() {
@@ -1425,7 +1425,7 @@ impl Parser {
                         operand.node_data(),
                         NodeData::Operation {..} | NodeData::Math {..} | NodeData::Condition {..},
                     ) {
-                        nodes.append(&mut self.convert_comma_operators_to_argument_separators(operand));
+                        nodes.append(&mut Self::convert_comma_operators_to_argument_separators(operand));
                     }else {
                         nodes.push(operand);
                     }
@@ -1443,7 +1443,7 @@ impl Parser {
                         left_side_operand.node_data(),
                         NodeData::Operation {..} | NodeData::Math {..} | NodeData::Condition {..},
                     ) {
-                        nodes.append(&mut self.convert_comma_operators_to_argument_separators(left_side_operand));
+                        nodes.append(&mut Self::convert_comma_operators_to_argument_separators(left_side_operand));
                     }else {
                         nodes.push(left_side_operand);
                     }
@@ -2257,7 +2257,7 @@ impl Parser {
 
                             "con.repeat" | "con.foreach" => {
                                 let arguments = self.parse_operation_expr(&mut loop_condition.unwrap()).unwrap();
-                                let arguments = self.convert_comma_operators_to_argument_separators(arguments);
+                                let arguments = Self::convert_comma_operators_to_argument_separators(arguments);
 
                                 let mut argument_iter = arguments.into_iter();
 
@@ -2556,7 +2556,7 @@ impl Parser {
             let throw_statement_token_pos = tokens.pop_front().unwrap().pos();
 
             let arguments = self.parse_operation_expr(tokens).unwrap();
-            let arguments = self.convert_comma_operators_to_argument_separators(arguments);
+            let arguments = Self::convert_comma_operators_to_argument_separators(arguments);
 
             let mut argument_iter = arguments.into_iter();
 
@@ -2883,7 +2883,7 @@ impl Parser {
                 //TODO check for matching brackets ("<" and ">")
 
                 let mut parent_class_end_index = None;
-                for i in (0..token_count_first_line).into_iter().rev() {
+                for i in (0..token_count_first_line).rev() {
                     if matches!(tokens[i].token_type(), TokenType::Operator) &&
                             tokens[i].value() == ">" && ends_with_opening_bracket {
                         parent_class_end_index = Some(i);
@@ -4893,7 +4893,7 @@ impl Parser {
 
             return Some(Node::new_function_call_node(
                 pos,
-                self.convert_comma_operators_to_argument_separators(raw_function_args),
+                Self::convert_comma_operators_to_argument_separators(raw_function_args),
                 identifier_token.value(),
             ));
         }

@@ -4,11 +4,11 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::mem;
 use std::str::FromStr;
-use regex::Regex;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, OptionDataObjectRef};
 use crate::interpreter::data::function::{Function, FunctionPointerObject, InternalFunction, Parameter};
 use crate::interpreter::{conversions, Interpreter};
 use crate::lexer::{CodePosition, Token, TokenType};
+use crate::regex_patterns;
 
 #[cfg(windows)]
 pub(crate) const LINE_SEPARATOR: &str = "\r\n";
@@ -150,16 +150,12 @@ pub(crate) fn remove_dots_from_file_path(file: &str) -> String {
 
     //Remove "/./"
     while file.contains("/./") {
-        let regex = Regex::new("\\/\\.\\/").unwrap();
-
-        file = regex.replace_all(&file, "/").to_string();
+        file = file.replace("/./", "/").to_string();
     }
 
-    let regex = Regex::new("\\/([^/]|[^/.][^/]|[^/][^/.]|[^/]{3,})\\/\\.\\.\\/").unwrap();
-
     //Remove "/../" and go to parent
-    while regex.is_match(&file) {
-        file = regex.replace_all(&file, "/").to_string();
+    while regex_patterns::UTILS_PARENT_FOLDER.is_match(&file) {
+        file = regex_patterns::UTILS_PARENT_FOLDER.replace_all(&file, "/").to_string();
     }
 
     file
@@ -387,8 +383,8 @@ fn get_most_restrictive_function_signature_index_internal(
                 argument_index = argument_list.len() + j + 1 - function_signature.0.len();
 
                 //Check if types are allowed for var args parameter
-                for k in old_argument_index..argument_index {
-                    if !parameter.type_constraint().is_type_allowed(argument_list[k].data_type()) {
+                for argument in argument_list[old_argument_index..argument_index].iter() {
+                    if !parameter.type_constraint().is_type_allowed(argument.data_type()) {
                         continue 'outer;
                     }
 

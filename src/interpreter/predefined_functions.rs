@@ -5063,6 +5063,7 @@ mod byte_buffer_functions {
 }
 
 mod array_functions {
+    use std::cmp::Ordering;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
@@ -6004,6 +6005,78 @@ mod array_functions {
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_array(distinct_values.into_boxed_slice())
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_sorted_function,
+            crate::lang_func_metadata!(
+                name="arraySorted",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="fp.comparator",
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_sorted_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            comparator_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let mut sorted_arr = arr.borrow().iter().
+                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap())).
+                    collect::<Box<_>>();
+
+            sorted_arr.sort_by(|a, b| {
+                let ret = interpreter.call_function_pointer(
+                    &comparator_object.function_pointer_value().unwrap(),
+                    comparator_object.variable_name().as_deref(),
+                    &utils::separate_arguments_with_argument_separators(
+                        &[a.clone(), b.clone()],
+                    ),
+                    CodePosition::EMPTY,
+                );
+                let ret = conversions::to_number(
+                    interpreter,
+                    &utils::none_to_lang_void(ret),
+                    CodePosition::EMPTY,
+                );
+
+                let Some(ret) = ret else {
+                    interpreter.set_errno(
+                        InterpretingError::NoNum,
+                        Some("The value returned by Argument 2 (\"fp.comparator\") must be a number."),
+                        CodePosition::EMPTY,
+                    );
+
+                    return Ordering::Equal;
+                };
+
+                let ret = ret.int_value();
+                match ret {
+                    0 => Ordering::Equal,
+                    1.. => Ordering::Greater,
+                    ..=-1 => Ordering::Less,
+                }
+            });
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(sorted_arr)
             }).unwrap())
         }
 

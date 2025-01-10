@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -23,20 +24,16 @@ impl CodePosition {
             return Self::EMPTY;
         }
 
-        let column_from = if self.line_number_from == code_position.line_number_from {
-            self.column_from.min(code_position.column_from)
-        }else if self.line_number_from < code_position.line_number_from {
-            self.column_from
-        }else {
-            code_position.column_from
+        let column_from = match self.line_number_from.cmp(&code_position.line_number_from) {
+            Ordering::Equal => self.column_from.min(code_position.column_from),
+            Ordering::Less => self.column_from,
+            Ordering::Greater => code_position.column_from,
         };
 
-        let column_to = if self.line_number_to == code_position.line_number_to {
-            self.column_to.min(code_position.column_to)
-        }else if self.line_number_to > code_position.line_number_to {
-            self.column_to
-        }else {
-            code_position.column_to
+        let column_to = match self.line_number_to.cmp(&code_position.line_number_to) {
+            Ordering::Equal => self.column_to.max(code_position.column_to),
+            Ordering::Greater => self.column_to,
+            Ordering::Less => code_position.column_to,
         };
 
         Self::new(

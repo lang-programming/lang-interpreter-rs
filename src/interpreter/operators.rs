@@ -3730,8 +3730,8 @@ pub fn op_slice(
             let to_index = to_index as usize;
 
             let list = left_value.borrow().iter().
+                    take(to_index).
                     skip(from_index).
-                    take(to_index - from_index).
                     cloned().
                     collect::<VecDeque<_>>();
 
@@ -3789,8 +3789,8 @@ pub fn op_slice(
             let to_index = to_index as usize;
 
             let text = left_value.chars().
+                    take(to_index).
                     skip(from_index).
-                    take(to_index - from_index).
                     collect::<Box<str>>();
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
