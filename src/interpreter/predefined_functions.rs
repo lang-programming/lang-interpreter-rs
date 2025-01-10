@@ -5064,7 +5064,7 @@ mod byte_buffer_functions {
 
 mod array_functions {
     use crate::interpreter::data::function::{Function, FunctionMetadata};
-    use crate::interpreter::{Interpreter, InterpretingError};
+    use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
     use crate::lexer::CodePosition;
     use crate::utils;
@@ -5417,6 +5417,594 @@ mod array_functions {
             };
 
             arr[index].clone()
+        }
+
+        functions.push(crate::lang_func!(
+            array_get_all_function,
+            crate::lang_func_metadata!(
+                name="arrayGetAll",
+                return_type_constraint(
+                    allowed=["TEXT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_get_all_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let text = arr.borrow().iter().
+                    map(|ele| conversions::to_text(interpreter, ele, CodePosition::EMPTY)).
+                    collect::<Vec<_>>().join(", ");
+
+            DataObjectRef::new(DataObject::new_text(text))
+        }
+
+        functions.push(crate::lang_func!(
+            array_read_function,
+            crate::lang_func_metadata!(
+                name="arrayRead",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="&pointers",
+                    parameter_type(var_args),
+                    type_constraint(
+                        allowed=["VAR_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_read_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            pointers: Vec<DataObjectRef>,
+        ) -> OptionDataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            if pointers.len() < arr.borrow().len() {
+                return Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArgCount,
+                    Some(&format!(
+                        "The var args argument (\"&pointers\") has not enough values ({} needed)",
+                         arr.borrow().len(),
+                    )),
+                    CodePosition::EMPTY,
+                ));
+            }
+
+            if pointers.len() > arr.borrow().len() {
+                return Some(interpreter.set_errno_error_object(
+                    InterpretingError::InvalidArgCount,
+                    Some(&format!(
+                        "The var args argument (\"&pointers\") has too many values ({} needed)",
+                         arr.borrow().len(),
+                    )),
+                    CodePosition::EMPTY,
+                ));
+            }
+
+            let arr = arr.borrow();
+
+            for (i, (ele, pointer)) in arr.iter().
+                    zip(pointers.iter()).
+                    enumerate() {
+                let dereferenced_pointer = pointer.var_pointer_value().unwrap();
+                if dereferenced_pointer.is_final_data() || dereferenced_pointer.is_lang_var() {
+                    return Some(interpreter.set_errno_error_object(
+                        InterpretingError::FinalVarChange,
+                        Some(&format!(
+                            "For the dereferenced pointer (argument {}) for var args parameter (\"&pointers\")",
+                             i + 1,
+                        )),
+                        CodePosition::EMPTY,
+                    ));
+                }
+
+
+                if !dereferenced_pointer.type_constraint().is_type_allowed(ele.data_type()) {
+                    return Some(interpreter.set_errno_error_object(
+                        InterpretingError::FinalVarChange,
+                        Some(&format!(
+                            "For the dereferenced pointer (argument {}) for var args parameter (\"&pointers\") does not allow the type {:?}",
+                            i + 1,
+                            ele.data_type(),
+                        )),
+                        CodePosition::EMPTY,
+                    ));
+                }
+
+                dereferenced_pointer.borrow_mut().set_data(&ele.borrow()).unwrap();
+            }
+
+            None
+        }
+
+        functions.push(crate::lang_func!(
+            array_fill_function,
+            crate::lang_func_metadata!(
+                name="arrayFill",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_fill_function(
+            _: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) {
+            let arr = array_object.array_value().unwrap();
+
+            let mut arr = arr.borrow_mut();
+            arr.iter_mut().for_each(|ele| {
+                *ele = DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_data(&value_object.borrow())
+                }).unwrap());
+            });
+        }
+
+        functions.push(crate::lang_func!(
+            array_fill_from_function,
+            crate::lang_func_metadata!(
+                name="arrayFillFrom",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$startIndex",
+                    parameter_type(number),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_fill_from_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            start_index_number: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> OptionDataObjectRef {
+            let start_index_number = start_index_number.number_value().unwrap();
+            let start_index = start_index_number.int_value();
+
+            let arr = array_object.array_value().unwrap();
+
+            let start_index = utils::wrap_index(start_index, arr.borrow().len());
+            let Some(start_index) = start_index else {
+                return Some(interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds));
+            };
+
+            let mut arr = arr.borrow_mut();
+            arr.iter_mut().skip(start_index).for_each(|ele| {
+                *ele = DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_data(&value_object.borrow())
+                }).unwrap());
+            });
+
+            None
+        }
+
+        functions.push(crate::lang_func!(
+            array_fill_to_function,
+            crate::lang_func_metadata!(
+                name="arrayFillTo",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$endIndex",
+                    parameter_type(number),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_fill_to_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            en_index_number: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> OptionDataObjectRef {
+            let en_index_number = en_index_number.number_value().unwrap();
+            let end_index = en_index_number.int_value();
+
+            let arr = array_object.array_value().unwrap();
+
+            let end_index = utils::wrap_index(end_index, arr.borrow().len());
+            let Some(end_index) = end_index else {
+                return Some(interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds));
+            };
+
+            let mut arr = arr.borrow_mut();
+            arr.iter_mut().take(end_index + 1).for_each(|ele| {
+                *ele = DataObjectRef::new(DataObject::with_update(|data_object| {
+                    data_object.set_data(&value_object.borrow())
+                }).unwrap());
+            });
+
+            None
+        }
+
+        functions.push(crate::lang_func!(
+            array_count_of_function,
+            crate::lang_func_metadata!(
+                name="arrayCountOf",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_count_of_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+            let count = arr.iter().filter(|ele| {
+                operators::is_strict_equals(interpreter, ele, &value_object, CodePosition::EMPTY)
+            }).count();
+
+            DataObjectRef::new(DataObject::new_number(count as i32))
+        }
+
+        functions.push(crate::lang_func!(
+            array_index_of_function,
+            crate::lang_func_metadata!(
+                name="arrayIndexOf",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_index_of_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+
+            let mut index = -1;
+
+            for (i, ele) in arr.iter().
+                    enumerate() {
+                if operators::is_strict_equals(interpreter, ele, &value_object, CodePosition::EMPTY) {
+                    index = i as i32;
+                    break;
+                }
+            }
+
+            DataObjectRef::new(DataObject::new_number(index))
+        }
+
+        functions.push(crate::lang_func!(
+            array_last_index_of_function,
+            crate::lang_func_metadata!(
+                name="arrayLastIndexOf",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_last_index_of_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+
+            let mut index = -1;
+
+            for (i, ele) in arr.iter().
+                    enumerate().rev() {
+                if operators::is_strict_equals(interpreter, ele, &value_object, CodePosition::EMPTY) {
+                    index = i as i32;
+                    break;
+                }
+            }
+
+            DataObjectRef::new(DataObject::new_number(index))
+        }
+
+        functions.push(crate::lang_func!(
+            array_count_like_function,
+            crate::lang_func_metadata!(
+                name="arrayCountLike",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_count_like_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+            let count = arr.iter().filter(|ele| {
+                operators::is_equals(interpreter, ele, &value_object, CodePosition::EMPTY)
+            }).count();
+
+            DataObjectRef::new(DataObject::new_number(count as i32))
+        }
+
+        functions.push(crate::lang_func!(
+            array_index_like_function,
+            crate::lang_func_metadata!(
+                name="arrayIndexLike",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_index_like_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+
+            let mut index = -1;
+
+            for (i, ele) in arr.iter().
+                    enumerate() {
+                if operators::is_equals(interpreter, ele, &value_object, CodePosition::EMPTY) {
+                    index = i as i32;
+                    break;
+                }
+            }
+
+            DataObjectRef::new(DataObject::new_number(index))
+        }
+
+        functions.push(crate::lang_func!(
+            array_last_index_like_function,
+            crate::lang_func_metadata!(
+                name="arrayLastIndexLike",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="$value",
+                ),
+            ),
+        ));
+        fn array_last_index_like_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            value_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+
+            let mut index = -1;
+
+            for (i, ele) in arr.iter().
+                    enumerate().rev() {
+                if operators::is_equals(interpreter, ele, &value_object, CodePosition::EMPTY) {
+                    index = i as i32;
+                    break;
+                }
+            }
+
+            DataObjectRef::new(DataObject::new_number(index))
+        }
+
+        functions.push(crate::lang_func!(
+            array_length_function,
+            crate::lang_func_metadata!(
+                name="arrayLength",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_length_function(
+            _: &mut Interpreter,
+            array_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let arr = arr.borrow();
+
+            DataObjectRef::new(DataObject::new_number(arr.len() as i32))
+        }
+
+        functions.push(crate::lang_func!(
+            array_distinct_values_of_function,
+            crate::lang_func_metadata!(
+                name="arrayDistinctValuesOf",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_distinct_values_of_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let mut distinct_values = Vec::new();
+
+            let arr = arr.borrow();
+
+            for ele in arr.iter() {
+                let mut flag = true;
+                for distinct_ele in distinct_values.iter() {
+                    if operators::is_strict_equals(interpreter, ele, distinct_ele, CodePosition::EMPTY) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if flag {
+                    distinct_values.push(DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap()));
+                }
+            }
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(distinct_values.into_boxed_slice())
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_distinct_values_like_function,
+            crate::lang_func_metadata!(
+                name="arrayDistinctValuesLike",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_distinct_values_like_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let mut distinct_values = Vec::new();
+
+            let arr = arr.borrow();
+
+            for ele in arr.iter() {
+                let mut flag = true;
+                for distinct_ele in distinct_values.iter() {
+                    if operators::is_equals(interpreter, ele, distinct_ele, CodePosition::EMPTY) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if flag {
+                    distinct_values.push(DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap()));
+                }
+            }
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(distinct_values.into_boxed_slice())
+            }).unwrap())
         }
 
         //TODO
