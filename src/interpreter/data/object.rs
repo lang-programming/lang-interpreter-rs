@@ -151,7 +151,7 @@ pub struct LangObject {
 }
 
 impl LangObject {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new_class(
         interpreter: &mut Interpreter,
 
@@ -185,7 +185,7 @@ impl LangObject {
         )
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub(crate) fn new_class_internal(
         interpreter: &mut Interpreter,
 

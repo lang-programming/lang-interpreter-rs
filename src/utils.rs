@@ -934,7 +934,7 @@ pub fn format_translation_template_pluralization_with_template(
     for template in templates {
         for count_range in template.count_values() {
             if count_range.is_count_in_range(count) {
-                let mut template_map = template_map.clone();
+                let mut template_map = template_map;
                 template_map.insert(Box::from("count"), Box::from(&*count.to_string()));
 
                 return format_translation_template(template.raw_translation_value(), template_map);

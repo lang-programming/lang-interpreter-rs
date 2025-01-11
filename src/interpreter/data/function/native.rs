@@ -324,7 +324,6 @@ impl NativeFunction {
     }
 }
 
-#[allow(unused_variables)]
 pub trait AnyWithEq: Debug {
     fn as_any(&self) -> &dyn Any;
 

@@ -1,6 +1,6 @@
 pub mod node;
 
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 pub use node::{
     Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method,
     ConditionalNode, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition,
@@ -68,7 +68,7 @@ impl Display for AST {
         builder += "AST: Children: {\n";
         for node in self.nodes.iter() {
             for token in node.to_string().split("\n") {
-                builder += &format!("\t{token}\n");
+                let _ = writeln!(builder, "\t{token}");
             }
         }
         builder += "}";

@@ -61,6 +61,7 @@ use crate::utils;
 pub struct Interpreter {
     parser: Parser,
 
+    #[expect(dead_code)]
     module_manager: ModuleManager,
     modules: HashMap<Box<str>, Rc<Module>>,
 
@@ -290,7 +291,7 @@ impl Interpreter {
             },
 
             NodeData::List => {
-                self.interpret_list_node(composite_type.clone(), node)
+                self.interpret_list_node(composite_type, node)
             },
 
             NodeData::CharValue(..) |
@@ -546,7 +547,7 @@ impl Interpreter {
                             module_name.clone(),
                             String::new() + &modified_variable_name[..index_opening_bracket] +
                                     &modified_variable_name[current_index..current_index_matching_bracket + 1],
-                            variable_names.clone(),
+                            variable_names,
                             "",
                             supports_pointer_dereferencing_and_referencing,
                             pos,
@@ -866,7 +867,7 @@ impl Interpreter {
                 data_objects.push(ret.clone());
             }
 
-            previous_data_object = ret.clone();
+            previous_data_object.clone_from(&ret);
         }
 
         utils::combine_data_objects(
@@ -2994,7 +2995,7 @@ impl Interpreter {
      *                                   (e.g. $[abc] is not in variableNames, but $abc is -> $[abc] will return a DataObject)
      * @param flags Will set by this method in format: [error, created]
      */
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn get_or_create_data_object_from_variable_name(
         &mut self,
         composite_type: OptionDataObjectRef,
@@ -3160,7 +3161,7 @@ impl Interpreter {
                 ));
             }
 
-            return Some(ret.clone());
+            return Some(ret);
         }
 
         if supports_pointer_dereferencing {
@@ -3353,7 +3354,7 @@ impl Interpreter {
 
         if variable_name.starts_with("$") || variable_name.starts_with("&") || variable_name.starts_with("fp.") {
             return self.get_or_create_data_object_from_variable_name(
-                composite_type.clone(),
+                composite_type,
                 module_name.as_deref(),
                 &variable_name,
                 variable_name.starts_with("$"),
@@ -3590,7 +3591,7 @@ impl Interpreter {
                 self.execution_state.try_body_scope_id == self.scope_id))
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[inline(always)]
     fn call_function_pointer_internal(
         &mut self,
@@ -7152,7 +7153,7 @@ impl Interpreter {
         message: Option<&str>,
         pos: CodePosition,
     ) {
-        self.set_errno_internal(error, message, pos, false)
+        self.set_errno_internal(error, message, pos, false);
     }
 
     fn set_errno_internal(
@@ -7199,7 +7200,7 @@ impl Interpreter {
                 error.error_text(),
                 error.error_code(),
                 if message.is_empty() {
-                    "".to_string()
+                    String::new()
                 }else {
                     "\nMessage: ".to_string() + message
                 },
@@ -7855,6 +7856,7 @@ struct ExecutionState {
      * Will be set to true for returning/throwing a value or breaking/continuing a loop or for try statements
      */
     stop_execution_flag: bool,
+    #[expect(dead_code)]
     force_stop_execution_flag: bool,
 
     //Fields for return statements

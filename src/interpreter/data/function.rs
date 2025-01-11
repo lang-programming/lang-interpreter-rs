@@ -2,7 +2,7 @@ pub mod native;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, Formatter, Write};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
@@ -663,7 +663,7 @@ impl Function {
                 if variable_name.is_empty() {
                     builder += "$[]";
                 }else {
-                    builder += &format!("$[{}]", &variable_name[1..variable_name.len()]);
+                    let _ = write!(builder, "$[{}]", &variable_name[1..variable_name.len()]);
                 }
             }else {
                 builder += variable_name;
@@ -897,7 +897,7 @@ impl FunctionPointerObject {
 
             let entry = functions_by_name.entry(function_name.clone());
             let vec = entry.or_insert(Vec::new());
-            vec.push((metadata, function))
+            vec.push((metadata, function));
         }
 
         let mut function_map = HashMap::new();
@@ -1429,7 +1429,7 @@ pub struct FunctionMetadata {
 }
 
 impl FunctionMetadata {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         function_name: Option<&str>,
         function_info: Option<&str>,

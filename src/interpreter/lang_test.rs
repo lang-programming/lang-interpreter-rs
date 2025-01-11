@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 use std::time::SystemTime;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataTypeConstraintError};
 use crate::interpreter::InterpretingError;
@@ -23,7 +23,7 @@ impl LangTest {
             let mut stack_trace_with_line_prefixes = String::new();
 
             for line in stack_trace.split("\n") {
-                stack_trace_with_line_prefixes += &format!("\n{line_prefix}{line}");
+                let _ = write!(stack_trace_with_line_prefixes, "\n{line_prefix}{line}");
             }
 
             stack_trace_with_line_prefixes
@@ -34,18 +34,18 @@ impl LangTest {
         builder += ":";
 
         if let Some(message) = message {
-            builder += &format!("\n{line_prefix}Message:  {message}");
+            let _ = write!(builder, "\n{line_prefix}Message:  {message}");
         }
 
         if let Some(actual_value) = actual_value {
             if let Some(expected_value) = expected_value {
-                builder += &format!("\n{line_prefix}Actual:   {actual_value}");
-                builder += &format!("\n{line_prefix}Excepted: {expected_value}");
+                let _ = write!(builder, "\n{line_prefix}Actual:   {actual_value}");
+                let _ = write!(builder, "\n{line_prefix}Excepted: {expected_value}");
             }
         }
 
         if let Some(stack_trace) = stack_trace {
-            builder += &format!("\n{line_prefix}Stack trace:{stack_trace}");
+            let _ = write!(builder, "\n{line_prefix}Stack trace:{stack_trace}");
         }
 
         builder
@@ -133,7 +133,7 @@ impl LangTest {
                 continue;
             }
 
-            out += &format!(
+            let _ = write!(out, 
                 "\n\tUnit: {}:",
                 unit.name.as_ref().map(|name| format!("\"{name}\"")).unwrap_or("noname".to_string()),
             );
@@ -142,17 +142,17 @@ impl LangTest {
                 let failed_tests = sub_unit.failed_tests();
                 if !failed_tests.is_empty() {
                     if let Some(name) = &sub_unit.name {
-                        out += &format!("\n\t\tSubUnit: \"{name}\"");
+                        let _ = write!(out, "\n\t\tSubUnit: \"{name}\"");
 
                         for failed_test in failed_tests {
-                            out += &format!(
+                            let _ = write!(out, 
                                 "\n\t\t\t{}",
                                 Self::print_failed_test_result("\t\t\t\t", failed_test),
                             );
                         }
                     }else {
                         for failed_test in failed_tests {
-                            out += &format!(
+                            let _ = write!(out, 
                                 "\n\t\t{}",
                                 Self::print_failed_test_result("\t\t\t", failed_test),
                             );
@@ -188,7 +188,7 @@ impl Display for LangTest {
                 collect::<Vec<_>>().
                 join("");
 
-        out += &format!(
+        let _ = write!(out, 
             "------------------------------------------\nSummary:\nTime taken: {:.3} s\nTests passed: {}/{}",
             diff as f64 / 1000.0,
             self.test_passed_count(),
@@ -204,7 +204,7 @@ impl Display for LangTest {
                 continue;
             }
 
-            out += &format!(
+            let _ = write!(out, 
                 "\n\tUnit: {}:",
                 unit.name.as_ref().map(|name| format!("\"{name}\"")).unwrap_or("noname".to_string()),
             );
@@ -213,17 +213,17 @@ impl Display for LangTest {
                 let failed_tests = sub_unit.failed_tests();
                 if !failed_tests.is_empty() {
                     if let Some(name) = &sub_unit.name {
-                        out += &format!("\n\t\tSubUnit: \"{name}\"");
+                        let _ = write!(out, "\n\t\tSubUnit: \"{name}\"");
 
                         for failed_test in failed_tests {
-                            out += &format!(
+                            let _ = write!(out, 
                                 "\n\t\t\t{}",
                                 Self::print_failed_test_result("\t\t\t\t", failed_test),
                             );
                         }
                     }else {
                         for failed_test in failed_tests {
-                            out += &format!(
+                            let _ = write!(out, 
                                 "\n\t\t{}",
                                 Self::print_failed_test_result("\t\t\t", failed_test),
                             );
@@ -297,17 +297,17 @@ impl Unit {
             let failed_tests = sub_unit.failed_tests();
             if !failed_tests.is_empty() {
                 if let Some(name) = &sub_unit.name {
-                    out += &format!("\n\tSubUnit: \"{name}\"");
+                    let _ = write!(out, "\n\tSubUnit: \"{name}\"");
 
                     for failed_test in failed_tests {
-                        out += &format!(
+                        let _ = write!(out, 
                             "\n\t\t{}\n",
                             LangTest::print_failed_test_result("\t\t\t", failed_test),
                         );
                     }
                 }else {
                     for failed_test in failed_tests {
-                        out += &format!(
+                        let _ = write!(out, 
                             "\n\t{}\n",
                             LangTest::print_failed_test_result("\t\t", failed_test),
                         );
@@ -353,17 +353,17 @@ impl Display for Unit {
             let failed_tests = sub_unit.failed_tests();
             if !failed_tests.is_empty() {
                 if let Some(name) = &sub_unit.name {
-                    out += &format!("\n\tSubUnit: \"{name}\"");
+                    let _ = write!(out, "\n\tSubUnit: \"{name}\"");
 
                     for failed_test in failed_tests {
-                        out += &format!(
+                        let _ = write!(out, 
                             "\n\t\t{}\n",
                             LangTest::print_failed_test_result("\t\t\t", failed_test),
                         );
                     }
                 }else {
                     for failed_test in failed_tests {
-                        out += &format!(
+                        let _ = write!(out, 
                             "\n\t{}\n",
                             LangTest::print_failed_test_result("\t\t", failed_test),
                         );
@@ -455,7 +455,7 @@ impl SubUnit {
             out += "\t\tFailed tests:";
 
             for assert_result in failed_tests {
-                out += &format!(
+                let _ = write!(out, 
                     "\n\t\t\t{}",
                     LangTest::print_failed_test_result("\t\t\t\t", assert_result),
                 );
@@ -490,7 +490,7 @@ impl Display for SubUnit {
             out += "\t\tFailed tests:";
 
             for assert_result in failed_tests {
-                out += &format!(
+                let _ = write!(out, 
                     "\n\t\t\t{}",
                     LangTest::print_failed_test_result("\t\t\t\t", assert_result),
                 );
@@ -539,7 +539,7 @@ impl AssertResult {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn new_generic_data_object_result(
         passed: bool,
         stack_trace: Option<&str>,

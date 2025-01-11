@@ -2651,7 +2651,7 @@ impl Parser {
                 token_count_first_line -= 2;
             }
 
-            #[allow(clippy::nonminimal_bool)]
+            #[expect(clippy::nonminimal_bool)]
             if !(matches!(tokens[0].token_type(), TokenType::Identifier) &&
                     regex_patterns::VAR_NAME_NORMAL_FUNCTION_WITHOUT_PREFIX.is_match(tokens[0].value())) &&
                     !(matches!(tokens[0].token_type(), TokenType::Other) &&
@@ -4480,7 +4480,7 @@ impl Parser {
         }
 
         //DOUBLE
-        #[allow(clippy::needless_return)]
+        #[expect(clippy::needless_return)]
         if let Ok(value) = f64::from_str(token) {
             nodes.push(Node::new_double_value_node(number_token.pos(), value));
 

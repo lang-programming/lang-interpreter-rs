@@ -4,7 +4,7 @@ pub mod object;
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, Formatter, Write};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::LazyLock;
@@ -186,7 +186,7 @@ impl DataTypeConstraint {
         }
 
         for data_type in types {
-            builder += &format!("{data_type:?}|");
+            let _ = write!(builder, "{data_type:?}|");
         }
 
         builder = builder[..builder.len() - 1].to_string();
@@ -462,10 +462,10 @@ impl DataObject {
                     self.value = DataValue::FunctionPointer(Rc::new(function_pointer.
                             copy_with_function_name(variable_name)));
                 }else {
-                    self.value = data_object.value.clone()
+                    self.value = data_object.value.clone();
                 }
             }else {
-                self.value = data_object.value.clone()
+                self.value = data_object.value.clone();
             }
         }else {
             self.value = data_object.value.clone();
