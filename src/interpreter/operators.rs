@@ -66,7 +66,10 @@ fn call_operator_method_3_arg(
         interpreter,
         left_side_operand,
         &("op:".to_string() + operator_name),
-        &[middle_operand.clone(), right_side_operand.clone()],
+        &utils::separate_arguments_with_argument_separators(&[
+            middle_operand.clone(),
+            right_side_operand.clone(),
+        ]),
         pos,
     )
 }

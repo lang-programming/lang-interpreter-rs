@@ -3054,6 +3054,7 @@ mod operation_functions {
     use crate::interpreter::{operators, Interpreter, InterpretingError};
     use crate::interpreter::data::DataObjectRef;
     use crate::lexer::CodePosition;
+    use crate::utils;
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         functions.push(crate::lang_func!(
@@ -3182,7 +3183,12 @@ mod operation_functions {
             callee: DataObjectRef,
             args: Vec<DataObjectRef>,
         ) -> DataObjectRef {
-            let ret = operators::op_call(interpreter, &callee, &args, CodePosition::EMPTY);
+            let ret = operators::op_call(
+                interpreter,
+                &callee,
+                &utils::separate_arguments_with_argument_separators(&args),
+                CodePosition::EMPTY,
+            );
             let Some(ret) = ret else {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
@@ -5295,7 +5301,7 @@ mod array_functions {
         functions.push(crate::lang_func!(
             array_set_all_single_value_function,
             crate::lang_func_metadata!(
-                name="arraySet",
+                name="arraySetAll",
                 has_info=true,
                 return_type_constraint(
                     allowed=["VOID"],
@@ -5329,7 +5335,7 @@ mod array_functions {
         functions.push(crate::lang_func!(
             array_set_all_var_args_value_function,
             crate::lang_func_metadata!(
-                name="arraySet",
+                name="arraySetAll",
                 return_type_constraint(
                     allowed=["VOID"],
                 ),
@@ -6077,6 +6083,192 @@ mod array_functions {
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_array(sorted_arr)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_filtered_function,
+            crate::lang_func_metadata!(
+                name="arrayFiltered",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="fp.filter",
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_filtered_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            filter_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let filtered_arr = arr.borrow().iter().
+                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap())).
+                    filter(|ele| {
+                        let ret = utils::none_to_lang_void(interpreter.call_function_pointer(
+                            &filter_object.function_pointer_value().unwrap(),
+                            filter_object.variable_name().as_deref(),
+                            &utils::separate_arguments_with_argument_separators(
+                                &[ele.clone()],
+                            ),
+                            CodePosition::EMPTY,
+                        ));
+
+                        conversions::to_bool(interpreter, &ret, CodePosition::EMPTY)
+                    }).
+                    collect::<Box<_>>();
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(filtered_arr)
+            }).unwrap())
+        }
+
+        functions.push(crate::lang_func!(
+            array_filtered_count_function,
+            crate::lang_func_metadata!(
+                name="arrayFilteredCount",
+                return_type_constraint(
+                    allowed=["INT"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="fp.filter",
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_filtered_count_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            filter_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let count = arr.borrow().iter().
+                    map(|ele| DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_data(&ele.borrow())
+                    }).unwrap())).
+                    filter(|ele| {
+                        let ret = utils::none_to_lang_void(interpreter.call_function_pointer(
+                            &filter_object.function_pointer_value().unwrap(),
+                            filter_object.variable_name().as_deref(),
+                            &utils::separate_arguments_with_argument_separators(
+                                &[ele.clone()],
+                            ),
+                            CodePosition::EMPTY,
+                        ));
+
+                        conversions::to_bool(interpreter, &ret, CodePosition::EMPTY)
+                    }).
+                    count();
+
+            DataObjectRef::new(DataObject::new_number(count as i32))
+        }
+
+        functions.push(crate::lang_func!(
+            array_map_function,
+            crate::lang_func_metadata!(
+                name="arrayMap",
+                return_type_constraint(
+                    allowed=["VOID"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="fp.map",
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_map_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            map_object: DataObjectRef,
+        ) {
+            let arr = array_object.array_value().unwrap();
+
+            for ele in arr.borrow_mut().iter_mut() {
+                *ele = utils::none_to_lang_void(interpreter.call_function_pointer(
+                    &map_object.function_pointer_value().unwrap(),
+                    map_object.variable_name().as_deref(),
+                    &utils::separate_arguments_with_argument_separators(
+                        &[ele.clone()],
+                    ),
+                    CodePosition::EMPTY,
+                ));
+            }
+        }
+
+        functions.push(crate::lang_func!(
+            array_map_to_new_function,
+            crate::lang_func_metadata!(
+                name="arrayMapToNew",
+                return_type_constraint(
+                    allowed=["ARRAY"],
+                ),
+                parameter(
+                    name="&array",
+                    type_constraint(
+                        allowed=["ARRAY"]
+                    ),
+                ),
+                parameter(
+                    name="fp.map",
+                    type_constraint(
+                        allowed=["FUNCTION_POINTER"]
+                    ),
+                ),
+            ),
+        ));
+        fn array_map_to_new_function(
+            interpreter: &mut Interpreter,
+            array_object: DataObjectRef,
+            map_object: DataObjectRef,
+        ) -> DataObjectRef {
+            let arr = array_object.array_value().unwrap();
+
+            let mut new_arr = Vec::with_capacity(arr.borrow().len());
+
+            for ele in arr.borrow_mut().iter() {
+                new_arr.push(utils::none_to_lang_void(interpreter.call_function_pointer(
+                    &map_object.function_pointer_value().unwrap(),
+                    map_object.variable_name().as_deref(),
+                    &utils::separate_arguments_with_argument_separators(
+                        &[ele.clone()],
+                    ),
+                    CodePosition::EMPTY,
+                )));
+            }
+
+            DataObjectRef::new(DataObject::with_update(|data_object| {
+                data_object.set_array(new_arr.into_boxed_slice())
             }).unwrap())
         }
 

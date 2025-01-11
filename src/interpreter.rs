@@ -1868,7 +1868,7 @@ impl Interpreter {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?}, ", middle_operand.data_type())
+                            format!(", {:?},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2021,7 +2021,7 @@ impl Interpreter {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?}, ", middle_operand.data_type())
+                            format!(", {:?},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2252,7 +2252,7 @@ impl Interpreter {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?}, ", middle_operand.data_type())
+                            format!(", {:?},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
