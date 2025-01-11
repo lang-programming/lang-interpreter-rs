@@ -5252,53 +5252,6 @@ mod array_functions {
         }
 
         functions.push(crate::lang_func!(
-            array_set_function,
-            crate::lang_func_metadata!(
-                name="arraySet",
-                return_type_constraint(
-                    allowed=["VOID"],
-                ),
-                parameter(
-                    name="&array",
-                    type_constraint(
-                        allowed=["ARRAY"]
-                    ),
-                ),
-                parameter(
-                    name="$index",
-                    parameter_type(number),
-                ),
-                parameter(
-                    name="$value",
-                ),
-            ),
-        ));
-        fn array_set_function(
-            interpreter: &mut Interpreter,
-            array_object: DataObjectRef,
-            index_number: DataObjectRef,
-            value_object: DataObjectRef,
-        ) -> OptionDataObjectRef {
-            let arr = array_object.array_value().unwrap();
-
-            let index_number = index_number.number_value().unwrap();
-            let index = index_number.int_value();
-
-            let mut arr = arr.borrow_mut();
-
-            let index = utils::wrap_index(index, arr.len());
-            let Some(index) = index else {
-                return Some(interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds));
-            };
-
-            arr[index] = DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_data(&value_object.borrow())
-            }).unwrap());
-
-            None
-        }
-
-        functions.push(crate::lang_func!(
             array_set_all_single_value_function,
             crate::lang_func_metadata!(
                 name="arraySetAll",
@@ -5388,42 +5341,6 @@ mod array_functions {
             });
 
             None
-        }
-
-        functions.push(crate::lang_func!(
-            array_get_function,
-            crate::lang_func_metadata!(
-                name="arrayGet",
-                parameter(
-                    name="&array",
-                    type_constraint(
-                        allowed=["ARRAY"]
-                    ),
-                ),
-                parameter(
-                    name="$index",
-                    parameter_type(number),
-                ),
-            ),
-        ));
-        fn array_get_function(
-            interpreter: &mut Interpreter,
-            array_object: DataObjectRef,
-            index_number: DataObjectRef,
-        ) -> DataObjectRef {
-            let arr = array_object.array_value().unwrap();
-
-            let index_number = index_number.number_value().unwrap();
-            let index = index_number.int_value();
-
-            let arr = arr.borrow();
-
-            let index = utils::wrap_index(index, arr.len());
-            let Some(index) = index else {
-                return interpreter.set_errno_error_object_error_only(InterpretingError::IndexOutOfBounds);
-            };
-
-            arr[index].clone()
         }
 
         functions.push(crate::lang_func!(
@@ -5894,32 +5811,6 @@ mod array_functions {
             }
 
             DataObjectRef::new(DataObject::new_number(index))
-        }
-
-        functions.push(crate::lang_func!(
-            array_length_function,
-            crate::lang_func_metadata!(
-                name="arrayLength",
-                return_type_constraint(
-                    allowed=["INT"],
-                ),
-                parameter(
-                    name="&array",
-                    type_constraint(
-                        allowed=["ARRAY"]
-                    ),
-                ),
-            ),
-        ));
-        fn array_length_function(
-            _: &mut Interpreter,
-            array_object: DataObjectRef,
-        ) -> DataObjectRef {
-            let arr = array_object.array_value().unwrap();
-
-            let arr = arr.borrow();
-
-            DataObjectRef::new(DataObject::new_number(arr.len() as i32))
         }
 
         functions.push(crate::lang_func!(
