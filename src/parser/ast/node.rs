@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter, Write as _};
 use std::mem;
 use crate::lexer::CodePosition;
 use crate::parser::ast::AST;

@@ -4,7 +4,7 @@ pub mod object;
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter, Write};
+use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::LazyLock;

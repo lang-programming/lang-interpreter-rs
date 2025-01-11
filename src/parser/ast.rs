@@ -1,6 +1,6 @@
 pub mod node;
 
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter, Write as _};
 pub use node::{
     Node, NodeData, Visibility, StructMember, StructDefinition, ClassMember, Method,
     ConditionalNode, Constructor, ClassDefinition, Operator, OperatorType, FunctionDefinition,

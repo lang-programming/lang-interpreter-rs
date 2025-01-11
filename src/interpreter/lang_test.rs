@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter, Write as _};
 use std::time::SystemTime;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataTypeConstraintError};
 use crate::interpreter::InterpretingError;

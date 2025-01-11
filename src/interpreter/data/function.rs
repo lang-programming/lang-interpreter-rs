@@ -2,7 +2,7 @@ pub mod native;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
-use std::fmt::{Debug, Display, Formatter, Write};
+use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
