@@ -527,10 +527,9 @@ impl Interpreter {
 
                 if let Some(index_matching_bracket) = index_matching_bracket {
                     //Remove all "[" "]" pairs
-                    let mut current_index = index_opening_bracket;
-                    let mut current_index_matching_bracket = index_matching_bracket;
+                    let mut current_index = index_opening_bracket + 1;
+                    let mut current_index_matching_bracket = index_matching_bracket - 1;
 
-                    //"&" both "++" and "--" must be executed
                     while modified_variable_name.as_bytes()[current_index] == b'[' &&
                             modified_variable_name.as_bytes()[current_index_matching_bracket] == b']' {
                         current_index += 1;
@@ -591,11 +590,11 @@ impl Interpreter {
                         //List: Variable was found with additional text -> no valid pointer reference
                         //TextValue: Variable was not found
 
-                        return Node::new_variable_name_node(pos, if let Some(module_name) = &module_name {
+                        return Node::new_text_value_node(pos, if let Some(module_name) = &module_name {
                             format!("[[{module_name}]]::{variable_prefix_append_after_search}{variable_name}")
                         }else {
                             format!("{variable_prefix_append_after_search}{variable_name}")
-                        }, None);
+                        });
                     },
 
                     _ => panic!("Invalid node"),
@@ -2904,6 +2903,7 @@ impl Interpreter {
 
                     let variable_name = lvalue.variable_name();
                     let Some(variable_name) = variable_name else {
+                        drop(lvalue);
                         return Some(self.set_errno_error_object(
                             InterpretingError::InvalidAssignment,
                             Some("Anonymous values can not be changed"),
@@ -2917,6 +2917,7 @@ impl Interpreter {
                             self.data_mut().var.remove(&variable_name);
                         }
 
+                        drop(lvalue);
                         return Some(self.set_errno_error_object(
                             InterpretingError::FinalVarChange,
                             None,
@@ -2932,6 +2933,7 @@ impl Interpreter {
                                 self.data_mut().var.remove(&variable_name);
                             }
 
+                            drop(lvalue);
                             return Some(self.set_errno_error_object(
                                 InterpretingError::IncompatibleDataType,
                                 Some("Incompatible type for rvalue in assignment"),
@@ -2939,6 +2941,8 @@ impl Interpreter {
                             ));
                         }
                     }
+
+                    drop(lvalue);
 
                     if let Some(func_name) = variable_name.strip_prefix("fp.") {
                         if self.funcs.iter().any(|(key, _)| *func_name == **key) {
