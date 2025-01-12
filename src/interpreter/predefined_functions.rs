@@ -1111,10 +1111,22 @@ mod system_functions {
         ) -> DataObjectRef {
             let current_stack_element = &interpreter.call_stack[interpreter.call_stack.len() - 1];
 
-            let module_path: Option<String> = None;
-            let module_file: Option<String> = None;
+            let mut module_path: Option<String> = None;
+            let mut module_file: Option<&str> = None;
             if let Some(module) = current_stack_element.module() {
-                todo!("Implement modules: {module:?}");
+                let prefix = format!(
+                    "<module:{}[{}]>",
+                    module.file(),
+                    module.lang_module_configuration().name()
+                );
+
+                let mut path = current_stack_element.lang_path()[prefix.len()..].to_string();
+                if !path.starts_with("/") {
+                    path = "/".to_string() + &path;
+                }
+
+                module_path = Some(path);
+                module_file = current_stack_element.lang_file();
             }
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -1158,10 +1170,22 @@ mod system_functions {
             let stack_trace_elements = interpreter.call_stack_elements();
             let array = stack_trace_elements.iter().
                     map(|ele| {
-                        let module_path: Option<String> = None;
-                        let module_file: Option<String> = None;
+                        let mut module_path: Option<String> = None;
+                        let mut module_file: Option<&str> = None;
                         if let Some(module) = ele.module() {
-                            todo!("Implement modules: {module:?}");
+                            let prefix = format!(
+                                "<module:{}[{}]>",
+                                module.file(),
+                                module.lang_module_configuration().name()
+                            );
+
+                            let mut path = ele.lang_path()[prefix.len()..].to_string();
+                            if !path.starts_with("/") {
+                                path = "/".to_string() + &path;
+                            }
+
+                            module_path = Some(path);
+                            module_file = ele.lang_file();
                         }
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -12167,7 +12191,7 @@ mod linker_functions {
     use std::str;
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
     use crate::interpreter::data::{DataObjectRef, OptionDataObjectRef};
-    use crate::interpreter::{conversions, Data, Interpreter, InterpretingError, StackElement};
+    use crate::interpreter::{conversions, module_manager, Data, Interpreter, InterpretingError, StackElement};
     use crate::interpreter::data::function::native::NativeError;
     use crate::lexer::CodePosition;
     use crate::utils;
@@ -12194,8 +12218,7 @@ mod linker_functions {
             "lang".to_string() + &utils::remove_dots_from_file_path(
                 &(interpreter.current_call_stack_element().lang_path()[10..].to_string() + "/" + lang_file_name))
         }else if let Some(module) = &module {
-            //absolutePath = LangModuleManager.getModuleFilePath(module, interpreter.getCurrentCallStackElement().getLangPath(), langFileName);
-            todo!("Implement modules: {module:?}")
+            module_manager::get_module_file_path(module, interpreter.current_call_stack_element().lang_path(), lang_file_name)
         }else if PathBuf::from(lang_file_name).is_absolute() {
             lang_file_name.to_string()
         }else {
@@ -12222,7 +12245,22 @@ mod linker_functions {
             lang_path_tmp = absolute_path[0..absolute_path.rfind('/').unwrap()].to_string();
 
             //Update call stack
-            todo!("Implement modules: {module:?} {lang_path_tmp:?}")
+            interpreter.push_stack_element(
+                StackElement::new(
+                    &format!(
+                        "<module:{}[{}]>{}",
+                        module.file(),
+                        module.lang_module_configuration().name(),
+                        lang_path_tmp,
+                    ),
+                    Some(&lang_file_name[lang_file_name.rfind('/').unwrap() + 1..]),
+                    None,
+                    None,
+                    None,
+                    Some(module.clone()),
+                ),
+                CodePosition::EMPTY,
+            );
         }else {
             lang_path_tmp = interpreter.platform_api.get_lang_path(Path::new(&absolute_path)).
                     map_err(NativeError::apply_with_message("Invalid path"))?.
@@ -12263,7 +12301,20 @@ mod linker_functions {
 
             String::from_utf8_lossy(file.contents()).to_string()
         }else if let Some(module) = &module {
-            todo!("Implement modules: {module:?}")
+            let file = module_manager::read_module_lang_file(module, &absolute_path);
+
+            let file = match file {
+                Ok(file) => file,
+                Err(e) => {
+                    return Ok(Some(interpreter.set_errno_error_object(
+                        InterpretingError::FileNotFound,
+                        Some(&e.to_string()),
+                        CodePosition::EMPTY,
+                    )));
+                },
+            };
+
+            String::from_utf8_lossy(&file).to_string()
         }else {
             let mut file = interpreter.platform_api.get_lang_reader(Path::new(&absolute_path)).
                     map_err(NativeError::apply_with_message("File not found"))?;
@@ -12425,8 +12476,78 @@ mod linker_functions {
             )
         }
 
-        //TODO loadModule
-        //TODO unloadModule
+        functions.push(crate::lang_func!(
+            load_module_function,
+            crate::lang_func_metadata!(
+                name="loadModule",
+                linker_function=true,
+                parameter(
+                    name="$moduleFile",
+                ),
+                parameter(
+                    name="&args",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn load_module_function(
+            interpreter: &mut Interpreter,
+            module_file_object: DataObjectRef,
+            args: Vec<DataObjectRef>,
+        ) -> OptionDataObjectRef {
+            let mut module_file = conversions::to_text(interpreter, &module_file_object, CodePosition::EMPTY).to_string();
+
+            if !module_file.ends_with(".lm") {
+                return Some(interpreter.set_errno_error_object(
+                    InterpretingError::NoLangFile,
+                    Some("Modules must have a file extension of\".lm\""),
+                    CodePosition::EMPTY,
+                ));
+            }
+
+            if !PathBuf::from(module_file.clone()).is_absolute() {
+                module_file = format!(
+                    "{}/{module_file}",
+                    interpreter.current_call_stack_element().lang_path(),
+                );
+            }
+
+            module_manager::load(interpreter, &module_file, &utils::separate_arguments_with_argument_separators(&args))
+        }
+
+        functions.push(crate::lang_func!(
+            unload_module_function,
+            crate::lang_func_metadata!(
+                name="unloadModule",
+                linker_function=true,
+                parameter(
+                    name="$moduleName",
+                ),
+                parameter(
+                    name="&args",
+                    parameter_type(var_args),
+                ),
+            ),
+        ));
+        fn unload_module_function(
+            interpreter: &mut Interpreter,
+            module_name_object: DataObjectRef,
+            args: Vec<DataObjectRef>,
+        ) -> OptionDataObjectRef {
+            let module_name = conversions::to_text(interpreter, &module_name_object, CodePosition::EMPTY).to_string();
+            for c in module_name.bytes() {
+                if !c.is_ascii_alphanumeric() && c != b'_' {
+                    return Some(interpreter.set_errno_error_object(
+                        InterpretingError::InvalidArguments,
+                        Some("The module name may only contain alphanumeric characters and underscores (_)"),
+                        CodePosition::EMPTY,
+                    ));
+                }
+            }
+
+            module_manager::unload(interpreter, &module_name, &utils::separate_arguments_with_argument_separators(&args))
+        }
+
         //TODO moduleLoadNative
         //TODO moduleUnloadNative
     }

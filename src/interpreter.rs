@@ -2,6 +2,7 @@ mod lang_vars;
 mod predefined_functions;
 
 pub mod module;
+pub mod module_manager;
 pub mod regex;
 pub mod data;
 pub mod conversions;
@@ -23,7 +24,7 @@ use ahash::AHashMap;
 use include_dir::{include_dir, Dir};
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
-use crate::interpreter::module::{Module, ModuleManager};
+use crate::interpreter::module::Module;
 use crate::interpreter::platform::{PlatformAPI};
 use crate::interpreter::data::{
     DataObject,
@@ -61,8 +62,6 @@ use crate::utils;
 pub struct Interpreter {
     parser: Parser,
 
-    #[expect(dead_code)]
-    module_manager: ModuleManager,
     modules: HashMap<Box<str>, Rc<Module>>,
 
     object_class: OptionLangObjectRef,
@@ -117,7 +116,6 @@ impl Interpreter {
         let mut interpreter = Self {
             parser: Parser::new(),
 
-            module_manager: ModuleManager::new(),
             modules: HashMap::new(),
 
             object_class: None,
@@ -440,7 +438,7 @@ impl Interpreter {
         let variable_names = if let Some(module_name) = &module_name {
             let module = self.modules.get(module_name);
             if let Some(module) = module {
-                Box::from_iter(module.exported_variables().keys().cloned())
+                Box::from_iter(module.exported_variables().borrow().keys().cloned())
             }else {
                 self.set_errno(InterpretingError::ModuleLoadUnloadErr, Some(&format!(
                     "The module \"{module_name}\" is not loaded!",
@@ -3149,7 +3147,7 @@ impl Interpreter {
                 ));
             };
 
-            module.exported_variables().get(variable_name).cloned()
+            module.exported_variables().borrow().get(variable_name).cloned()
         }else {
             self.data_ref().var.get(variable_name).cloned()
         };
@@ -4464,8 +4462,8 @@ impl Interpreter {
 
             let variables = module.exported_variables();
             (
-                variables.get(&*function_name).cloned(),
-                variables.get(&*("fp.".to_string() + &function_name)).cloned(),
+                variables.borrow().get(&*function_name).cloned(),
+                variables.borrow().get(&*("fp.".to_string() + &function_name)).cloned(),
             )
         }else {
             let variables = &self.data_ref().var;
