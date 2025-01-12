@@ -1250,7 +1250,7 @@ impl Parser {
                     tokens.pop_front();
 
                     if !whitespaces.is_empty() {
-                        whitespaces.clear();
+                        other_tokens.append(&mut whitespaces);
                     }
 
                     if !other_tokens.is_empty() {
