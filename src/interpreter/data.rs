@@ -471,6 +471,16 @@ impl DataObject {
             self.value = data_object.value.clone();
         }
 
+        if data_object.is_copy_static_and_final_modifiers() {
+            if data_object.is_final_data() {
+                self.flags |= Self::FLAG_FINAL;
+            }
+
+            if data_object.is_static_data() {
+                self.flags |= Self::FLAG_STATIC;
+            }
+        }
+
         Ok(self)
     }
 
