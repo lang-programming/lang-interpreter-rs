@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::ops::Deref;
 use std::ptr;
-use std::rc::Rc;
+use gc::Gc;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataValue, OptionDataObjectRef, StructObject};
 use crate::interpreter::{conversions, Interpreter, InterpretingError};
 use crate::interpreter::data::function::FunctionPointerObject;
@@ -113,7 +113,7 @@ pub fn op_len(
         return Some(ret);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::ByteBuffer(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_int(value.borrow().len() as i32)
@@ -171,7 +171,7 @@ pub fn op_deep_copy(
         return Some(ret);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::ByteBuffer(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_byte_buffer(value.borrow().clone())
@@ -209,7 +209,7 @@ pub fn op_deep_copy(
                         collect::<Vec<_>>();
 
                 Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_struct(Rc::new(StructObject::new_definition(&members)))
+                    data_object.set_struct(Gc::new(StructObject::new_definition(&members)))
                 }).unwrap()))
             }else {
                 let base_definition = value.base_definition()?;
@@ -250,7 +250,7 @@ pub fn op_deep_copy(
                 };
 
                 Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_struct(Rc::new(struct_copy))
+                    data_object.set_struct(Gc::new(struct_copy))
                 }).unwrap()))
             }
         },
@@ -283,7 +283,7 @@ pub fn op_concat(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Int(left_value) => {
             Some(DataObjectRef::new(DataObject::new_text(format!(
                 "{left_value}{}",
@@ -389,6 +389,7 @@ pub fn op_concat(
         },
 
         DataValue::FunctionPointer(left_value) => {
+            let left_value = left_value.clone();
             let right_value = right_side_operand.function_pointer_value()?;
 
             let function_name = format!("<concat-func({left_value}, {right_value})>");
@@ -431,7 +432,7 @@ pub fn op_concat(
             )).copy_with_function_name(&function_name);
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(func))
+                data_object.set_function_pointer(Gc::new(func))
             }).unwrap()))
         },
 
@@ -483,7 +484,7 @@ pub fn op_inc(
         return Some(ret);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Int(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_int(value.wrapping_add(1))
@@ -510,11 +511,12 @@ pub fn op_inc(
 
         DataValue::Char(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_char(char::from_u32((value as u32).wrapping_add(1)).unwrap_or('\u{FFFD}'))
+                data_object.set_char(char::from_u32((*value as u32).wrapping_add(1)).unwrap_or('\u{FFFD}'))
             }).unwrap()))
         },
 
         DataValue::FunctionPointer(value) => {
+            let value = value.clone();
             let function_name = format!("<auto-unpack-func({value}>");
 
             let operand = operand.clone();
@@ -553,7 +555,7 @@ pub fn op_inc(
             )).copy_with_function_name(&function_name);
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(func))
+                data_object.set_function_pointer(Gc::new(func))
             }).unwrap()))
         },
 
@@ -578,7 +580,7 @@ pub fn op_dec(
         return Some(ret);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Int(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_int(value.wrapping_sub(1))
@@ -605,11 +607,12 @@ pub fn op_dec(
 
         DataValue::Char(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_char(char::from_u32((value as u32).wrapping_sub(1)).unwrap_or('\u{FFFD}'))
+                data_object.set_char(char::from_u32((*value as u32).wrapping_sub(1)).unwrap_or('\u{FFFD}'))
             }).unwrap()))
         },
 
         DataValue::FunctionPointer(value) => {
+            let value = value.clone();
             let function_name = format!("<auto-pack-func({value}>");
 
             let operand = operand.clone();
@@ -650,7 +653,7 @@ pub fn op_dec(
             )).copy_with_function_name(&function_name);
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(func))
+                data_object.set_function_pointer(Gc::new(func))
             }).unwrap()))
         },
 
@@ -697,7 +700,7 @@ pub fn op_inv(
         return Some(ret);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Int(value) => {
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                 data_object.set_int(value.wrapping_neg())
@@ -770,7 +773,7 @@ pub fn op_add(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Int(left_value) => {
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
@@ -781,19 +784,19 @@ pub fn op_add(
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_long((left_value as i64).wrapping_add(right_value))
+                        data_object.set_long((*left_value as i64).wrapping_add(right_value))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 + right_value)
+                        data_object.set_float(*left_value as f32 + right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 + right_value)
+                        data_object.set_double(*left_value as f64 + right_value)
                     }).unwrap()))
                 },
 
@@ -823,13 +826,13 @@ pub fn op_add(
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 + right_value)
+                        data_object.set_float(*left_value as f32 + right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 + right_value)
+                        data_object.set_double(*left_value as f64 + right_value)
                     }).unwrap()))
                 },
 
@@ -865,7 +868,7 @@ pub fn op_add(
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 + right_value)
+                        data_object.set_double(*left_value as f64 + right_value)
                     }).unwrap()))
                 },
 
@@ -919,31 +922,31 @@ pub fn op_add(
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_int((left_value as i32).wrapping_add(right_value))
+                        data_object.set_int((*left_value as i32).wrapping_add(right_value))
                     }).unwrap()))
                 },
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_long((left_value as i64).wrapping_add(right_value))
+                        data_object.set_long((*left_value as i64).wrapping_add(right_value))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as i32 as f32 + right_value)
+                        data_object.set_float(*left_value as i32 as f32 + right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as i32 as f64 + right_value)
+                        data_object.set_double(*left_value as i32 as f64 + right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Char(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_int((left_value as i32).wrapping_add(right_value as i32))
+                        data_object.set_int((*left_value as i32).wrapping_add(right_value as i32))
                     }).unwrap()))
                 },
 
@@ -986,7 +989,7 @@ pub fn op_add(
             let right_value = right_side_operand.function_pointer_value()?;
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(left_value.
+                data_object.set_function_pointer(Gc::new(left_value.
                         copy_with_added_functions(&right_value)))
             }).unwrap()))
         },
@@ -1220,7 +1223,7 @@ pub fn op_mul(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Int(left_value) => {
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
@@ -1231,19 +1234,19 @@ pub fn op_mul(
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_long((left_value as i64).wrapping_mul(right_value))
+                        data_object.set_long((*left_value as i64).wrapping_mul(right_value))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 * right_value)
+                        data_object.set_float(*left_value as f32 * right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 * right_value)
+                        data_object.set_double(*left_value as f64 * right_value)
                     }).unwrap()))
                 },
 
@@ -1267,13 +1270,13 @@ pub fn op_mul(
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 * right_value)
+                        data_object.set_float(*left_value as f32 * right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 * right_value)
+                        data_object.set_double(*left_value as f64 * right_value)
                     }).unwrap()))
                 },
 
@@ -1303,7 +1306,7 @@ pub fn op_mul(
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 * right_value)
+                        data_object.set_double(*left_value as f64 * right_value)
                     }).unwrap()))
                 },
 
@@ -1353,7 +1356,7 @@ pub fn op_mul(
 
             let mut builder = String::with_capacity(left_value.len() * right_value as usize);
             for _ in 0..right_value {
-                builder += &left_value;
+                builder += left_value;
             }
 
             Some(DataObjectRef::new(DataObject::new_text(builder)))
@@ -1383,7 +1386,7 @@ pub fn op_pow(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Int(left_value) => {
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
@@ -1397,26 +1400,26 @@ pub fn op_pow(
                         if let Some(pow_result) = pow_result {
                             data_object.set_int(pow_result)
                         }else {
-                            data_object.set_double((left_value as f64).powf(right_value as f64))
+                            data_object.set_double((*left_value as f64).powf(right_value as f64))
                         }
                     }).unwrap()))
                 },
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value))
+                        data_object.set_double((*left_value as f64).powf(right_value))
                     }).unwrap()))
                 },
 
@@ -1428,25 +1431,25 @@ pub fn op_pow(
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value))
+                        data_object.set_double((*left_value as f64).powf(right_value))
                     }).unwrap()))
                 },
 
@@ -1458,25 +1461,25 @@ pub fn op_pow(
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Long(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value as f64))
+                        data_object.set_double((*left_value as f64).powf(right_value as f64))
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double((left_value as f64).powf(right_value))
+                        data_object.set_double((*left_value as f64).powf(right_value))
                     }).unwrap()))
                 },
 
@@ -1515,6 +1518,7 @@ pub fn op_pow(
         },
 
         DataValue::FunctionPointer(left_value) => {
+            let left_value = left_value.clone();
             let count = right_side_operand.int_value()?;
             if count < 0 {
                 return Some(interpreter.set_errno_error_object(
@@ -1544,7 +1548,7 @@ pub fn op_pow(
                 )).copy_with_function_name(&function_name);
 
                 Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_function_pointer(Rc::new(func))
+                    data_object.set_function_pointer(Gc::new(func))
                 }).unwrap()))
             }else {
                 let left_side_operand = left_side_operand.clone();
@@ -1588,7 +1592,7 @@ pub fn op_pow(
                 )).copy_with_function_name(&function_name);
 
                 Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_function_pointer(Rc::new(func))
+                    data_object.set_function_pointer(Gc::new(func))
                 }).unwrap()))
             }
         },
@@ -2705,7 +2709,7 @@ pub fn op_mod(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Int(left_value) => {
             match right_side_operand.data_value() {
                 DataValue::Int(right_value) => {
@@ -2731,20 +2735,20 @@ pub fn op_mod(
                         ))
                     }else {
                         Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_long((left_value as i64).wrapping_rem(right_value))
+                            data_object.set_long((*left_value as i64).wrapping_rem(right_value))
                         }).unwrap()))
                     }
                 },
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 % right_value)
+                        data_object.set_float(*left_value as f32 % right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 % right_value)
+                        data_object.set_double(*left_value as f64 % right_value)
                     }).unwrap()))
                 },
 
@@ -2784,13 +2788,13 @@ pub fn op_mod(
 
                 DataValue::Float(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_float(left_value as f32 % right_value)
+                        data_object.set_float(*left_value as f32 % right_value)
                     }).unwrap()))
                 },
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 % right_value)
+                        data_object.set_double(*left_value as f64 % right_value)
                     }).unwrap()))
                 },
 
@@ -2820,7 +2824,7 @@ pub fn op_mod(
 
                 DataValue::Double(right_value) => {
                     Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_double(left_value as f64 % right_value)
+                        data_object.set_double(*left_value as f64 % right_value)
                     }).unwrap()))
                 },
 
@@ -2861,7 +2865,7 @@ pub fn op_mod(
         DataValue::Text(left_value) => {
             let right_value = right_side_operand.array_value()?.borrow().clone();
 
-            Some(interpreter.format_text(&left_value, &right_value))
+            Some(interpreter.format_text(left_value, &right_value))
         },
 
         _ => None,
@@ -3401,7 +3405,7 @@ pub fn op_get_item(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::ByteBuffer(left_value) => {
             let right_value = right_side_operand.int_value()? as isize;
 
@@ -3512,7 +3516,7 @@ pub fn op_get_item(
             }
 
             Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_char(left_value)
+                data_object.set_char(*left_value)
             }).unwrap()))
         },
 
@@ -3577,7 +3581,7 @@ pub fn op_slice(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::ByteBuffer(left_value) => {
             let len = left_value.borrow().len();
 
@@ -3842,7 +3846,7 @@ pub fn op_slice(
                 }).unwrap()))
             }else {
                 Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_char(left_value)
+                    data_object.set_char(*left_value)
                 }).unwrap()))
             }
         },
@@ -3885,7 +3889,7 @@ pub fn op_set_item(
         return Some(ret);
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::ByteBuffer(left_value) => {
             let middle_value = middle_operand.int_value()? as isize;
 
@@ -4182,7 +4186,7 @@ pub fn op_call(
             }
 
             let ret = DataObject::with_update(|data_object| {
-                data_object.set_struct(Rc::new(StructObject::new_instance(
+                data_object.set_struct(Gc::new(StructObject::new_instance(
                     struct_value,
                     &combined_argument_list,
                 )?))
@@ -4274,10 +4278,10 @@ pub fn is_equals(
 
     let number = conversions::to_number(interpreter, right_side_operand, pos);
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Text(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
-                return *left_value == *right_value;
+                return **left_value == *right_value;
             }
 
             if left_value.chars().count() == 1 {
@@ -4292,27 +4296,27 @@ pub fn is_equals(
         DataValue::Char(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
                 if right_value.chars().count() == 1 {
-                    return left_value == right_value.chars().next().unwrap();
+                    return *left_value == right_value.chars().next().unwrap();
                 }
             }
 
-            number.is_some_and(|number| left_value as i32 == number.int_value())
+            number.is_some_and(|number| *left_value as i32 == number.int_value())
         },
 
         DataValue::Int(left_value) => {
-            number.is_some_and(|number| left_value == number.int_value())
+            number.is_some_and(|number| *left_value == number.int_value())
         },
 
         DataValue::Long(left_value) => {
-            number.is_some_and(|number| left_value == number.long_value())
+            number.is_some_and(|number| *left_value == number.long_value())
         },
 
         DataValue::Float(left_value) => {
-            number.is_some_and(|number| left_value == number.float_value())
+            number.is_some_and(|number| *left_value == number.float_value())
         },
 
         DataValue::Double(left_value) => {
-            number.is_some_and(|number| left_value == number.double_value())
+            number.is_some_and(|number| *left_value == number.double_value())
         },
 
         DataValue::ByteBuffer(left_value) => {
@@ -4451,12 +4455,12 @@ pub fn is_equals(
         },
 
         DataValue::Error(left_value) => {
-            match right_side_operand.data_value() {
+            match &right_side_operand.data_value() {
                 DataValue::Text(right_value) => {
                     if let Some(number) = number {
                         left_value.err().error_code() == number.int_value()
                     }else {
-                        *left_value.err().error_text() == *right_value
+                        *left_value.err().error_text() == **right_value
                     }
                 },
 
@@ -4473,7 +4477,7 @@ pub fn is_equals(
                 },
 
                 DataValue::Error(right_value) => {
-                    left_value == right_value
+                    *left_value == *right_value
                 },
 
                 _ => false,
@@ -4482,9 +4486,9 @@ pub fn is_equals(
 
         DataValue::Type(left_value) => {
             if let Some(right_value) = right_side_operand.type_value() {
-                left_value == right_value
+                *left_value == right_value
             }else {
-                left_value == right_side_operand.data_type()
+                *left_value == right_side_operand.data_type()
             }
         },
 
@@ -4528,41 +4532,41 @@ pub fn is_strict_equals(
         return false;
     }
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Text(left_value) => {
             let right_value = right_side_operand.text_value().unwrap();
 
-            *left_value == *right_value
+            **left_value == *right_value
         },
 
         DataValue::Char(left_value) => {
             let right_value = right_side_operand.char_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Int(left_value) => {
             let right_value = right_side_operand.int_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Long(left_value) => {
             let right_value = right_side_operand.long_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Float(left_value) => {
             let right_value = right_side_operand.float_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Double(left_value) => {
             let right_value = right_side_operand.double_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::ByteBuffer(left_value) => {
@@ -4664,13 +4668,13 @@ pub fn is_strict_equals(
         DataValue::Error(left_value) => {
             let right_value = right_side_operand.error_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Type(left_value) => {
             let right_value = right_side_operand.type_value().unwrap();
 
-            left_value == right_value
+            *left_value == right_value
         },
 
         DataValue::Null |
@@ -4714,10 +4718,10 @@ pub fn is_less_than(
                 data_object.set_number(number)
             }).unwrap()).unwrap_or_default();
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Text(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
-                return *left_value < *right_value;
+                return **left_value < *right_value;
             }
 
             if left_value.chars().count() == 1 {
@@ -4744,15 +4748,15 @@ pub fn is_less_than(
         DataValue::Char(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
                 if right_value.chars().count() == 1 {
-                    return left_value < right_value.chars().next().unwrap();
+                    return *left_value < right_value.chars().next().unwrap();
                 }
             }
 
             match number.data_value().clone() {
-                DataValue::Int(number) => (left_value as i32) < number,
-                DataValue::Long(number) => (left_value as i64) < number,
-                DataValue::Float(number) => (left_value as i32 as f32) < number,
-                DataValue::Double(number) => (left_value as i32 as f64) < number,
+                DataValue::Int(number) => (*left_value as i32) < number,
+                DataValue::Long(number) => (*left_value as i64) < number,
+                DataValue::Float(number) => (*left_value as i32 as f32) < number,
+                DataValue::Double(number) => (*left_value as i32 as f64) < number,
 
                 _ => false
             }
@@ -4760,10 +4764,10 @@ pub fn is_less_than(
 
         DataValue::Int(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value < number,
-                DataValue::Long(number) => (left_value as i64) < number,
-                DataValue::Float(number) => (left_value as f32) < number,
-                DataValue::Double(number) => (left_value as f64) < number,
+                DataValue::Int(number) => *left_value < number,
+                DataValue::Long(number) => (*left_value as i64) < number,
+                DataValue::Float(number) => (*left_value as f32) < number,
+                DataValue::Double(number) => (*left_value as f64) < number,
 
                 _ => false
             }
@@ -4771,10 +4775,10 @@ pub fn is_less_than(
 
         DataValue::Long(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value < number as i64,
-                DataValue::Long(number) => left_value < number,
-                DataValue::Float(number) => (left_value as f32) < number,
-                DataValue::Double(number) => (left_value as f64) < number,
+                DataValue::Int(number) => *left_value < number as i64,
+                DataValue::Long(number) => *left_value < number,
+                DataValue::Float(number) => (*left_value as f32) < number,
+                DataValue::Double(number) => (*left_value as f64) < number,
 
                 _ => false
             }
@@ -4782,10 +4786,10 @@ pub fn is_less_than(
 
         DataValue::Float(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value < number as f32,
-                DataValue::Long(number) => left_value < number as f32,
-                DataValue::Float(number) => left_value < number,
-                DataValue::Double(number) => (left_value as f64) < number,
+                DataValue::Int(number) => *left_value < number as f32,
+                DataValue::Long(number) => *left_value < number as f32,
+                DataValue::Float(number) => *left_value < number,
+                DataValue::Double(number) => (*left_value as f64) < number,
 
                 _ => false
             }
@@ -4793,10 +4797,10 @@ pub fn is_less_than(
 
         DataValue::Double(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value < number as f64,
-                DataValue::Long(number) => left_value < number as f64,
-                DataValue::Float(number) => left_value < number as f64,
-                DataValue::Double(number) => left_value < number,
+                DataValue::Int(number) => *left_value < number as f64,
+                DataValue::Long(number) => *left_value < number as f64,
+                DataValue::Float(number) => *left_value < number as f64,
+                DataValue::Double(number) => *left_value < number,
 
                 _ => false
             }
@@ -4896,10 +4900,10 @@ pub fn is_greater_than(
                 data_object.set_number(number)
             }).unwrap()).unwrap_or_default();
 
-    match left_side_operand.data_value() {
+    match &left_side_operand.data_value() {
         DataValue::Text(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
-                return *left_value > *right_value;
+                return **left_value > *right_value;
             }
 
             if left_value.chars().count() == 1 {
@@ -4926,15 +4930,15 @@ pub fn is_greater_than(
         DataValue::Char(left_value) => {
             if let Some(right_value) = right_side_operand.text_value() {
                 if right_value.chars().count() == 1 {
-                    return left_value > right_value.chars().next().unwrap();
+                    return *left_value > right_value.chars().next().unwrap();
                 }
             }
 
             match number.data_value().clone() {
-                DataValue::Int(number) => (left_value as i32) > number,
-                DataValue::Long(number) => (left_value as i64) > number,
-                DataValue::Float(number) => (left_value as i32 as f32) > number,
-                DataValue::Double(number) => (left_value as i32 as f64) > number,
+                DataValue::Int(number) => (*left_value as i32) > number,
+                DataValue::Long(number) => (*left_value as i64) > number,
+                DataValue::Float(number) => (*left_value as i32 as f32) > number,
+                DataValue::Double(number) => (*left_value as i32 as f64) > number,
 
                 _ => false
             }
@@ -4942,10 +4946,10 @@ pub fn is_greater_than(
 
         DataValue::Int(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value > number,
-                DataValue::Long(number) => (left_value as i64) > number,
-                DataValue::Float(number) => (left_value as f32) > number,
-                DataValue::Double(number) => (left_value as f64) > number,
+                DataValue::Int(number) => *left_value > number,
+                DataValue::Long(number) => (*left_value as i64) > number,
+                DataValue::Float(number) => (*left_value as f32) > number,
+                DataValue::Double(number) => (*left_value as f64) > number,
 
                 _ => false
             }
@@ -4953,10 +4957,10 @@ pub fn is_greater_than(
 
         DataValue::Long(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value > number as i64,
-                DataValue::Long(number) => left_value > number,
-                DataValue::Float(number) => (left_value as f32) > number,
-                DataValue::Double(number) => (left_value as f64) > number,
+                DataValue::Int(number) => *left_value > number as i64,
+                DataValue::Long(number) => *left_value > number,
+                DataValue::Float(number) => (*left_value as f32) > number,
+                DataValue::Double(number) => (*left_value as f64) > number,
 
                 _ => false
             }
@@ -4964,10 +4968,10 @@ pub fn is_greater_than(
 
         DataValue::Float(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value > number as f32,
-                DataValue::Long(number) => left_value > number as f32,
-                DataValue::Float(number) => left_value > number,
-                DataValue::Double(number) => (left_value as f64) > number,
+                DataValue::Int(number) => *left_value > number as f32,
+                DataValue::Long(number) => *left_value > number as f32,
+                DataValue::Float(number) => *left_value > number,
+                DataValue::Double(number) => (*left_value as f64) > number,
 
                 _ => false
             }
@@ -4975,10 +4979,10 @@ pub fn is_greater_than(
 
         DataValue::Double(left_value) => {
             match number.data_value().clone() {
-                DataValue::Int(number) => left_value > number as f64,
-                DataValue::Long(number) => left_value > number as f64,
-                DataValue::Float(number) => left_value > number as f64,
-                DataValue::Double(number) => left_value > number,
+                DataValue::Int(number) => *left_value > number as f64,
+                DataValue::Long(number) => *left_value > number as f64,
+                DataValue::Float(number) => *left_value > number as f64,
+                DataValue::Double(number) => *left_value > number,
 
                 _ => false
             }

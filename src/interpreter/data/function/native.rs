@@ -2,6 +2,7 @@ use std::any::Any;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use gc::{Finalize, Trace};
 use crate::interpreter::data::{DataObjectRef, DataTypeConstraintError, LangObjectRef, OptionDataObjectRef, OptionLangObjectRef};
 use crate::interpreter::{operators, Interpreter};
 use crate::interpreter::data::function::native::dyn_fn_lang_native_function_return_type::ReturnType;
@@ -284,9 +285,13 @@ pub fn gen_next_native_func_id() -> NativeFuncId {
     NativeFuncId(id)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct NativeFunction {
+    //SAFETY: There are no GC reference inside NativeFunctionAdapter
+    #[unsafe_ignore_trace]
     function_body: Box<dyn NativeFunctionAdapter>,
+    //SAFETY: There are no GC reference inside NativeFuncId
+    #[unsafe_ignore_trace]
     func_id: NativeFuncId,
 
     value_dependencies: Vec<Box<dyn AnyWithEq>>,
@@ -324,14 +329,14 @@ impl NativeFunction {
     }
 }
 
-pub trait AnyWithEq: Debug {
+pub trait AnyWithEq: Debug + Trace + Finalize {
     fn as_any(&self) -> &dyn Any;
 
     fn is_equals(&self, other: &dyn AnyWithEq, interpreter: &mut Interpreter, pos: CodePosition) -> bool;
     fn is_strict_equals(&self, other: &dyn AnyWithEq, interpreter: &mut Interpreter, pos: CodePosition) -> bool;
 }
 
-impl<T: 'static + PartialEq> AnyWithEq for T where T: Debug {
+impl<T: 'static + PartialEq> AnyWithEq for T where T: Debug + Trace + Finalize {
     fn as_any(&self) -> &dyn Any {
         self
     }

@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use ahash::AHashMap;
+use gc::Gc;
 use crate::interpreter::data::function::FunctionPointerObject;
 use crate::interpreter::data::FunctionPointerObjectRef;
 
@@ -27,7 +27,7 @@ pub fn add_predefined_functions(funcs: &mut AHashMap<Box<str>, FunctionPointerOb
 
     let functions = FunctionPointerObject::create_function_pointer_objects_from_native_functions(functions);
     for (function_name, functions) in functions {
-        funcs.insert(function_name, Rc::new(functions));
+        funcs.insert(function_name, Gc::new(functions));
     }
 }
 
@@ -38,7 +38,7 @@ pub fn add_predefined_linker_functions(funcs: &mut AHashMap<Box<str>, FunctionPo
 
     let functions = FunctionPointerObject::create_function_pointer_objects_from_native_functions(functions);
     for (function_name, functions) in functions {
-        funcs.insert(function_name, Rc::new(functions));
+        funcs.insert(function_name, Gc::new(functions));
     }
 }
 
@@ -125,7 +125,7 @@ mod reset_functions {
 }
 
 mod error_functions {
-    use std::rc::Rc;
+    use gc::Gc;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObject, DataObjectRef, ErrorObject};
     use crate::interpreter::{conversions, Interpreter};
@@ -173,7 +173,7 @@ mod error_functions {
             text_object: DataObjectRef,
         ) -> DataObjectRef {
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_error(Rc::new(ErrorObject::new(
+                data_object.set_error(Gc::new(ErrorObject::new(
                     error_object.error_value().unwrap().err(),
                     Some(&conversions::to_text(interpreter, &text_object, CodePosition::EMPTY))
                 )))
@@ -263,10 +263,10 @@ mod lang_functions {
 }
 
 mod system_functions {
-    use std::rc::Rc;
     use std::{ptr, thread};
     use std::ops::Deref;
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use gc::Gc;
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, OptionDataObjectRef, StructObject};
     use crate::interpreter::{conversions, Interpreter, InterpretingError, StackElement};
@@ -1130,13 +1130,13 @@ mod system_functions {
             }
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_struct(Rc::new(StructObject::new_instance(
+                data_object.set_struct(Gc::new(StructObject::new_instance(
                     interpreter.standard_types["&StackTraceElement"].struct_value().unwrap(),
                     &[
                         DataObjectRef::new(DataObject::new_text(current_stack_element.lang_path())),
                         DataObjectRef::new(DataObject::new_optional_text(current_stack_element.lang_file())),
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_struct(Rc::new(StructObject::new_instance(
+                            data_object.set_struct(Gc::new(StructObject::new_instance(
                                 interpreter.standard_types["&CodePosition"].struct_value().unwrap(),
                                 &[
                                     DataObjectRef::new(DataObject::new_number(current_stack_element.pos().line_number_from() as i32)),
@@ -1189,13 +1189,13 @@ mod system_functions {
                         }
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_struct(Rc::new(StructObject::new_instance(
+                            data_object.set_struct(Gc::new(StructObject::new_instance(
                                 interpreter.standard_types["&StackTraceElement"].struct_value().unwrap(),
                                 &[
                                     DataObjectRef::new(DataObject::new_text(ele.lang_path())),
                                     DataObjectRef::new(DataObject::new_optional_text(ele.lang_file())),
                                     DataObjectRef::new(DataObject::with_update(|data_object| {
-                                        data_object.set_struct(Rc::new(StructObject::new_instance(
+                                        data_object.set_struct(Gc::new(StructObject::new_instance(
                                             interpreter.standard_types["&CodePosition"].struct_value().unwrap(),
                                             &[
                                                 DataObjectRef::new(DataObject::new_number(ele.pos().line_number_from() as i32)),
@@ -4680,7 +4680,7 @@ mod combinator_functions {
 }
 
 mod func_ptr_functions {
-    use std::rc::Rc;
+    use gc::Gc;
     use crate::interpreter::data::function::{Function, FunctionMetadata, FunctionPointerObject};
     use crate::interpreter::{operators, Interpreter};
     use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef};
@@ -4733,7 +4733,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_0_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_0_func_function.copy_with_function_name(&format!(
                     "<argCnt0({function_name})>",
                 ))))
             }).unwrap())
@@ -4790,7 +4790,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_1_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_1_func_function.copy_with_function_name(&format!(
                     "<argCnt1({function_name})>",
                 ))))
             }).unwrap())
@@ -4850,7 +4850,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_2_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_2_func_function.copy_with_function_name(&format!(
                     "<argCnt2({function_name})>",
                 ))))
             }).unwrap())
@@ -4913,7 +4913,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_3_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_3_func_function.copy_with_function_name(&format!(
                     "<argCnt3({function_name})>",
                 ))))
             }).unwrap())
@@ -4979,7 +4979,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_4_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_4_func_function.copy_with_function_name(&format!(
                     "<argCnt4({function_name})>",
                 ))))
             }).unwrap())
@@ -5048,7 +5048,7 @@ mod func_ptr_functions {
             ));
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_function_pointer(Rc::new(arg_cnt_5_func_function.copy_with_function_name(&format!(
+                data_object.set_function_pointer(Gc::new(arg_cnt_5_func_function.copy_with_function_name(&format!(
                     "<argCnt5({function_name})>",
                 ))))
             }).unwrap())
@@ -5096,6 +5096,7 @@ mod array_functions {
     use std::cell::RefCell;
     use std::cmp::Ordering;
     use std::rc::Rc;
+    use gc::Gc;
     use crate::interpreter::data::function::{Function, FunctionMetadata, FunctionPointerObject};
     use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataType, OptionDataObjectRef};
@@ -6577,7 +6578,7 @@ mod array_functions {
                         ));
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_function_pointer(Rc::new(func))
+                            data_object.set_function_pointer(Gc::new(func))
                         }).unwrap())
                     };
 
@@ -6704,7 +6705,7 @@ mod array_functions {
                         ));
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_function_pointer(Rc::new(func))
+                            data_object.set_function_pointer(Gc::new(func))
                         }).unwrap())
                     };
 
@@ -7271,6 +7272,7 @@ mod list_functions {
     use std::cmp::Ordering;
     use std::collections::VecDeque;
     use std::rc::Rc;
+    use gc::Gc;
     use crate::interpreter::data::function::{Function, FunctionMetadata, FunctionPointerObject};
     use crate::interpreter::{conversions, operators, Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataType, OptionDataObjectRef};
@@ -8791,7 +8793,7 @@ mod list_functions {
                         ));
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_function_pointer(Rc::new(func))
+                            data_object.set_function_pointer(Gc::new(func))
                         }).unwrap())
                     };
 
@@ -8918,7 +8920,7 @@ mod list_functions {
                         ));
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_function_pointer(Rc::new(func))
+                            data_object.set_function_pointer(Gc::new(func))
                         }).unwrap())
                     };
 
@@ -9147,7 +9149,7 @@ mod list_functions {
 }
 
 mod struct_functions {
-    use std::rc::Rc;
+    use gc::Gc;
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::{Interpreter, InterpretingError};
     use crate::interpreter::data::{DataObject, DataObjectRef, OptionDataObjectRef, StructObject};
@@ -9194,7 +9196,7 @@ mod struct_functions {
             match ret {
                 Ok(ret) => {
                     DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_struct(Rc::new(ret))
+                        data_object.set_struct(Gc::new(ret))
                     }).unwrap())
                 },
 
@@ -9257,7 +9259,7 @@ mod struct_functions {
             match ret {
                 Ok(ret) => {
                     DataObjectRef::new(DataObject::with_update(|data_object| {
-                        data_object.set_struct(Rc::new(ret))
+                        data_object.set_struct(Gc::new(ret))
                     }).unwrap())
                 },
 

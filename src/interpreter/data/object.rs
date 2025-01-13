@@ -1,11 +1,10 @@
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::ptr;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{LazyLock, Mutex};
+use gc::{Finalize, Gc, GcCell, Trace};
 use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, DataTypeConstraintError, FunctionPointerObjectRef, LangObjectRef, OptionLangObjectRef, Visibility};
 use crate::interpreter::data::function::{FunctionPointerObject, InternalFunction};
 use crate::interpreter::Interpreter;
@@ -14,13 +13,13 @@ use crate::utils;
 static NEXT_CLASS_ID: AtomicI64 = AtomicI64::new(0);
 pub(super) static CLASS_ID_TO_SUPER_CLASS_IDS: LazyLock<Mutex<HashMap<i64, Vec<i64>>>> = LazyLock::new(Default::default);
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct LangObjectObject {
     super_level: usize,
 
     members: Vec<DataObjectRef>,
 
-    class_base_definition: Rc<RefCell<LangObject>>,
+    class_base_definition: LangObjectRef,
 
     /**
      * false for classes and uninitialized objects, true for objects where post construct was called
@@ -32,7 +31,7 @@ impl LangObjectObject {
     pub fn new(
         super_level: usize,
         members: Vec<DataObjectRef>,
-        class_base_definition: Rc<RefCell<LangObject>>,
+        class_base_definition: LangObjectRef,
         initialized: bool,
     ) -> Self {
         Self { super_level, members, class_base_definition, initialized }
@@ -46,7 +45,7 @@ impl LangObjectObject {
         &self.members
     }
 
-    pub fn class_base_definition(&self) -> &Rc<RefCell<LangObject>> {
+    pub fn class_base_definition(&self) -> &LangObjectRef {
         &self.class_base_definition
     }
 
@@ -55,14 +54,18 @@ impl LangObjectObject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct MemberDefinition {
     name: Box<str>,
 
+    //SAFETY: There are no GC reference inside DataTypeConstraint
+    #[unsafe_ignore_trace]
     type_constraint: Option<Box<DataTypeConstraint>>,
 
     final_flag: bool,
 
+    //SAFETY: There are no GC reference inside Visibility
+    #[unsafe_ignore_trace]
     member_of_visibility: Visibility,
     member_of_class: LangObjectRef,
 }
@@ -105,7 +108,7 @@ impl MemberDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct LangObjectClass {
     members: Vec<MemberDefinition>,
 
@@ -130,13 +133,13 @@ impl LangObjectClass {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub enum LangObjectData {
     Class(LangObjectClass),
     Object(LangObjectObject),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct LangObject {
     pub(super) class_id: i64,
 
@@ -266,7 +269,7 @@ impl LangObject {
             class_id_to_super_class_ids.insert(class_id, Vec::from_iter(super_class_ids));
         }
 
-        let new_value = Rc::new(RefCell::new(Self {
+        let new_value = Gc::new(GcCell::new(Self {
             class_id,
 
             class_name: class_name.map(Box::from),
@@ -274,7 +277,7 @@ impl LangObject {
             static_members: Vec::new(),
 
             methods: HashMap::new(),
-            constructors: Rc::new(FunctionPointerObject::new_dummy_definition()),
+            constructors: Gc::new(FunctionPointerObject::new_dummy_definition()),
 
             data: LangObjectData::Class(LangObjectClass::new(
                 Vec::new(),
@@ -302,7 +305,7 @@ impl LangObject {
                     function.clone()
                 });
 
-                static_member.set_function_pointer(Rc::new(func))?;
+                static_member.set_function_pointer(Gc::new(func))?;
             }
         }
 
@@ -614,8 +617,8 @@ impl LangObject {
 
             new_value_data.members = members_new;
             new_value_ref.methods = HashMap::from_iter(methods_new.into_iter().
-                    map(|(key, value)| (key, Rc::new(value))));
-            new_value_ref.constructors = Rc::new(constructors);
+                    map(|(key, value)| (key, Gc::new(value))));
+            new_value_ref.constructors = Gc::new(constructors);
         }
 
         Ok(new_value)
@@ -633,7 +636,7 @@ impl LangObject {
             ));
         }
 
-        let new_value = Rc::new(RefCell::new(Self {
+        let new_value = Gc::new(GcCell::new(Self {
             class_id: class_base_definition.borrow().class_id,
 
             class_name: class_base_definition.borrow().class_name.clone(),
@@ -642,7 +645,7 @@ impl LangObject {
             static_members: class_base_definition.borrow().static_members.clone(),
 
             methods: HashMap::new(),
-            constructors: Rc::new(FunctionPointerObject::new_dummy_definition()),
+            constructors: Gc::new(FunctionPointerObject::new_dummy_definition()),
 
             data: LangObjectData::Object(LangObjectObject::new(
                 0,
@@ -665,7 +668,7 @@ impl LangObject {
 
         let mut methods: HashMap<Box<str>, FunctionPointerObjectRef> = HashMap::with_capacity(class_base_definition.borrow().methods.len());
         for (method_name, method) in class_base_definition.borrow().methods.iter() {
-            methods.insert(method_name.clone(), Rc::new(FunctionPointerObject::copy_with_this_object(method, new_value.clone())?));
+            methods.insert(method_name.clone(), Gc::new(FunctionPointerObject::copy_with_this_object(method, new_value.clone())?));
         }
 
         let constructors = FunctionPointerObject::copy_with_this_object(
@@ -681,7 +684,7 @@ impl LangObject {
 
             new_value_data.members = members;
             new_value_ref.methods = methods;
-            new_value_ref.constructors = Rc::new(constructors);
+            new_value_ref.constructors = Gc::new(constructors);
         }
 
         Ok(new_value)
@@ -832,7 +835,7 @@ impl LangObject {
         Ok(&object.members[index])
     }
 
-    pub fn methods(&self) -> &HashMap<Box<str>, Rc<FunctionPointerObject>> {
+    pub fn methods(&self) -> &HashMap<Box<str>, Gc<FunctionPointerObject>> {
         &self.methods
     }
 
@@ -854,7 +857,7 @@ impl LangObject {
 
                 for (method_name, method) in super_super_methods {
                     if let Some(super_method) = super_methods.get_mut(&method_name) {
-                        *super_method = Rc::new(super_method.copy_with_added_functions(&method));
+                        *super_method = Gc::new(super_method.copy_with_added_functions(&method));
                     }else {
                         super_methods.insert(method_name, method.clone());
                     }
@@ -862,7 +865,7 @@ impl LangObject {
             }else {
                 for (method_name, method) in parent_class.borrow().methods.iter() {
                     if let Some(super_method) = super_methods.get_mut(method_name) {
-                        *super_method = Rc::new(super_method.copy_with_added_functions(method));
+                        *super_method = Gc::new(super_method.copy_with_added_functions(method));
                     }else {
                         super_methods.insert(method_name.clone(), method.clone());
                     }
@@ -922,7 +925,7 @@ impl LangObject {
                         super_constructors_internal(super_level - 1);
 
                 if let Some(super_constructors) = &mut super_constructors {
-                    *super_constructors = Rc::new(super_constructors.copy_with_added_functions(&super_super_constructors));
+                    *super_constructors = Gc::new(super_constructors.copy_with_added_functions(&super_super_constructors));
                 }else {
                     super_constructors = Some(super_super_constructors);
                 }
@@ -931,7 +934,7 @@ impl LangObject {
                 let super_super_constructors = parent_class.constructors();
 
                 if let Some(super_constructors) = &mut super_constructors {
-                    *super_constructors = Rc::new(super_constructors.copy_with_added_functions(&super_super_constructors));
+                    *super_constructors = Gc::new(super_constructors.copy_with_added_functions(&super_super_constructors));
                 }else {
                     super_constructors = Some(super_super_constructors.clone());
                 }

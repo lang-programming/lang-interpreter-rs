@@ -21,6 +21,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Instant;
 use ahash::AHashMap;
+use gc::Gc;
 use include_dir::{include_dir, Dir};
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
@@ -922,7 +923,7 @@ impl Interpreter {
 
             _ => {
                 DataObjectRef::new(DataObject::with_update(|data_object| {
-                    data_object.set_error(Rc::new(ErrorObject::new(
+                    data_object.set_error(Gc::new(ErrorObject::new(
                         InterpretingError::InvalidAstNode,
                         None,
                     )))
@@ -2538,7 +2539,7 @@ impl Interpreter {
 
                         let error_message = error_message.as_deref();
                         self.execution_state.returned_or_thrown_value = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_error(Rc::new(ErrorObject::new(error_value.err(), error_message)))
+                            data_object.set_error(Gc::new(ErrorObject::new(error_value.err(), error_message)))
                         }).unwrap()));
                     }else {
                         error_message = None;
@@ -2554,7 +2555,7 @@ impl Interpreter {
             error_message = None;
 
             self.execution_state.returned_or_thrown_value = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                data_object.set_error(Rc::new(ErrorObject::new(error_type, None)))
+                data_object.set_error(Gc::new(ErrorObject::new(error_type, None)))
             }).unwrap()));
         }
         self.execution_state.is_thrown_value = error_type.error_code() > 0;
@@ -3088,7 +3089,7 @@ impl Interpreter {
                                 map(|(function_name, functions)| {
                                     DataObjectRef::new(DataObject::with_update_final(|data_object| {
                                         data_object.
-                                                set_function_pointer(Rc::new(
+                                                set_function_pointer(Gc::new(
                                                     functions.copy_with_function_name(function_name),
                                                 ))?.
                                                 set_variable_name(Some(function_name))
@@ -3418,7 +3419,7 @@ impl Interpreter {
 
         Some(DataObjectRef::new(DataObject::with_update_final(|data_object| {
             data_object.
-                    set_function_pointer(Rc::new(
+                    set_function_pointer(Gc::new(
                         func.copy_with_function_name(variable_name_orig),
                     ))?.
                     set_variable_name(Some(variable_name_orig))
@@ -4596,7 +4597,7 @@ impl Interpreter {
             };
 
             let func = ret.1;
-            Rc::new(func.copy_with_function_name(original_function_name))
+            Gc::new(func.copy_with_function_name(original_function_name))
         }else if Self::is_var_name_func_ptr_without_prefix(&function_name) {
             let Some(fp) = ret.and_then(|ret| ret.function_pointer_value()) else {
                 return Some(self.set_errno_error_object(
@@ -4630,7 +4631,7 @@ impl Interpreter {
 
                 if let Some(ret) = ret {
                     let func = ret.1;
-                    Rc::new(func.copy_with_function_name(&("func.".to_string() + &function_name)))
+                    Gc::new(func.copy_with_function_name(&("func.".to_string() + &function_name)))
                 }else {
                     //Predefined linker function
                     let ret = self.funcs.iter().find(|(func_name, func)| {
@@ -4648,7 +4649,7 @@ impl Interpreter {
                     };
 
                     let func = ret.1;
-                    Rc::new(func.copy_with_function_name(&("linker.".to_string() + &function_name)))
+                    Gc::new(func.copy_with_function_name(&("linker.".to_string() + &function_name)))
                 }
             }else {
                 return Some(self.set_errno_error_object(
@@ -4969,12 +4970,12 @@ impl Interpreter {
                             copy_with_class_member_attributes(lang_class.clone(), Visibility::Public));
                 }
 
-                data_object.set_function_pointer(Rc::new(fp))
+                data_object.set_function_pointer(Gc::new(fp))
             }).unwrap()));
         };
 
         let ret = if function_definition.overloaded() {
-            let mut internal_function = InternalFunction::new(Rc::new(function));
+            let mut internal_function = InternalFunction::new(Gc::new(function));
             if let Some(lang_class) = &self.current_call_stack_element.lang_class {
                 internal_function = internal_function.copy_with_class_member_attributes(lang_class.clone(), Visibility::Public);
             }
@@ -4982,7 +4983,7 @@ impl Interpreter {
             let fp = function_pointer_data_object.function_pointer_value().unwrap().
                     copy_with_added_function(internal_function);
 
-            function_pointer_data_object.borrow_mut().set_function_pointer(Rc::new(fp)).map(|_| ())
+            function_pointer_data_object.borrow_mut().set_function_pointer(Gc::new(fp)).map(|_| ())
         }else {
             let mut fp = FunctionPointerObject::new(&function_metadata, function);
             if let Some(lang_class) = &self.current_call_stack_element.lang_class {
@@ -4991,7 +4992,7 @@ impl Interpreter {
             }
 
             function_pointer_data_object.borrow_mut().update(|data_object| {
-                data_object.set_function_pointer(Rc::new(fp))?.
+                data_object.set_function_pointer(Gc::new(fp))?.
                         set_type_constraint(Box::new(DataTypeConstraint::from_single_allowed_type(
                             DataType::FUNCTION_POINTER,
                         )))
@@ -5147,7 +5148,7 @@ impl Interpreter {
             ));
         }
 
-        let struct_object = Rc::new(StructObject::new_definition(
+        let struct_object = Gc::new(StructObject::new_definition(
             &interpreted_members,
         ));
 
@@ -7076,7 +7077,7 @@ impl Interpreter {
         for (variable_name, variable) in &data.borrow().var {
             if let Some(function_name) = variable_name.strip_prefix("fp.") {
                 if let Some(function_value) = variable.function_pointer_value() {
-                    self.funcs.insert(Box::from(function_name), Rc::new(function_value.
+                    self.funcs.insert(Box::from(function_name), Gc::new(function_value.
                             copy_with_function_name(&("func.".to_string() + function_name))));
                 }
             }else if matches!(variable.data_type(), DataType::STRUCT | DataType::OBJECT) {
@@ -7260,7 +7261,7 @@ impl Interpreter {
         self.set_errno_internal(error, message, pos, force_no_error_output);
 
         DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_error(Rc::new(ErrorObject::new(error, message)))
+            data_object.set_error(Gc::new(ErrorObject::new(error, message)))
         }).unwrap())
     }
 

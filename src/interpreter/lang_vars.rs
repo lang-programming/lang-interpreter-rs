@@ -1,6 +1,7 @@
 use std::collections::hash_map::Entry;
 use std::path;
 use std::rc::Rc;
+use gc::Gc;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, ErrorObject, OptionDataObjectRef};
 use crate::interpreter::{Interpreter, InterpretingError};
 use crate::utils;
@@ -98,7 +99,7 @@ fn add_error_lang_vars(interpreter: &mut Interpreter) {
         let error_name = error.name();
         let variable_name = "$LANG_ERROR_".to_string() + error_name;
         add_lang_var(interpreter, &variable_name, DataObject::with_update_final(|data_object| {
-            data_object.set_error(Rc::new(ErrorObject::new(error, None)))
+            data_object.set_error(Gc::new(ErrorObject::new(error, None)))
         }).unwrap());
         let variable_name = "$LANG_ERRNO_".to_string() + error_name;
         add_lang_var(interpreter, &variable_name, DataObject::with_update_final(|data_object| {

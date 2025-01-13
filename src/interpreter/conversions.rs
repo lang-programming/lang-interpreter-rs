@@ -1,8 +1,7 @@
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::ops::Deref;
-use std::rc::Rc;
 use std::str::FromStr;
+use gc::{Gc, GcCell};
 use crate::interpreter::data::{DataObject, DataObjectRef, DataValue, Number, OptionDataObjectRef, StructObject};
 use crate::interpreter::Interpreter;
 use crate::lexer::CodePosition;
@@ -32,7 +31,7 @@ fn call_conversion_method(
 
 //DataType conversion methods
 pub fn convert_byte_buffer_to_text(
-    operand: Rc<RefCell<Box<[u8]>>>,
+    operand: Gc<GcCell<Box<[u8]>>>,
 ) -> String {
     let mut builder = String::new();
 
@@ -75,7 +74,7 @@ fn convert_to_text_max_recursion(ele: &DataObjectRef) -> String {
 
 fn convert_array_to_text(
     interpreter: &mut Interpreter,
-    operand: Rc<RefCell<Box<[DataObjectRef]>>>,
+    operand: Gc<GcCell<Box<[DataObjectRef]>>>,
     recursion_step: usize,
     pos: CodePosition,
 ) -> String {
@@ -100,7 +99,7 @@ fn convert_array_to_text(
 
 fn convert_list_to_text(
     interpreter: &mut Interpreter,
-    operand: Rc<RefCell<VecDeque<DataObjectRef>>>,
+    operand: Gc<GcCell<VecDeque<DataObjectRef>>>,
     recursion_step: usize,
     pos: CodePosition,
 ) -> String {
@@ -125,7 +124,7 @@ fn convert_list_to_text(
 
 fn convert_struct_to_text(
     interpreter: &mut Interpreter,
-    operand: Rc<StructObject>,
+    operand: Gc<StructObject>,
     recursion_step: usize,
     pos: CodePosition,
 ) -> String {
@@ -174,27 +173,27 @@ pub fn to_text_internal(
         return convert_to_text_max_recursion(&operand);
     }
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) |
         DataValue::ArgumentSeparator(value) => {
             value.to_string()
         },
 
         DataValue::ByteBuffer(value) => {
-            convert_byte_buffer_to_text(value)
+            convert_byte_buffer_to_text(value.clone())
         },
 
         DataValue::Array(value) => {
-            convert_array_to_text(interpreter, value, recursion_step, pos)
+            convert_array_to_text(interpreter, value.clone(), recursion_step, pos)
         },
 
         DataValue::List(value) => {
-            convert_list_to_text(interpreter, value, recursion_step, pos)
+            convert_list_to_text(interpreter, value.clone(), recursion_step, pos)
         },
 
         DataValue::VarPointer(value) => {
             format!(
-                "-->{{{}}}", to_text_internal(interpreter, &value, recursion_step - 1, pos),
+                "-->{{{}}}", to_text_internal(interpreter, value, recursion_step - 1, pos),
             )
         },
 
@@ -207,7 +206,7 @@ pub fn to_text_internal(
         },
 
         DataValue::Struct(value) => {
-            convert_struct_to_text(interpreter, value, recursion_step, pos)
+            convert_struct_to_text(interpreter, value.clone(), recursion_step, pos)
         },
 
         DataValue::Object(value) => {
@@ -324,33 +323,33 @@ pub fn to_int(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             if value.trim().len() == value.len() {
-                i32::from_str(&value).ok()
+                i32::from_str(value).ok()
             }else {
                 None
             }
         },
 
         DataValue::Char(value) => {
-            Some(value as i32)
+            Some(*value as i32)
         },
 
         DataValue::Int(value) => {
-            Some(value)
+            Some(*value)
         },
 
         DataValue::Long(value) => {
-            Some(value as i32)
+            Some(*value as i32)
         },
 
         DataValue::Float(value) => {
-            Some(value as i32)
+            Some(*value as i32)
         },
 
         DataValue::Double(value) => {
-            Some(value as i32)
+            Some(*value as i32)
         },
 
         DataValue::Error(value) => {
@@ -388,33 +387,33 @@ pub fn to_long(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             if value.trim().len() == value.len() {
-                i64::from_str(&value).ok()
+                i64::from_str(value).ok()
             }else {
                 None
             }
         },
 
         DataValue::Char(value) => {
-            Some(value as i64)
+            Some(*value as i64)
         },
 
         DataValue::Int(value) => {
-            Some(value as i64)
+            Some(*value as i64)
         },
 
         DataValue::Long(value) => {
-            Some(value)
+            Some(*value)
         },
 
         DataValue::Float(value) => {
-            Some(value as i64)
+            Some(*value as i64)
         },
 
         DataValue::Double(value) => {
-            Some(value as i64)
+            Some(*value as i64)
         },
 
         DataValue::Error(value) => {
@@ -452,7 +451,7 @@ pub fn to_float(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             if value.trim().len() == value.len() {
                 //Do not allow: NaN, Infinity, xX
@@ -461,30 +460,30 @@ pub fn to_float(
                     return None;
                 }
 
-                f32::from_str(&value).ok()
+                f32::from_str(value).ok()
             }else {
                 None
             }
         },
 
         DataValue::Char(value) => {
-            Some(value as i32 as f32)
+            Some(*value as i32 as f32)
         },
 
         DataValue::Int(value) => {
-            Some(value as f32)
+            Some(*value as f32)
         },
 
         DataValue::Long(value) => {
-            Some(value as f32)
+            Some(*value as f32)
         },
 
         DataValue::Float(value) => {
-            Some(value)
+            Some(*value)
         },
 
         DataValue::Double(value) => {
-            Some(value as f32)
+            Some(*value as f32)
         },
 
         DataValue::Error(value) => {
@@ -522,7 +521,7 @@ pub fn to_double(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             if value.trim().len() == value.len() {
                 //Do not allow: NaN, Infinity, xX
@@ -531,30 +530,30 @@ pub fn to_double(
                     return None;
                 }
 
-                f64::from_str(&value).ok()
+                f64::from_str(value).ok()
             }else {
                 None
             }
         },
 
         DataValue::Char(value) => {
-            Some(value as i32 as f64)
+            Some(*value as i32 as f64)
         },
 
         DataValue::Int(value) => {
-            Some(value as f64)
+            Some(*value as f64)
         },
 
         DataValue::Long(value) => {
-            Some(value as f64)
+            Some(*value as f64)
         },
 
         DataValue::Float(value) => {
-            Some(value as f64)
+            Some(*value as f64)
         },
 
         DataValue::Double(value) => {
-            Some(value)
+            Some(*value)
         },
 
         DataValue::Error(value) => {
@@ -592,7 +591,7 @@ pub fn to_byte_buffer(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::ByteBuffer(value) => {
             Some(value.borrow().clone())
         },
@@ -612,7 +611,7 @@ pub fn to_array(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Array(value) => {
             Some(value.borrow().clone())
         },
@@ -645,7 +644,7 @@ pub fn to_list(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Array(value) => {
             Some(VecDeque::from(Vec::from(value.borrow().deref().clone())))
         },
@@ -680,29 +679,29 @@ pub fn to_bool(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             !value.is_empty()
         },
 
         DataValue::Char(value) => {
-            value != '\0'
+            *value != '\0'
         },
 
         DataValue::Int(value) => {
-            value != 0
+            *value != 0
         },
 
         DataValue::Long(value) => {
-            value != 0
+            *value != 0
         },
 
         DataValue::Float(value) => {
-            value != 0.0
+            *value != 0.0
         },
 
         DataValue::Double(value) => {
-            value != 0.0
+            *value != 0.0
         },
 
         DataValue::ByteBuffer(value) => {
@@ -752,7 +751,7 @@ pub fn to_number(
         None => operand.clone(),
     };
 
-    match operand.data_value() {
+    match &operand.data_value() {
         DataValue::Text(value) => {
             if value.trim().len() == value.len() {
                 //Do not allow: NaN, Infinity, xX
@@ -762,7 +761,7 @@ pub fn to_number(
                 }
 
                 //INT
-                let ret = i32::from_str(&value).ok();
+                let ret = i32::from_str(value).ok();
                 if let Some(ret) = ret {
                     return Some(ret.into())
                 }
@@ -771,7 +770,7 @@ pub fn to_number(
                 let ret = if value.ends_with("l") || value.ends_with("L") {
                     i64::from_str(&value[..value.len() - 1]).ok()
                 }else {
-                    i64::from_str(&value).ok()
+                    i64::from_str(value).ok()
                 };
                 if let Some(ret) = ret {
                     return Some(ret.into())
@@ -786,30 +785,30 @@ pub fn to_number(
                 }
 
                 //DOUBLE
-                f64::from_str(&value).ok().map(Number::from)
+                f64::from_str(value).ok().map(Number::from)
             }else {
                 None
             }
         },
 
         DataValue::Char(value) => {
-            Some((value as i32).into())
+            Some((*value as i32).into())
         },
 
         DataValue::Int(value) => {
-            Some(value.into())
+            Some((*value).into())
         },
 
         DataValue::Long(value) => {
-            Some(value.into())
+            Some((*value).into())
         },
 
         DataValue::Float(value) => {
-            Some(value.into())
+            Some((*value).into())
         },
 
         DataValue::Double(value) => {
-            Some(value.into())
+            Some((*value).into())
         },
 
         DataValue::Error(value) => {

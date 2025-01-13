@@ -1,11 +1,10 @@
 pub mod native;
 
-use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::ops::Deref;
 use std::ptr;
-use std::rc::Rc;
+use gc::{Finalize, Gc, Trace};
 use crate::interpreter::{conversions, data, operators, Interpreter, InterpretingError};
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataTypeConstraint, DataTypeConstraintError, LangObjectRef, OptionDataObjectRef, OptionLangObjectRef, Visibility};
 use crate::interpreter::data::function::native::NativeFunction;
@@ -73,9 +72,10 @@ impl NormalFunction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub enum FunctionData {
-    Normal(NormalFunction),
+    //SAFETY: There are no GC reference inside NormalFunction
+    Normal(#[unsafe_ignore_trace] NormalFunction),
     Native(NativeFunction),
 }
 
@@ -99,14 +99,20 @@ impl FunctionData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct Function {
-    function: Rc<FunctionData>,
+    function: Gc<FunctionData>,
 
+    //SAFETY: There are no GC reference inside Parameter
+    #[unsafe_ignore_trace]
     parameter_list: Vec<Parameter>,
 
+    //SAFETY: There are no GC reference inside VarArgsType
+    #[unsafe_ignore_trace]
     var_args_parameter: Option<(usize, VarArgsType)>,
 
+    //SAFETY: There are no GC reference inside DataTypeConstraint
+    #[unsafe_ignore_trace]
     return_value_type_constraint: Option<Box<DataTypeConstraint>>,
 
     combinator_function_call_count: Option<usize>,
@@ -124,7 +130,7 @@ impl Function {
             panic!("Normal function parameter count does not match parameter count of function metadata");
         }
 
-        Self::new(Rc::new(FunctionData::Normal(function)), metadata)
+        Self::new(Gc::new(FunctionData::Normal(function)), metadata)
     }
 
     pub fn new_native(
@@ -135,11 +141,11 @@ impl Function {
             panic!("Native function parameter count (without interpreter and without this object parameter) does not match parameter count of function metadata");
         }
 
-        Self::new(Rc::new(FunctionData::Native(function)), metadata)
+        Self::new(Gc::new(FunctionData::Native(function)), metadata)
     }
 
     fn new(
-        function: Rc<FunctionData>,
+        function: Gc<FunctionData>,
         metadata: &FunctionMetadata,
     ) -> Self {
         let mut var_args_parameter = None;
@@ -328,7 +334,7 @@ impl Function {
                     let mut number_data_object = DataObject::new();
                     number_data_object.set_number(number).unwrap();
 
-                    Rc::new(RefCell::new(number_data_object))
+                    DataObjectRef::new(number_data_object)
                 })
             }else {
                 None
@@ -428,7 +434,7 @@ impl Function {
                                 CodePosition::EMPTY,
                             )).unwrap_or_default();
 
-                            let mut argument = DataObject::new_text(Rc::from(text));
+                            let mut argument = DataObject::new_text(text);
                             let ret = argument.set_variable_name(
                                 Some(variable_name),
                             );
@@ -576,7 +582,7 @@ impl Function {
                 self.function_name.as_deref().unwrap_or("null") + "-func(" + &function_name + ")>";
 
         let function = Function {
-            function: Rc::clone(&self.function),
+            function: Gc::clone(&self.function),
 
             parameter_list: self.parameter_list.clone(),
 
@@ -599,7 +605,7 @@ impl Function {
         }
 
         DataObjectRef::new(DataObject::with_update(|data_object| {
-            data_object.set_function_pointer(Rc::new(fp))
+            data_object.set_function_pointer(Gc::new(fp))
         }).unwrap())
     }
 
@@ -746,18 +752,20 @@ impl Function {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Trace, Finalize)]
 pub struct InternalFunction {
     super_level: Option<usize>,
 
-    function: Rc<Function>,
+    function: Gc<Function>,
 
     member_of_class: OptionLangObjectRef,
+    //SAFETY: There are no GC reference inside DeprecationInfo
+    #[unsafe_ignore_trace]
     member_visibility: Option<Visibility>,
 }
 
 impl InternalFunction {
-    pub fn new(function: Rc<Function>) -> Self {
+    pub fn new(function: Gc<Function>) -> Self {
         Self {
             super_level: None,
 
@@ -869,7 +877,7 @@ impl InternalFunction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Trace, Finalize)]
 pub struct FunctionPointerObject {
     this_object: OptionLangObjectRef,
 
@@ -877,6 +885,8 @@ pub struct FunctionPointerObject {
     function_info: Option<Box<str>>,
 
     linker_function: bool,
+    //SAFETY: There are no GC reference inside DeprecationInfo
+    #[unsafe_ignore_trace]
     deprecated: Option<DeprecationInfo>,
 
     functions: Vec<InternalFunction>,
@@ -906,7 +916,7 @@ impl FunctionPointerObject {
             let (metadata, functions): (Vec<FunctionMetadata>, Vec<InternalFunction>) = functions.
                     into_iter().
                     map(|(metadata, function)|
-                            (metadata, InternalFunction::new(Rc::new(function)))).
+                            (metadata, InternalFunction::new(Gc::new(function)))).
                     unzip();
 
             #[cfg(debug_assertions)]
@@ -957,7 +967,7 @@ impl FunctionPointerObject {
             deprecated: metadata.deprecated.clone(),
 
             functions: vec![
-                InternalFunction::new(Rc::new(func)),
+                InternalFunction::new(Gc::new(func)),
             ],
         }
     }
@@ -973,7 +983,7 @@ impl FunctionPointerObject {
             deprecated: None,
 
             functions: vec![
-                InternalFunction::new(Rc::new(func)),
+                InternalFunction::new(Gc::new(func)),
             ],
         }
     }

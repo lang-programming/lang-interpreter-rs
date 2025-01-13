@@ -1,23 +1,23 @@
 pub mod function;
 pub mod object;
 
-use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Write as _};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::LazyLock;
+use gc::{Finalize, Gc, GcCell, Trace};
 use crate::interpreter::data::function::FunctionPointerObject;
 use crate::interpreter::data::object::LangObject;
 use crate::interpreter::InterpretingError;
 
 pub type OptionDataObjectRef = Option<DataObjectRef>;
 
-pub type LangObjectRef = Rc<RefCell<LangObject>>;
+pub type LangObjectRef = Gc<GcCell<LangObject>>;
 pub type OptionLangObjectRef = Option<LangObjectRef>;
 
-pub type FunctionPointerObjectRef = Rc<FunctionPointerObject>;
+pub type FunctionPointerObjectRef = Gc<FunctionPointerObject>;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct DataType(u8);
@@ -234,7 +234,7 @@ pub static CONSTRAINT_FUNCTION_POINTER: LazyLock<DataTypeConstraint, fn() -> Dat
     ]));
 
 #[repr(u8)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Trace, Finalize)]
 pub enum DataValue {
     Text(Rc<str>),
     Char(char),
@@ -242,18 +242,19 @@ pub enum DataValue {
     Long(i64),
     Float(f32),
     Double(f64),
-    ByteBuffer(Rc<RefCell<Box<[u8]>>>),
-    Array(Rc<RefCell<Box<[DataObjectRef]>>>),
-    List(Rc<RefCell<VecDeque<DataObjectRef>>>),
+    ByteBuffer(Gc<GcCell<Box<[u8]>>>),
+    Array(Gc<GcCell<Box<[DataObjectRef]>>>),
+    List(Gc<GcCell<VecDeque<DataObjectRef>>>),
     VarPointer(DataObjectRef),
     FunctionPointer(FunctionPointerObjectRef),
-    Struct(Rc<StructObject>),
+    Struct(Gc<StructObject>),
     Object(LangObjectRef),
-    Error(Rc<ErrorObject>),
+    Error(Gc<ErrorObject>),
     Null,
     Void,
     ArgumentSeparator(Rc<str>),
-    Type(DataType),
+    //SAFETY: There are no GC reference inside Visibility
+    Type(#[unsafe_ignore_trace] DataType),
 }
 
 impl DataValue {
@@ -285,15 +286,19 @@ impl DataValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct DataObject {
     value: DataValue,
 
+    //SAFETY: There are no GC reference inside DataTypeConstraint
+    #[unsafe_ignore_trace]
     type_constraint: Box<DataTypeConstraint>,
 
     variable_name: Option<Box<str>>,
     flags: u8,
     member_of_class_id: i64,
+    //SAFETY: There are no GC reference inside Visibility
+    #[unsafe_ignore_trace]
     member_visibility: Option<Visibility>,
 }
 
@@ -459,7 +464,7 @@ impl DataObject {
         if let DataValue::FunctionPointer(function_pointer) = &data_object.value {
             if let Some(variable_name) = &self.variable_name {
                 if self.variable_name().is_some() && function_pointer.function_name().is_none() {
-                    self.value = DataValue::FunctionPointer(Rc::new(function_pointer.
+                    self.value = DataValue::FunctionPointer(Gc::new(function_pointer.
                             copy_with_function_name(variable_name)));
                 }else {
                     self.value = data_object.value.clone();
@@ -524,12 +529,12 @@ impl DataObject {
         }
 
         self.check_type(DataType::BYTE_BUFFER)?;
-        self.value = DataValue::ByteBuffer(Rc::new(RefCell::new(value)));
+        self.value = DataValue::ByteBuffer(Gc::new(GcCell::new(value)));
 
         Ok(self)
     }
 
-    pub fn byte_buffer_value(&self) -> Option<Rc<RefCell<Box<[u8]>>>> {
+    pub fn byte_buffer_value(&self) -> Option<Gc<GcCell<Box<[u8]>>>> {
         match &self.value {
             DataValue::ByteBuffer(value) => Some(value.clone()),
 
@@ -543,12 +548,12 @@ impl DataObject {
         }
 
         self.check_type(DataType::ARRAY)?;
-        self.value = DataValue::Array(Rc::new(RefCell::new(value)));
+        self.value = DataValue::Array(Gc::new(GcCell::new(value)));
 
         Ok(self)
     }
 
-    pub fn array_value(&self) -> Option<Rc<RefCell<Box<[DataObjectRef]>>>> {
+    pub fn array_value(&self) -> Option<Gc<GcCell<Box<[DataObjectRef]>>>> {
         match &self.value {
             DataValue::Array(value) => Some(value.clone()),
 
@@ -562,12 +567,12 @@ impl DataObject {
         }
 
         self.check_type(DataType::LIST)?;
-        self.value = DataValue::List(Rc::new(RefCell::new(value)));
+        self.value = DataValue::List(Gc::new(GcCell::new(value)));
 
         Ok(self)
     }
 
-    pub fn list_value(&self) -> Option<Rc<RefCell<VecDeque<DataObjectRef>>>> {
+    pub fn list_value(&self) -> Option<Gc<GcCell<VecDeque<DataObjectRef>>>> {
         match &self.value {
             DataValue::List(value) => Some(value.clone()),
 
@@ -603,7 +608,7 @@ impl DataObject {
 
         if let Some(variable_name) = &self.variable_name {
             if self.variable_name().is_some() && value.function_name().is_none() {
-                self.value = DataValue::FunctionPointer(Rc::new(value.
+                self.value = DataValue::FunctionPointer(Gc::new(value.
                         copy_with_function_name(variable_name)));
             }else {
                 self.value = DataValue::FunctionPointer(value);
@@ -623,7 +628,7 @@ impl DataObject {
         }
     }
 
-    pub fn set_struct(&mut self, value: Rc<StructObject>) -> Result<&mut Self, DataTypeConstraintError> {
+    pub fn set_struct(&mut self, value: Gc<StructObject>) -> Result<&mut Self, DataTypeConstraintError> {
         if self.is_final_data() {
             return Ok(self);
         }
@@ -634,7 +639,7 @@ impl DataObject {
         Ok(self)
     }
 
-    pub fn struct_value(&self) -> Option<Rc<StructObject>> {
+    pub fn struct_value(&self) -> Option<Gc<StructObject>> {
         match &self.value {
             DataValue::Struct(value) => Some(value.clone()),
 
@@ -822,7 +827,7 @@ impl DataObject {
         }
     }
 
-    pub fn set_error(&mut self, value: Rc<ErrorObject>) -> Result<&mut Self, DataTypeConstraintError> {
+    pub fn set_error(&mut self, value: Gc<ErrorObject>) -> Result<&mut Self, DataTypeConstraintError> {
         if self.is_final_data() {
             return Ok(self);
         }
@@ -833,7 +838,7 @@ impl DataObject {
         Ok(self)
     }
 
-    pub fn error_value(&self) -> Option<Rc<ErrorObject>> {
+    pub fn error_value(&self) -> Option<Gc<ErrorObject>> {
         match &self.value {
             DataValue::Error(value) => Some(value.clone()),
 
@@ -1049,12 +1054,12 @@ impl Display for DataObject {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct DataObjectRef(Rc<RefCell<DataObject>>);
+#[derive(Debug, Clone, Default, Trace, Finalize)]
+pub struct DataObjectRef(Gc<GcCell<DataObject>>);
 
 impl DataObjectRef {
     pub fn new(data_object: DataObject) -> Self {
-        Self(Rc::new(RefCell::new(data_object)))
+        Self(Gc::new(GcCell::new(data_object)))
     }
 
     pub(crate) fn data_value(&self) -> DataValue {
@@ -1065,15 +1070,15 @@ impl DataObjectRef {
         self.0.borrow().text_value().map(Box::from)
     }
 
-    pub fn byte_buffer_value(&self) -> Option<Rc<RefCell<Box<[u8]>>>> {
+    pub fn byte_buffer_value(&self) -> Option<Gc<GcCell<Box<[u8]>>>> {
         self.0.borrow().byte_buffer_value()
     }
 
-    pub fn array_value(&self) -> Option<Rc<RefCell<Box<[DataObjectRef]>>>> {
+    pub fn array_value(&self) -> Option<Gc<GcCell<Box<[DataObjectRef]>>>> {
         self.0.borrow().array_value()
     }
 
-    pub fn list_value(&self) -> Option<Rc<RefCell<VecDeque<DataObjectRef>>>> {
+    pub fn list_value(&self) -> Option<Gc<GcCell<VecDeque<DataObjectRef>>>> {
         self.0.borrow().list_value()
     }
 
@@ -1085,7 +1090,7 @@ impl DataObjectRef {
         self.0.borrow().function_pointer_value()
     }
 
-    pub fn struct_value(&self) -> Option<Rc<StructObject>> {
+    pub fn struct_value(&self) -> Option<Gc<StructObject>> {
         self.0.borrow().struct_value()
     }
 
@@ -1113,7 +1118,7 @@ impl DataObjectRef {
         self.0.borrow().char_value()
     }
 
-    pub fn error_value(&self) -> Option<Rc<ErrorObject>> {
+    pub fn error_value(&self) -> Option<Gc<ErrorObject>> {
         self.0.borrow().error_value()
     }
 
@@ -1174,23 +1179,24 @@ impl DataObjectRef {
 }
 
 impl Deref for DataObjectRef {
-    type Target = RefCell<DataObject>;
+    type Target = GcCell<DataObject>;
 
     fn deref(&self) -> &Self::Target {
         self.0.deref()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 enum StructData {
-    Definition(Vec<(Box<str>, Option<Box<DataTypeConstraint>>)>),
+    //SAFETY: There are no GC reference inside InterpretingError
+    Definition(#[unsafe_ignore_trace] Vec<(Box<str>, Option<Box<DataTypeConstraint>>)>),
     Instance {
         members: Vec<(Box<str>, DataObjectRef)>,
-        struct_base_definition: Rc<StructObject>,
+        struct_base_definition: Gc<StructObject>,
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Trace, Finalize)]
 pub struct StructObject {
     data: StructData,
 }
@@ -1208,7 +1214,7 @@ impl StructObject {
     }
 
     pub fn new_instance(
-        struct_base_definition: Rc<StructObject>,
+        struct_base_definition: Gc<StructObject>,
         values: &[DataObjectRef],
     ) -> Result<Self, DataTypeConstraintError> {
         let mut members = Vec::with_capacity(values.len());
@@ -1275,7 +1281,7 @@ impl StructObject {
         }
     }
 
-    pub fn base_definition(&self) -> Option<Rc<StructObject>> {
+    pub fn base_definition(&self) -> Option<Gc<StructObject>> {
         match &self.data {
             StructData::Instance { struct_base_definition, .. } =>
                 Some(struct_base_definition.clone()),
@@ -1366,8 +1372,10 @@ impl Display for StructObject {
     }
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Trace, Finalize)]
 pub struct ErrorObject {
+    //SAFETY: There are no GC reference inside InterpretingError
+    #[unsafe_ignore_trace]
     err: InterpretingError,
     message: Option<Box<str>>,
 }
