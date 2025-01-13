@@ -22,7 +22,7 @@
 #![warn(clippy::suboptimal_flops)]
 #![warn(clippy::too_long_first_doc_paragraph)]
 
-//Triggered by for Trace and Finalize derive
+//Triggered by Trace and Finalize derive
 #![allow(non_local_definitions)]
 
 pub(crate) mod regex_patterns;
