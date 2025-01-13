@@ -15,6 +15,10 @@
 /// - `DataObjectRef`
 /// - `()` (= No return value)
 ///
+/// If move is used to capture local values in a closure,
+/// a copy for basic values (like i32) or a clone for Arc/Rc/Gc values must be created and must be
+/// provided to the second argument (After function name and before function metadata) of this macro as `vec![val1, val2, ...]`
+///
 /// # Examples
 ///
 /// ```

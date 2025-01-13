@@ -253,7 +253,7 @@ pub enum DataValue {
     Null,
     Void,
     ArgumentSeparator(Rc<str>),
-    //SAFETY: There are no GC reference inside Visibility
+    //SAFETY: There are no GC reference inside DataType
     Type(#[unsafe_ignore_trace] DataType),
 }
 
@@ -1188,7 +1188,7 @@ impl Deref for DataObjectRef {
 
 #[derive(Debug, Trace, Finalize)]
 enum StructData {
-    //SAFETY: There are no GC reference inside InterpretingError
+    //SAFETY: There are no GC reference inside DataTypeConstraint
     Definition(#[unsafe_ignore_trace] Vec<(Box<str>, Option<Box<DataTypeConstraint>>)>),
     Instance {
         members: Vec<(Box<str>, DataObjectRef)>,
