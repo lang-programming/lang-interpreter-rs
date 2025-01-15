@@ -1238,7 +1238,8 @@ mod system_functions {
 }
 
 mod io_functions {
-    use std::io::{stdin, Read};
+    use std::io;
+    use std::io::{stdin, Read, Write};
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataType, Number, OptionDataObjectRef};
     use crate::interpreter::{conversions, Interpreter, InterpretingError};
@@ -1275,6 +1276,7 @@ mod io_functions {
                     println!("{}", message);
                 }
                 print!("Input: ");
+                let _ = io::stdout().flush();
 
                 let mut line = String::new();
                 let count = stdin().read_line(&mut line);
@@ -1531,6 +1533,7 @@ mod io_functions {
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
             print!("{text}");
+            let _ = io::stdout().flush();
         }
 
         functions.push(crate::lang_func!(
@@ -1585,6 +1588,7 @@ mod io_functions {
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
 
             print!("{out}");
+            let _ = io::stdout().flush();
 
             None
         }
@@ -1608,6 +1612,7 @@ mod io_functions {
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
             eprint!("{text}");
+            let _ = io::stderr().flush();
         }
 
         functions.push(crate::lang_func!(
@@ -1662,6 +1667,7 @@ mod io_functions {
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
 
             eprint!("{out}");
+            let _ = io::stderr().flush();
 
             None
         }
