@@ -12,7 +12,7 @@ const MAX_MODULE_FILE_SIZE: usize = 1024 * 1024 * 1024; //1 GiB
 
 pub fn get_module_file_path(module: &Module, mut current_path: &str, file: &str) -> String {
     if file.starts_with("/") {
-        return utils::remove_dots_from_file_path(file);
+        return utils::remove_dots_from_file_path(file.to_string());
     }
 
     let prefix = format!(
@@ -28,7 +28,7 @@ pub fn get_module_file_path(module: &Module, mut current_path: &str, file: &str)
         return "/".to_string() + &path;
     }
 
-    utils::remove_dots_from_file_path(file)
+    utils::remove_dots_from_file_path(path)
 }
 
 /**

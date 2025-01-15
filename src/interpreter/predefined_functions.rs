@@ -12218,7 +12218,7 @@ mod linker_functions {
         let module = interpreter.current_call_stack_element().module.clone();
         let absolute_path = if inside_lang_standard_implementation {
             "lang".to_string() + &utils::remove_dots_from_file_path(
-                &(interpreter.current_call_stack_element().lang_path()[10..].to_string() + "/" + lang_file_name))
+                interpreter.current_call_stack_element().lang_path()[10..].to_string() + "/" + lang_file_name)
         }else if let Some(module) = &module {
             module_manager::get_module_file_path(module, interpreter.current_call_stack_element().lang_path(), lang_file_name)
         }else if PathBuf::from(lang_file_name).is_absolute() {
@@ -12255,7 +12255,7 @@ mod linker_functions {
                         module.lang_module_configuration().name(),
                         lang_path_tmp,
                     ),
-                    Some(&lang_file_name[lang_file_name.rfind('/').unwrap() + 1..]),
+                    Some(&lang_file_name[lang_file_name.rfind('/').map(|index| index + 1).unwrap_or_default()..]),
                     None,
                     None,
                     None,
