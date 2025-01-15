@@ -5676,6 +5676,7 @@ impl Interpreter {
 
         let mut full_format = &format[..min_end_index + 1];
         let format_type = full_format.as_bytes()[full_format.len() - 1];
+        let format_type_char = format_type as char;
 
         //Parsing format arguments
         let value_specified_index = if full_format.as_bytes()[0] == b'[' {
@@ -5922,7 +5923,7 @@ impl Interpreter {
                 b'd' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let mut output = format!("{}", number.long_value());
@@ -5940,7 +5941,7 @@ impl Interpreter {
                 b'b' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let sign = if number.long_value().is_negative() { "-" } else { "" };
@@ -5961,7 +5962,7 @@ impl Interpreter {
                 b'o' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let sign = if number.long_value().is_negative() { "-" } else { "" };
@@ -5982,7 +5983,7 @@ impl Interpreter {
                 b'x' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let sign = if number.long_value().is_negative() { "-" } else { "" };
@@ -6003,7 +6004,7 @@ impl Interpreter {
                 b'f' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let value = number.double_value();
@@ -6060,7 +6061,7 @@ impl Interpreter {
                 b'c' => {
                     let number = conversions::to_number(self, data_object, CodePosition::EMPTY);
                     let Some(number) = number else {
-                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type}"))));
+                        return Err(FormatSequenceError::InvalidArguments(Box::from(format!("Argument can not be converted to number which is required for %{format_type_char}"))));
                     };
 
                     let code_point = number.int_value() as u32;
