@@ -2054,7 +2054,7 @@ impl Interpreter {
             OperatorType::Math => {
                 let output = match operation.operator() {
                     //Unary
-                    Operator::Non => {
+                    Operator::MathNon => {
                         let left_side_operand = left_side_operand.as_ref().unwrap();
 
                         Some(left_side_operand.clone())
