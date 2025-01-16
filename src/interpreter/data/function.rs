@@ -238,14 +238,17 @@ impl Function {
         let arg_cnt = self.parameter_list.len();
 
         if self.combinator_function_call_count.is_some() {
-            combined_argument_list = combined_argument_list.into_iter().
+            let mut new_combined_argument_list = self.combinator_function_provided_arguments().to_vec();
+
+            new_combined_argument_list.append(&mut combined_argument_list.into_iter().
                     map(|data_object| {
                         let mut new_data_object = DataObject::new();
                         new_data_object.set_data(&data_object.borrow()).unwrap();
 
                         DataObjectRef::new(new_data_object)
-                    }).collect::<Vec<_>>();
-            combined_argument_list.append(&mut self.combinator_function_provided_arguments().to_vec());
+                    }).collect::<Vec<_>>());
+
+            combined_argument_list = new_combined_argument_list;
         }
 
         if self.var_args_parameter.is_some() {
