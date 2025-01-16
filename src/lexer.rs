@@ -693,6 +693,10 @@ impl Lexer {
                     continue;
                 }
 
+                if c == b'#' {
+                    break;
+                }
+
                 if c != b' ' && c != b'\t' {
                     is_last_code_token_in_line = false;
 
