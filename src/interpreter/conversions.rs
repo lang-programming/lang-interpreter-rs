@@ -230,20 +230,32 @@ pub fn to_text_internal(
         },
 
         DataValue::Float(value) => {
-            let ret = value.to_string();
-            if ret.contains(".") {
-                ret
+            if value.is_nan() {
+                "NaN".to_string()
+            }else if value.is_infinite() {
+                (if *value == f32::NEG_INFINITY { "-" } else { "" }).to_string() + "Infinity"
             }else {
-                format!("{ret}.0")
+                let ret = value.to_string();
+                if ret.contains(".") {
+                    ret
+                } else {
+                    format!("{ret}.0")
+                }
             }
         },
 
         DataValue::Double(value) => {
-            let ret = value.to_string();
-            if ret.contains(".") {
-                ret
+            if value.is_nan() {
+                "NaN".to_string()
+            }else if value.is_infinite() {
+                (if *value == f64::NEG_INFINITY { "-" } else { "" }).to_string() + "Infinity"
             }else {
-                format!("{ret}.0")
+                let ret = value.to_string();
+                if ret.contains(".") {
+                    ret
+                } else {
+                    format!("{ret}.0")
+                }
             }
         },
 

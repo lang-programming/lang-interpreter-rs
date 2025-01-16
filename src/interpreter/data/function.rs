@@ -343,7 +343,7 @@ impl Function {
             if matches!(parameter.parameter_type, ParameterType::Callable) &&
                     !utils::is_callable(&combined_argument_list[argument_index]) {
                 return Some(interpreter.set_errno_error_object(
-                    InterpretingError::NoNum,
+                    InterpretingError::InvalidArguments,
                     Some(&format!(
                         "Argument {} (\"{}\") must be callable",
                         argument_index + 1,
