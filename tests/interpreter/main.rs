@@ -31,7 +31,7 @@ fn lang_spec_test() {
     let test_count = interpreter.lang_test_store().test_count();
     let passed_test_count = interpreter.lang_test_store().test_passed_count();
 
-    assert!(test_count > 0, "Lang spec tests where not initialized correctly");
+    assert!(test_count > 0, "Lang spec tests were not initialized correctly");
     assert_eq!(
         test_count,
         passed_test_count,
