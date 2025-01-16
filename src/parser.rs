@@ -1886,8 +1886,8 @@ impl Parser {
 
                             con_expression = tokens[0].value().to_string();
 
-                            //"con." is optional if the curly brackets syntax is used
-                            if ends_with_opening_bracket && !starts_with_con_expression {
+                            //"con." is optional if "{" syntax is used
+                            if !con_expression.starts_with("con.") {
                                 con_expression = "con.".to_string() + &con_expression;
                             }
 
@@ -2092,8 +2092,8 @@ impl Parser {
 
                             con_expression = tokens[0].value().to_string();
 
-                            //"con." is optional if the curly brackets syntax is used
-                            if ends_with_opening_bracket && !starts_with_con_expression {
+                            //"con." is optional if "{" syntax is used
+                            if !con_expression.starts_with("con.") {
                                 con_expression = "con.".to_string() + &con_expression;
                             }
 
@@ -2376,8 +2376,8 @@ impl Parser {
 
                             con_expression = tokens[0].value().to_string();
 
-                            //"con." is optional if the curly brackets syntax is used
-                            if ends_with_opening_bracket && !starts_with_con_expression {
+                            //"con." is optional if "{" syntax is used
+                            if !con_expression.starts_with("con.") {
                                 con_expression = "con.".to_string() + &con_expression;
                             }
 
