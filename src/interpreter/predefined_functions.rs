@@ -1509,6 +1509,9 @@ mod io_functions {
                         );
                     }
 
+                    //Remove trailing newlines
+                    let line = line.trim_end_matches(['\n', '\r']);
+
                     DataObjectRef::new(DataObject::new_text(line))
                 }
             }
