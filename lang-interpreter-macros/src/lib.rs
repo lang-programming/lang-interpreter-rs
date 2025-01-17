@@ -41,6 +41,20 @@ enum ParameterTypeMacroArgs {
     RawVarArgs,
 }
 
+impl ParameterTypeMacroArgs {
+    fn type_name(&self) -> &'static str {
+        match self {
+            ParameterTypeMacroArgs::Normal => "Normal",
+            ParameterTypeMacroArgs::Number => "Number",
+            ParameterTypeMacroArgs::Callable => "Callable",
+            ParameterTypeMacroArgs::Boolean => "Boolean",
+            ParameterTypeMacroArgs::CallByPointer => "CallByPointer",
+            ParameterTypeMacroArgs::VarArgs => "VarArgs",
+            ParameterTypeMacroArgs::RawVarArgs => "RawVarArgs",
+        }
+    }
+}
+
 #[derive(Debug, FromMeta)]
 struct ParameterMacroArgs {
     name: String,
@@ -150,7 +164,7 @@ pub fn lang_func_metadata(
         let parameter_data_type_constraint = util::option_type_constraint_macro_args_to_token_stream(&parameter.type_constraint);
 
         let parameter_type = proc_macro2::Ident::new(
-            &format!("{:?}", parameter.parameter_type),
+            parameter.parameter_type.type_name(),
             Span::mixed_site(),
         );
 
