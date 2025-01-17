@@ -73,14 +73,8 @@ impl DataType {
         }
     }
 
-    pub const fn lang_type_id(&self) -> u8 {
-        self.0
-    }
-}
-
-impl Debug for DataType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let str = match *self {
+    fn type_name(&self) -> &str {
+        match *self {
             Self::TEXT => "TEXT",
             Self::CHAR => "CHAR",
             Self::INT => "INT",
@@ -101,9 +95,23 @@ impl Debug for DataType {
             Self::TYPE => "TYPE",
 
             _ => "invalid"
-        };
+        }
+    }
 
-        f.write_str(str)
+    pub const fn lang_type_id(&self) -> u8 {
+        self.0
+    }
+}
+
+impl Debug for DataType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.type_name())
+    }
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.type_name())
     }
 }
 
@@ -186,7 +194,7 @@ impl DataTypeConstraint {
         }
 
         for data_type in types {
-            let _ = write!(builder, "{data_type:?}|");
+            let _ = write!(builder, "{data_type}|");
         }
 
         builder = builder[..builder.len() - 1].to_string();
@@ -213,7 +221,7 @@ impl Display for DataTypeConstraint {
                 "! "
             },
             self.types.iter().
-                    map(|ele| format!("{ele:?}")).
+                    map(|ele| ele.to_string()).
                     collect::<Vec<_>>().
                     join(", "),
         )

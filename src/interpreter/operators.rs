@@ -4158,7 +4158,7 @@ pub fn op_call(
             return Some(interpreter.set_errno_error_object(
                 InterpretingError::IncompatibleDataType,
                 Some(&format!(
-                    "Data type \"{:?}\" can not be casted to \"{:?}\"!",
+                    "Data type \"{}\" can not be casted to \"{}\"!",
                     arg.data_type(),
                     type_value,
                 )),

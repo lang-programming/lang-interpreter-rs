@@ -18,6 +18,17 @@ impl OperatorType {
     }
 }
 
+impl Display for OperatorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            OperatorType::All => "ALL",
+            OperatorType::General => "GENERAL",
+            OperatorType::Math => "MATH",
+            OperatorType::Condition => "CONDITION",
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Operator {
     //General
@@ -380,6 +391,73 @@ impl Operator {
             Operator::OptionalMemberAccess |
             Operator::MemberAccessPointer => OperatorType::All,
         }
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            //General
+            Operator::Non => "NON",
+            Operator::Len => "LEN",
+            Operator::DeepCopy => "DEEP_COPY",
+            Operator::Concat => "CONCAT",
+            Operator::Spaceship => "SPACESHIP",
+            Operator::Elvis => "ELVIS",
+            Operator::NullCoalescing => "NULL_COALESCING",
+            Operator::InlineIf => "INLINE_IF",
+
+            //Math
+            Operator::MathNon => "MATH_NON",
+            Operator::Pow => "POW",
+            Operator::Pos => "POS",
+            Operator::Inv => "INV",
+            Operator::BitwiseNot => "BITWISE_NOT",
+            Operator::Inc => "INC",
+            Operator::Dec => "DEC",
+            Operator::Mul => "MUL",
+            Operator::Div => "DIV",
+            Operator::TruncDiv => "TRUNC_DIV",
+            Operator::FloorDiv => "FLOOR_DIV",
+            Operator::CeilDiv => "CEIL_DIV",
+            Operator::Mod => "MOD",
+            Operator::Add => "ADD",
+            Operator::Sub => "SUB",
+            Operator::Lshift => "LSHIFT",
+            Operator::Rshift => "RSHIFT",
+            Operator::Rzshift => "RZSHIFT",
+            Operator::BitwiseAnd => "BITWISE_AND",
+            Operator::BitwiseXor => "BITWISE_XOR",
+            Operator::BitwiseOr => "BITWISE_OR",
+
+            //Condition
+            Operator::ConditionalNon => "CONDITIONAL_NON",
+            Operator::Not => "NOT",
+            Operator::InstanceOf => "INSTANCE_OF",
+            Operator::Equals => "EQUALS",
+            Operator::NotEquals => "NOT_EQUALS",
+            Operator::Matches => "MATCHES",
+            Operator::NotMatches => "NOT_MATCHES",
+            Operator::StrictEquals => "STRICT_EQUALS",
+            Operator::StrictNotEquals => "STRICT_NOT_EQUALS",
+            Operator::LessThan => "LESS_THAN",
+            Operator::GreaterThan => "GREATER_THAN",
+            Operator::LessThanOrEquals => "LESS_THAN_OR_EQUALS",
+            Operator::GreaterThanOrEquals => "GREATER_THAN_OR_EQUALS",
+            Operator::And => "AND",
+            Operator::Or => "OR",
+
+            //ALL
+            Operator::Comma => "COMMA",
+            Operator::GetItem => "GET_ITEM",
+            Operator::OptionalGetItem => "OPTIONAL_GET_ITEM",
+            Operator::Slice => "SLICE",
+            Operator::OptionalSlice => "OPTIONAL_SLICE",
+            Operator::MemberAccess => "MEMBER_ACCESS",
+            Operator::MemberAccessThis => "MEMBER_ACCESS_THIS",
+            Operator::OptionalMemberAccess => "OPTIONAL_MEMBER_ACCESS",
+            Operator::MemberAccessPointer => "MEMBER_ACCESS_POINTER",
+        })
     }
 }
 
@@ -1668,7 +1746,7 @@ impl Display for Node {
 
             NodeData::ParsingError { error, message } => {
                 let _ = write!(builder, "ParsingErrorNode: Position: {}", self.pos.to_compact_string());
-                let _ = write!(builder, ", Error: \"{error:?}\"");
+                let _ = write!(builder, ", Error: \"{error}\"");
                 let _ = write!(builder, ", Message: \"{message}\"");
             },
 
@@ -1980,9 +2058,9 @@ impl Display for Node {
             NodeData::Math(operation_expression) |
             NodeData::Condition(operation_expression) => {
                 let _ = write!(builder, "OperationNode: Position: {}", self.pos.to_compact_string());
-                let _ = write!(builder, ", NodeType: \"{:?}\"", operation_expression.operator_type);
-                let _ = write!(builder, ", Operator: \"{:?}\"", operation_expression.operator);
-                let _ = write!(builder, ", OperatorType: \"{:?}\"", operation_expression.operator.operator_type());
+                let _ = write!(builder, ", NodeType: \"{}\"", operation_expression.operator_type);
+                let _ = write!(builder, ", Operator: \"{}\"", operation_expression.operator);
+                let _ = write!(builder, ", OperatorType: \"{}\"", operation_expression.operator.operator_type());
                 builder += ", Operands: {\n";
                 for node in operation_expression.left_side_operand.iter().
                         chain(operation_expression.middle_operand.iter()).

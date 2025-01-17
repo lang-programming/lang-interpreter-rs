@@ -557,12 +557,12 @@ impl AssertResult {
             stack_trace: stack_trace.map(Box::from),
             message: message.map(Box::from),
             actual_value: Some(Box::from(&*format!(
-                "\"{}\", Type: {:?}",
+                "\"{}\", Type: {}",
                 actual_value_text,
                 actual_value.data_type(),
             ))),
             expected_value: Some(Box::from(&*format!(
-                "{expected_operator} \"{}\", Type: {:?}",
+                "{expected_operator} \"{}\", Type: {}",
                 expected_value_text,
                 expected_value.data_type(),
             ))),
@@ -806,7 +806,7 @@ impl AssertResult {
             stack_trace: stack_trace.map(Box::from),
             message: message.map(Box::from),
             actual_value: Some(Box::from(&*format!(
-                "\"{}\", Type: {:?}",
+                "\"{}\", Type: {}",
                 actual_value_text,
                 actual_value.data_type(),
             ))),
@@ -825,7 +825,7 @@ impl AssertResult {
         Self::new_generic_data_object_string_result(
             passed, stack_trace, message, actual_value, actual_value_text,
             &format!(
-                "Type: == {expected_type:?}"
+                "Type: == {expected_type}"
             ),
             "assertResultTypeEquals",
         )
@@ -842,7 +842,7 @@ impl AssertResult {
         Self::new_generic_data_object_string_result(
             passed, stack_trace, message, actual_value, actual_value_text,
             &format!(
-                "Type: != {expected_type:?}"
+                "Type: != {expected_type}"
             ),
             "assertResultTypeNotEquals",
         )
@@ -997,11 +997,11 @@ impl AssertResult {
             stack_trace: stack_trace.map(Box::from),
             message: message.map(Box::from),
             actual_value: Some(actual_value.map(|(value, text)| Box::from(&*format!(
-                "\"{text}\", Type: {:?}",
+                "\"{text}\", Type: {}",
                 value.data_type(),
             ))).unwrap_or_else(|| Box::from("nothing returned"))),
             expected_value: Some(Box::from(&*format!(
-                "=== \"{}\", Type: {:?}",
+                "=== \"{}\", Type: {}",
                 expected_value_text,
                 expected_value.data_type(),
             ))),
@@ -1020,7 +1020,7 @@ impl AssertResult {
             stack_trace: stack_trace.map(Box::from),
             message: message.map(Box::from),
             actual_value: Some(actual_value.map(|(value, text)| Box::from(&*format!(
-                "\"{text}\", Type: {:?}",
+                "\"{text}\", Type: {}",
                 value.data_type(),
             ))).unwrap_or_else(|| Box::from("nothing returned"))),
             expected_value: Some(Box::from("== nothing returned")),

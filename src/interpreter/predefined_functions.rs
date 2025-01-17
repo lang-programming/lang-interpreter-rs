@@ -3107,7 +3107,7 @@ mod operation_functions {
             let Some(ret) = ret else {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
-                    Some(&format!("The iter operator is not defined for {:?}", operand.data_type())),
+                    Some(&format!("The iter operator is not defined for {}", operand.data_type())),
                     CodePosition::EMPTY,
                 );
             };
@@ -3132,7 +3132,7 @@ mod operation_functions {
             let Some(ret) = ret else {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
-                    Some(&format!("The hasNext operator is not defined for {:?}", operand.data_type())),
+                    Some(&format!("The hasNext operator is not defined for {}", operand.data_type())),
                     CodePosition::EMPTY,
                 );
             };
@@ -3157,7 +3157,7 @@ mod operation_functions {
             let Some(ret) = ret else {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
-                    Some(&format!("The next operator is not defined for {:?}", operand.data_type())),
+                    Some(&format!("The next operator is not defined for {}", operand.data_type())),
                     CodePosition::EMPTY,
                 );
             };
@@ -3187,7 +3187,7 @@ mod operation_functions {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some(&format!(
-                        "The cast operator is not defined for {:?} and {:?}",
+                        "The cast operator is not defined for {} and {}",
                         left_side_operand.data_type(),
                         right_side_operand.data_type(),
                     )),
@@ -3984,7 +3984,7 @@ mod math_functions {
             let Some(ret) = ret else {
                 return interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
-                    Some(&format!("The abs operator is not defined for {:?}", operand.data_type())),
+                    Some(&format!("The abs operator is not defined for {}", operand.data_type())),
                     CodePosition::EMPTY,
                 );
             };
@@ -5479,7 +5479,7 @@ mod array_functions {
                     return Some(interpreter.set_errno_error_object(
                         InterpretingError::FinalVarChange,
                         Some(&format!(
-                            "For the dereferenced pointer (argument {}) for var args parameter (\"&pointers\") does not allow the type {:?}",
+                            "For the dereferenced pointer (argument {}) for var args parameter (\"&pointers\") does not allow the type {}",
                             i + 1,
                             ele.data_type(),
                         )),
@@ -6422,7 +6422,7 @@ mod array_functions {
                         return interpreter.set_errno_error_object(
                             InterpretingError::InvalidArguments,
                             Some(&format!(
-                                "The element at index {i} of argument 1 (\"&arrays\") must be of type {:?}",
+                                "The element at index {i} of argument 1 (\"&arrays\") must be of type {}",
                                 DataType::ARRAY,
                             )),
                             CodePosition::EMPTY,
@@ -8637,7 +8637,7 @@ mod list_functions {
                         return interpreter.set_errno_error_object(
                             InterpretingError::InvalidArguments,
                             Some(&format!(
-                                "The element at index {i} of argument 1 (\"&lists\") must be of type {:?}",
+                                "The element at index {i} of argument 1 (\"&lists\") must be of type {}",
                                 DataType::LIST,
                             )),
                             CodePosition::EMPTY,

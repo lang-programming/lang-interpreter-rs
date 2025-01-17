@@ -1610,7 +1610,7 @@ impl Interpreter {
                             self.set_errno(
                                 InterpretingError::InvalidArguments,
                                 Some(&format!(
-                                    "Variable with type other than {:?} in catch statement",
+                                    "Variable with type other than {} in catch statement",
                                     DataType::ERROR,
                                 )),
                                 node.pos(),
@@ -1859,14 +1859,14 @@ impl Interpreter {
                     let left_side_operand_data_type = {
                         let left_side_operand = left_side_operand.as_ref().unwrap();
 
-                        format!("{:?}", left_side_operand.data_type())
+                        format!("{}", left_side_operand.data_type())
                     };
 
                     let middle_operand_data_type = {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?},", middle_operand.data_type())
+                            format!(", {},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -1876,7 +1876,7 @@ impl Interpreter {
                         if !operation.operator().is_unary() {
                             let right_side_operand = right_side_operand.as_ref().unwrap();
 
-                            format!(" and {:?}", right_side_operand.data_type())
+                            format!(" and {}", right_side_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2012,14 +2012,14 @@ impl Interpreter {
                     let left_side_operand_data_type = {
                         let left_side_operand = left_side_operand.as_ref().unwrap();
 
-                        format!("{:?}", left_side_operand.data_type())
+                        format!("{}", left_side_operand.data_type())
                     };
 
                     let middle_operand_data_type = {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?},", middle_operand.data_type())
+                            format!(", {},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2029,7 +2029,7 @@ impl Interpreter {
                         if !operation.operator().is_unary() {
                             let right_side_operand = right_side_operand.as_ref().unwrap();
 
-                            format!(" and {:?}", right_side_operand.data_type())
+                            format!(" and {}", right_side_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2243,14 +2243,14 @@ impl Interpreter {
                     let left_side_operand_data_type = {
                         let left_side_operand = left_side_operand.as_ref().unwrap();
 
-                        format!("{:?}", left_side_operand.data_type())
+                        format!("{}", left_side_operand.data_type())
                     };
 
                     let middle_operand_data_type = {
                         if operation.operator().is_ternary() {
                             let middle_operand = middle_operand.as_ref().unwrap();
 
-                            format!(", {:?},", middle_operand.data_type())
+                            format!(", {},", middle_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2260,7 +2260,7 @@ impl Interpreter {
                         if !operation.operator().is_unary() {
                             let right_side_operand = right_side_operand.as_ref().unwrap();
 
-                            format!(" and {:?}", right_side_operand.data_type())
+                            format!(" and {}", right_side_operand.data_type())
                         }else {
                             String::new()
                         }
@@ -2395,7 +2395,7 @@ impl Interpreter {
                             return Some(self.set_errno_error_object(
                                 InterpretingError::InvalidArguments,
                                 Some(&format!(
-                                    "The second operand of the \"{}\" operator must be of type {:?}, {:?}, or {:?}",
+                                    "The second operand of the \"{}\" operator must be of type {}, {}, or {}",
                                     operation.operator().symbol(),
                                     DataType::TYPE,
                                     DataType::STRUCT,
@@ -3829,10 +3829,13 @@ impl Interpreter {
                                             break 'early_ret Some(Some(self.set_errno_error_object(
                                                 InterpretingError::IncompatibleDataType,
                                                 Some(&format!(
-                                                    "Invalid argument (Argument {}) value for var args function parameter \"{}\": Value must be one of {:?}",
+                                                    "Invalid argument (Argument {}) value for var args function parameter \"{}\": Value must be one of [{}]",
                                                     argument_index + j + 1,
                                                     parameter.parameter_name(),
-                                                    parameter.type_constraint().allowed_types()
+                                                    parameter.type_constraint().allowed_types().iter().
+                                                            map(|data_type| data_type.to_string()).
+                                                            collect::<Vec<_>>().
+                                                            join(", "),
                                                 )),
                                                 argument_pos,
                                             )));
@@ -4065,7 +4068,7 @@ impl Interpreter {
                             return Some(self.set_errno_error_object(
                                 InterpretingError::IncompatibleDataType,
                                 Some(&format!(
-                                    "Invalid return value type \"{:?}\"",
+                                    "Invalid return value type \"{}\"",
                                     ret_tmp.data_type(),
                                 )),
                                 return_or_throw_statement_pos,
@@ -5436,7 +5439,7 @@ impl Interpreter {
                     break 'early_ret Some(self.set_errno_error_object(
                         InterpretingError::IncompatibleDataType,
                         Some(&format!(
-                            "Methods must be of type \"{:?}\"",
+                            "Methods must be of type \"{}\"",
                             DataType::FUNCTION_POINTER,
                         )),
                         node.pos(),
@@ -5479,7 +5482,7 @@ impl Interpreter {
                     break 'early_ret Some(self.set_errno_error_object(
                         InterpretingError::IncompatibleDataType,
                         Some(&format!(
-                            "Constructors must be of type \"{:?}\"",
+                            "Constructors must be of type \"{}\"",
                             DataType::FUNCTION_POINTER,
                         )),
                         node.pos(),
@@ -7047,7 +7050,7 @@ impl Interpreter {
 
         let ret = self.init_lang_standard_lang_code();
         if let Err(e) = ret {
-            panic!("Could not load lang standard implementation in lang code: {e:?}")
+            panic!("Could not load lang standard implementation in lang code: {e}")
         }
 
         //Cleanup of temporary scope

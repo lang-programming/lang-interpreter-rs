@@ -109,7 +109,7 @@ fn add_error_lang_vars(interpreter: &mut Interpreter) {
 }
 fn add_type_lang_vars(interpreter: &mut Interpreter) {
     for data_type in DataType::VALUES {
-        let type_name = format!("{data_type:?}");
+        let type_name = data_type.to_string();
         let variable_name = "$LANG_TYPE_".to_string() + &type_name;
         add_lang_var(interpreter, &variable_name, DataObject::with_update_final(|data_object| {
             data_object.set_type(data_type)

@@ -12,6 +12,7 @@ use crate::parser::ast::{
 use crate::{regex_patterns, utils};
 
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 use std::mem;
 use std::str::FromStr;
 
@@ -49,6 +50,20 @@ impl ParsingError {
             ParsingError::InvalidParameter => "Invalid function parameter",
             ParsingError::LexerError => "Error during lexical parsing",
         }
+    }
+}
+
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            ParsingError::BracketMismatch => "BRACKET_MISMATCH",
+            ParsingError::ContFlowArgMissing => "CONT_FLOW_ARG_MISSING",
+            ParsingError::Eof => "EOF",
+            ParsingError::InvalidConPart => "INVALID_CON_PART",
+            ParsingError::InvalidAssignment => "INVALID_ASSIGNMENT",
+            ParsingError::InvalidParameter => "INVALID_PARAMETER",
+            ParsingError::LexerError => "LEXER_ERROR",
+        })
     }
 }
 

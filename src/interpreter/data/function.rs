@@ -305,10 +305,13 @@ impl Function {
                 return Some(interpreter.set_errno_error_object(
                     InterpretingError::InvalidArguments,
                     Some(&format!(
-                        "The type of argument {} (\"{}\") must be one of {:?}",
+                        "The type of argument {} (\"{}\") must be one of [{}]",
                         argument_index + 1,
                         variable_name,
-                        parameter.type_constraint.allowed_types(),
+                        parameter.type_constraint.allowed_types().iter().
+                                map(|data_type| data_type.to_string()).
+                                collect::<Vec<_>>().
+                                join(", "),
                     )),
                     CodePosition::EMPTY,
                 ));
@@ -389,10 +392,13 @@ impl Function {
                                     return Some(interpreter.set_errno_error_object(
                                         InterpretingError::InvalidArguments,
                                         Some(&format!(
-                                            "The type of argument {} (for var args parameter \"{}\") must be one of {:?}",
+                                            "The type of argument {} (for var args parameter \"{}\") must be one of [{}]",
                                             i + j + 1,
                                             variable_name,
-                                            parameter.type_constraint.allowed_types(),
+                                            parameter.type_constraint.allowed_types().iter().
+                                                    map(|data_type| data_type.to_string()).
+                                                    collect::<Vec<_>>().
+                                                    join(", "),
                                         )),
                                         CodePosition::EMPTY,
                                     ));
@@ -553,7 +559,7 @@ impl Function {
                 if !type_constraint.is_type_allowed(ret.data_type()) {
                     return Some(interpreter.set_errno_error_object(
                         InterpretingError::IncompatibleDataType,
-                        Some(&format!("Invalid return value type \"{:?}\"", ret.data_type())),
+                        Some(&format!("Invalid return value type \"{}\"", ret.data_type())),
                         CodePosition::EMPTY,
                     ));
                 }

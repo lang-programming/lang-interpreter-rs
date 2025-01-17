@@ -268,7 +268,7 @@ pub fn to_text_internal(
         },
 
         DataValue::Type(value) => {
-            format!("{value:?}")
+            format!("{value}")
         },
     }
 }
