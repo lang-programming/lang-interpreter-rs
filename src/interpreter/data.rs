@@ -73,7 +73,7 @@ impl DataType {
         }
     }
 
-    fn type_name(&self) -> &str {
+    fn type_name(&self) -> &'static str {
         match *self {
             Self::TEXT => "TEXT",
             Self::CHAR => "CHAR",
