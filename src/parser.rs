@@ -322,7 +322,7 @@ impl Parser {
                                     CodePosition::EMPTY,
                                     ParsingError::Eof,
                                     format!(
-                                        "Invalid token type ({:?}) in multiline text during operator parsing",
+                                        "Invalid token type ({}) in multiline text during operator parsing",
                                         t.token_type(),
                                     ),
                                 ));
@@ -1301,7 +1301,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type in operator expression: \"{:?}\"",
+                            "Invalid token type in operator expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -3035,7 +3035,7 @@ impl Parser {
                                     CodePosition::EMPTY,
                                     ParsingError::Eof,
                                     format!(
-                                        "Invalid token type ({:?}) in multiline text during translation key parsing",
+                                        "Invalid token type ({}) in multiline text during translation key parsing",
                                         t.token_type(),
                                     ),
                                 ));
@@ -3077,7 +3077,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type in translation key expression: \"{:?}\"",
+                            "Invalid token type in translation key expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -3416,7 +3416,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type for struct definition expression: \"{:?}\"",
+                            "Invalid token type for struct definition expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -3849,7 +3849,7 @@ impl Parser {
                             t.pos(),
                             ParsingError::LexerError,
                             format!(
-                                "Invalid token type for class definition expression: \"{:?}\"",
+                                "Invalid token type for class definition expression: \"{}\"",
                                 t.token_type(),
                             ),
                         ));
@@ -4043,7 +4043,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type for class definition expression: \"{:?}\"",
+                            "Invalid token type for class definition expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -4208,7 +4208,7 @@ impl Parser {
                                     CodePosition::EMPTY,
                                     ParsingError::Eof,
                                     format!(
-                                        "Invalid token type ({:?}) in multiline text during token value parsing",
+                                        "Invalid token type ({}) in multiline text during token value parsing",
                                         t.token_type(),
                                     ),
                                 ));
@@ -4242,7 +4242,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type in token value expression: \"{:?}\"",
+                            "Invalid token type in token value expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -4326,7 +4326,7 @@ impl Parser {
                                     CodePosition::EMPTY,
                                     ParsingError::Eof,
                                     format!(
-                                        "Invalid token type ({:?}) in multiline text during simple assignment value parsing",
+                                        "Invalid token type ({}) in multiline text during simple assignment value parsing",
                                         t.token_type(),
                                     ),
                                 ));
@@ -4349,7 +4349,7 @@ impl Parser {
                         CodePosition::EMPTY,
                         ParsingError::LexerError,
                         format!(
-                            "Invalid token type for simple assignment value expression: \"{:?}\"",
+                            "Invalid token type for simple assignment value expression: \"{}\"",
                             t.token_type(),
                         ),
                     ));
@@ -4611,7 +4611,7 @@ impl Parser {
                             CodePosition::EMPTY,
                             ParsingError::LexerError,
                             format!(
-                                "Invalid token type for function parameter list expression: \"{:?}\"",
+                                "Invalid token type for function parameter list expression: \"{}\"",
                                 t.token_type(),
                             ),
                         ));
@@ -4762,7 +4762,7 @@ impl Parser {
                                         CodePosition::EMPTY,
                                         ParsingError::Eof,
                                         format!(
-                                            "Invalid token type ({:?}) in multiline text during simple assignment value parsing",
+                                            "Invalid token type ({}) in multiline text during simple assignment value parsing",
                                             t.token_type(),
                                         ),
                                     ));
@@ -4815,7 +4815,7 @@ impl Parser {
                             CodePosition::EMPTY,
                             ParsingError::LexerError,
                             format!(
-                                "Invalid token type for function argument expression: \"{:?}\"",
+                                "Invalid token type for function argument expression: \"{}\"",
                                 t.token_type(),
                             ),
                         ));

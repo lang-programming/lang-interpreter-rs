@@ -27,6 +27,25 @@ fn empty_block_token_stream() {
 }
 
 #[test]
+fn empty_block_with_comment_token_stream() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("{ # This is a comment\n}");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 2), "{", TokenType::OpeningBlockBracket),
+        Token::new(CodePosition::new(1, 1, 2, 3), " ", TokenType::Whitespace),
+        Token::new(CodePosition::new(1, 1, 3, 4), "#", TokenType::StartComment),
+        Token::new(CodePosition::new(1, 1, 4, 22), " This is a comment", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 22, 22), "", TokenType::EndComment),
+        Token::new(CodePosition::new(1, 1, 22, 23), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 2), "}", TokenType::ClosingBlockBracket),
+        Token::new(CodePosition::new(2, 2, 2, 3), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(3, 3, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
 fn literal_null_token() {
     let mut lexer = Lexer::new();
 
