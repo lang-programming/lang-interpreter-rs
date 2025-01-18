@@ -1113,20 +1113,23 @@ mod system_functions {
 
             let mut module_path: Option<String> = None;
             let mut module_file: Option<&str> = None;
-            if let Some(module) = current_stack_element.module() {
-                let prefix = format!(
-                    "<module:{}[{}]>",
-                    module.file(),
-                    module.lang_module_configuration().name()
-                );
+            //TODO improve when if let chains become stable
+            if current_stack_element.lang_path().starts_with("<module:") {
+                if let Some(module) = current_stack_element.module() {
+                    let prefix = format!(
+                        "<module:{}[{}]>",
+                        module.file(),
+                        module.lang_module_configuration().name()
+                    );
 
-                let mut path = current_stack_element.lang_path()[prefix.len()..].to_string();
-                if !path.starts_with("/") {
-                    path = "/".to_string() + &path;
+                    let mut path = current_stack_element.lang_path()[prefix.len()..].to_string();
+                    if !path.starts_with("/") {
+                        path = "/".to_string() + &path;
+                    }
+
+                    module_path = Some(path);
+                    module_file = current_stack_element.lang_file();
                 }
-
-                module_path = Some(path);
-                module_file = current_stack_element.lang_file();
             }
 
             DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -1172,20 +1175,23 @@ mod system_functions {
                     map(|ele| {
                         let mut module_path: Option<String> = None;
                         let mut module_file: Option<&str> = None;
-                        if let Some(module) = ele.module() {
-                            let prefix = format!(
-                                "<module:{}[{}]>",
-                                module.file(),
-                                module.lang_module_configuration().name()
-                            );
+                        //TODO improve when if let chains become stable
+                        if ele.lang_path().starts_with("<module:") {
+                            if let Some(module) = ele.module() {
+                                let prefix = format!(
+                                    "<module:{}[{}]>",
+                                    module.file(),
+                                    module.lang_module_configuration().name()
+                                );
 
-                            let mut path = ele.lang_path()[prefix.len()..].to_string();
-                            if !path.starts_with("/") {
-                                path = "/".to_string() + &path;
+                                let mut path = ele.lang_path()[prefix.len()..].to_string();
+                                if !path.starts_with("/") {
+                                    path = "/".to_string() + &path;
+                                }
+
+                                module_path = Some(path);
+                                module_file = ele.lang_file();
                             }
-
-                            module_path = Some(path);
-                            module_file = ele.lang_file();
                         }
 
                         DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -12224,7 +12230,8 @@ mod linker_functions {
         let inside_lang_standard_implementation = interpreter.current_call_stack_element().
                 lang_path().starts_with("<standard>");
 
-        let module = interpreter.current_call_stack_element().module.clone();
+        let module = interpreter.current_call_stack_element().lang_path().starts_with("<module:").
+                then(|| interpreter.current_call_stack_element().module.clone()).flatten();
         let absolute_path = if inside_lang_standard_implementation {
             "lang".to_string() + &utils::remove_dots_from_file_path(
                 interpreter.current_call_stack_element().lang_path()[10..].to_string() + "/" + lang_file_name)

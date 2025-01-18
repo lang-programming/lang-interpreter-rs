@@ -145,28 +145,31 @@ fn add_execution_lang_vars(interpreter: &mut Interpreter) {
     }).unwrap());
 
     //Module vars
-    if let Some(module) = &current_stack_element.module {
-        add_lang_var(interpreter, "$LANG_MODULE_STATE", DataObject::new_final_text(if module.is_load() { "load" } else { "unload" }));
+    //TODO improve when if let chains become stable
+    if current_stack_element.lang_path().starts_with("<module:") {
+        if let Some(module) = &current_stack_element.module {
+            add_lang_var(interpreter, "$LANG_MODULE_STATE", DataObject::new_final_text(if module.is_load() { "load" } else { "unload" }));
 
-        let prefix = format!(
-            "<module:{}[{}]>",
-            module.file(),
-            module.lang_module_configuration().name()
-        );
+            let prefix = format!(
+                "<module:{}[{}]>",
+                module.file(),
+                module.lang_module_configuration().name()
+            );
 
-        let mut module_path = current_stack_element.lang_path()[prefix.len()..].to_string();
-        if !module_path.starts_with("/") {
-            module_path = "/".to_string() + &module_path;
-        }
-
-        add_lang_var(interpreter, "$LANG_MODULE_PATH", DataObject::new_final_text(module_path));
-        add_lang_var(interpreter, "$LANG_MODULE_FILE", DataObject::with_update_final(|data_object| {
-            if let Some(lang_file) = current_stack_element.lang_file() {
-                data_object.set_text(lang_file)
-            }else {
-                data_object.set_null()
+            let mut module_path = current_stack_element.lang_path()[prefix.len()..].to_string();
+            if !module_path.starts_with("/") {
+                module_path = "/".to_string() + &module_path;
             }
-        }).unwrap());
+
+            add_lang_var(interpreter, "$LANG_MODULE_PATH", DataObject::new_final_text(module_path));
+            add_lang_var(interpreter, "$LANG_MODULE_FILE", DataObject::with_update_final(|data_object| {
+                if let Some(lang_file) = current_stack_element.lang_file() {
+                    data_object.set_text(lang_file)
+                }else {
+                    data_object.set_null()
+                }
+            }).unwrap());
+        }
     }
 }
 fn add_number_lang_vars(interpreter: &mut Interpreter) {
