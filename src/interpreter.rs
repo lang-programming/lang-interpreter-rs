@@ -7,6 +7,7 @@ pub mod regex;
 pub mod data;
 pub mod conversions;
 pub mod operators;
+pub mod lii;
 pub mod platform;
 pub mod lang_test;
 
