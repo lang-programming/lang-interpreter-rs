@@ -225,12 +225,12 @@ impl LangObject {
 
     /// Returns the "<class-definition>" lang initialization class
     pub(crate) fn dummy_class_definition_class() -> LangObjectRef {
-        Self::DUMMY_CLASS_DEFINITION_CLASS.with(|lang_class| lang_class.clone())
+        Self::DUMMY_CLASS_DEFINITION_CLASS.with(Clone::clone)
     }
 
     /// Returns the "&Object" lang object base class
     pub fn object_class() -> LangObjectRef {
-        Self::OBJECT_CLASS.with(|lang_class| lang_class.clone())
+        Self::OBJECT_CLASS.with(Clone::clone)
     }
 
     #[expect(clippy::too_many_arguments)]
