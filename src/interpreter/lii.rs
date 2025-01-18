@@ -68,7 +68,7 @@ pub fn get_and_clear_errno_error_object(interpreter: &mut Interpreter) -> Interp
 /**
  * Creates a function which is accessible globally in the Interpreter (= in all scopes)<br>
  * If function already exists, it will be overridden<br>
- * Function can be accessed with "func.[funcName]"/"fn.[funcName]" or with "linker.[funcName]"/"ln.[funcName]" and can't be removed nor changed by the Lang file
+ * Function can be accessed with "func.funcName"/"fn.funcName" or with "linker.funcName"/"ln.funcName" and can't be removed nor changed by the Lang file
  */
 pub fn add_predefined_function(interpreter: &mut Interpreter, func_name: impl Into<Box<str>>, function: FunctionPointerObjectRef) {
     interpreter.funcs.insert(func_name.into(), function);

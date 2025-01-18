@@ -4,6 +4,7 @@ use std::rc::Rc;
 use gc::Gc;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, ErrorObject, OptionDataObjectRef};
 use crate::interpreter::{Interpreter, InterpretingError};
+use crate::interpreter::data::object::LangObject;
 use crate::utils;
 
 fn add_lang_var(interpreter: &mut Interpreter, variable_name: &str, mut lang_var: DataObject) {
@@ -196,7 +197,7 @@ fn add_struct_definition_lang_vars(interpreter: &mut Interpreter) {
 }
 fn add_class_definition_lang_vars(interpreter: &mut Interpreter) {
     add_static_lang_var(interpreter, "&Object", DataObject::with_update_final(|data_object| {
-        data_object.set_object(interpreter.get_object_class().clone())
+        data_object.set_object(LangObject::object_class())
     }).unwrap());
     add_static_lang_var(interpreter, "&Maybe", DataObject::with_update_final(|data_object| {
         data_object.set_data(&interpreter.standard_types.get("&Maybe").unwrap().borrow())

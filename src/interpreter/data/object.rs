@@ -154,10 +154,87 @@ pub struct LangObject {
 }
 
 impl LangObject {
+    //Thread local is ok for now, because data objects are neither Send nor Sync
+    thread_local! {
+        static DUMMY_CLASS_DEFINITION_CLASS: LangObjectRef = {
+            let constructor = |_interpreter: &mut Interpreter, _: LangObjectRef| {};
+            let constructor = FunctionPointerObject::from(crate::lang_func!(
+                constructor,
+                crate::lang_func_metadata!(
+                    name="construct",
+                    return_type_constraint(
+                        allowed=["VOID"],
+                    ),
+                ),
+            ));
+
+            let constructor_visibility = vec![Visibility::Public];
+
+            LangObject::new_class(
+                Some("<class-definition>"), Vec::new(), Vec::new(),
+                HashMap::new(), HashMap::new(), HashMap::new(), constructor, constructor_visibility,
+                Vec::new(),
+            ).unwrap()
+        };
+
+        static OBJECT_CLASS: LangObjectRef = {
+            let mut methods = HashMap::new();
+            let mut method_override_flags = HashMap::new();
+            let mut method_visibility = HashMap::new();
+
+            let get_class_method = |_interpreter: &mut Interpreter, this: LangObjectRef| -> DataObjectRef {
+                let mut class_object = DataObject::new();
+                class_object.set_object(this.borrow().base_definition().unwrap()).unwrap();
+
+                DataObjectRef::new(class_object)
+            };
+            let get_class_method = FunctionPointerObject::from(crate::lang_func!(
+                get_class_method,
+                crate::lang_func_metadata!(
+                    name="mp.getClass",
+                    return_type_constraint(
+                        allowed=["OBJECT"],
+                    ),
+                ),
+            ));
+
+            methods.insert(Box::from("mp.getClass"), get_class_method);
+            method_override_flags.insert(Box::from("mp.getClass"), vec![false]);
+            method_visibility.insert(Box::from("mp.getClass"), vec![Visibility::Public]);
+
+            let constructor = |_interpreter: &mut Interpreter, _: LangObjectRef| {};
+            let constructor = FunctionPointerObject::from(crate::lang_func!(
+                constructor,
+                crate::lang_func_metadata!(
+                    name="construct",
+                    return_type_constraint(
+                        allowed=["VOID"],
+                    ),
+                ),
+            ));
+
+            let constructor_visibility = vec![Visibility::Public];
+
+            LangObject::new_class_internal(
+                true, Some("&Object"), Vec::new(), Vec::new(),
+                methods, method_override_flags, method_visibility, constructor, constructor_visibility,
+                Vec::new(),
+            ).unwrap()
+        };
+    }
+
+    /// Returns the "<class-definition>" lang initialization class
+    pub(crate) fn dummy_class_definition_class() -> LangObjectRef {
+        Self::DUMMY_CLASS_DEFINITION_CLASS.with(|lang_class| lang_class.clone())
+    }
+
+    /// Returns the "&Object" lang object base class
+    pub fn object_class() -> LangObjectRef {
+        Self::OBJECT_CLASS.with(|lang_class| lang_class.clone())
+    }
+
     #[expect(clippy::too_many_arguments)]
     pub fn new_class(
-        interpreter: &mut Interpreter,
-
         class_name: Option<&str>,
 
         static_members: Vec<DataObject>,
@@ -174,7 +251,6 @@ impl LangObject {
         parent_classes: Vec<LangObjectRef>,
     ) -> Result<LangObjectRef, DataTypeConstraintError> {
         Self::new_class_internal(
-            interpreter,
             false,
             class_name,
             static_members,
@@ -189,9 +265,7 @@ impl LangObject {
     }
 
     #[expect(clippy::too_many_arguments)]
-    pub(crate) fn new_class_internal(
-        interpreter: &mut Interpreter,
-
+    fn new_class_internal(
         is_base_object: bool,
         class_name: Option<&str>,
 
@@ -211,7 +285,7 @@ impl LangObject {
         let parent_classes = if is_base_object {
             Vec::new()
         }else if parent_classes.is_empty() {
-            vec![interpreter.object_class.as_ref().unwrap().clone()]
+            vec![Self::object_class()]
         }else {
             for parent_class in parent_classes.iter() {
                 if !parent_class.borrow().is_class() {
@@ -292,8 +366,7 @@ impl LangObject {
             if let Some(function_pointer) = static_member.function_pointer_value() {
                 let func = function_pointer.copy_with_mapped_functions(|function| {
                     if let Some(member_of_class) = function.member_of_class() {
-                        if ptr::eq(member_of_class.borrow().deref(),
-                                        interpreter.dummy_class_definition_class.as_ref().unwrap().borrow().deref()) {
+                        if ptr::eq(member_of_class.borrow().deref(), Self::dummy_class_definition_class().borrow().deref()) {
                             return InternalFunction::copy_with_class_member_attributes(
                                 function,
                                 new_value.clone(),

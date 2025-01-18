@@ -66,9 +66,6 @@ pub struct Interpreter {
 
     modules: HashMap<Box<str>, Rc<Module>>,
 
-    object_class: OptionLangObjectRef,
-    dummy_class_definition_class: OptionLangObjectRef,
-
     is_initializing_lang_standard_implementation: bool,
     scope_id: isize,
     current_call_stack_element: StackElement,
@@ -119,9 +116,6 @@ impl Interpreter {
             parser: Parser::new(),
 
             modules: HashMap::new(),
-
-            object_class: None,
-            dummy_class_definition_class: None,
 
             is_initializing_lang_standard_implementation: true,
             scope_id: -1,
@@ -188,10 +182,6 @@ impl Interpreter {
         }
 
         ret
-    }
-
-    pub fn get_object_class(&self) -> &LangObjectRef {
-        self.object_class.as_ref().unwrap()
     }
 
     pub fn lang_test_store(&self) -> &LangTest {
@@ -5197,7 +5187,7 @@ impl Interpreter {
             let new_stack_element = StackElement::new(
                 &current_stack_element.lang_path,
                 current_stack_element.lang_file.as_deref(),
-                Some(self.dummy_class_definition_class.as_ref().unwrap().clone()),
+                Some(LangObject::dummy_class_definition_class()),
                 if let Some(class_name) = class_definition.class_name() {
                     Some(class_name)
                 }else {
@@ -5402,7 +5392,7 @@ impl Interpreter {
                     type_constraint.map(Box::new),
                     member.final_flag(),
                     Visibility::from(member.visibility()),
-                    self.dummy_class_definition_class.as_ref().unwrap().clone(),
+                    LangObject::dummy_class_definition_class(),
                 ));
             }
 
@@ -5520,7 +5510,6 @@ impl Interpreter {
             });
 
             let lang_object = LangObject::new_class(
-                self,
                 class_definition.class_name(),
                 interpreted_static_members,
                 interpreted_members,
@@ -6959,74 +6948,6 @@ impl Interpreter {
     fn init_lang_standard(&mut self) {
         if !self.is_initializing_lang_standard_implementation {
             panic!("Initialization of lang standard implementation was already completed");
-        }
-
-        //&Object class
-        {
-            let mut methods = HashMap::new();
-            let mut method_override_flags = HashMap::new();
-            let mut method_visibility = HashMap::new();
-
-            let get_class_method = |_interpreter: &mut Interpreter, this: LangObjectRef| -> DataObjectRef {
-                let mut class_object = DataObject::new();
-                class_object.set_object(this.borrow().base_definition().unwrap()).unwrap();
-
-                DataObjectRef::new(class_object)
-            };
-            let get_class_method = FunctionPointerObject::from(crate::lang_func!(
-                get_class_method,
-                crate::lang_func_metadata!(
-                    name="mp.getClass",
-                    return_type_constraint(
-                        allowed=["OBJECT"],
-                    ),
-                ),
-            ));
-
-            methods.insert(Box::from("mp.getClass"), get_class_method);
-            method_override_flags.insert(Box::from("mp.getClass"), vec![false]);
-            method_visibility.insert(Box::from("mp.getClass"), vec![Visibility::Public]);
-
-            let constructor = |_interpreter: &mut Interpreter, _: LangObjectRef| {};
-            let constructor = FunctionPointerObject::from(crate::lang_func!(
-                constructor,
-                crate::lang_func_metadata!(
-                    name="construct",
-                    return_type_constraint(
-                        allowed=["VOID"],
-                    ),
-                ),
-            ));
-
-            let constructor_visibility = vec![Visibility::Public];
-
-            self.object_class = Some(LangObject::new_class_internal(
-                self, true, Some("&Object"), Vec::new(), Vec::new(),
-                methods, method_override_flags, method_visibility, constructor, constructor_visibility,
-                Vec::new(),
-            ).unwrap());
-        }
-
-        //<class-definition> tmp class
-        {
-            let constructor = |_interpreter: &mut Interpreter, _: LangObjectRef| {};
-            let constructor = FunctionPointerObject::from(crate::lang_func!(
-                constructor,
-                crate::lang_func_metadata!(
-                    name="construct",
-                    return_type_constraint(
-                        allowed=["VOID"],
-                    ),
-                ),
-            ));
-
-            let constructor_visibility = vec![Visibility::Public];
-
-            self.dummy_class_definition_class = Some(LangObject::new_class(
-                self, Some("<class-definition>"), Vec::new(), Vec::new(),
-                HashMap::new(), HashMap::new(), HashMap::new(), constructor, constructor_visibility,
-                Vec::new(),
-            ).unwrap());
         }
 
         //Init predefined and linker functions
