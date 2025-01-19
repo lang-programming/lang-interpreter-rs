@@ -86,7 +86,7 @@ pub(crate) mod math {
                     let mut string = String::new();
 
                     while i >= radix as $unsignedT {
-                        string.push(DIGITS[i as usize % radix as usize] as char);
+                        string.push(DIGITS[(i % radix as $unsignedT) as usize] as char);
                         i /= radix as $unsignedT;
                     }
                     string.push(DIGITS[i as usize] as char);
