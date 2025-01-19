@@ -27,10 +27,29 @@ pub(crate) fn get_os_version() -> String {
     "TODO: os.version".to_string()
 }
 
-pub(crate) fn get_os_arch() -> String {
-    //TODO
-
-    "TODO: os.arch".to_string()
+pub(crate) fn get_os_arch() -> &'static str {
+    if cfg!(any(
+        target_arch = "aarch64",
+        target_arch = "arm64ec",
+        target_arch = "riscv64",
+        target_arch = "powerpc64",
+        target_arch = "loongarch64",
+        target_arch = "mips64",
+        target_arch = "mips64r6",
+        target_arch = "sparc64",
+    )) {
+        "ia64"
+    }else if cfg!(any(target_arch = "x86_64")) {
+        "amd64"
+    }else if cfg!(any(target_arch = "x86")) {
+        "x86"
+    }else if cfg!(any(target_arch = "wasm64")) {
+        "wasm64"
+    }else if cfg!(any(target_arch = "wasm32")) {
+        "wasm32"
+    }else {
+        "unknown"
+    }
 }
 
 pub(crate) mod math {
