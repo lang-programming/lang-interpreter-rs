@@ -15,10 +15,8 @@ pub(crate) const LINE_SEPARATOR: &str = "\r\n";
 #[cfg(not(windows))]
 pub(crate) const LINE_SEPARATOR: &str = "\n";
 
-pub(crate) fn get_os_name() -> String {
-    //TODO
-
-    "TODO: os.name".to_string()
+pub(crate) fn get_os_name() -> &'static str {
+    std::env::consts::OS
 }
 
 pub(crate) fn get_os_version() -> String {
@@ -67,7 +65,7 @@ pub(crate) mod math {
                 fn wrapping_floor_div(self, rhs: Self) -> Self {
                     let mut ret = self.wrapping_div(rhs);
 
-                    //Round down if signs are different and module != 0
+                    //Round down if signs are different and modulo != 0
                     if (self ^ rhs) < 0 && ret.wrapping_mul(rhs) != self {
                         ret = ret.wrapping_sub(1);
                     }
