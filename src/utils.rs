@@ -74,7 +74,14 @@ pub(crate) mod math {
                 }
 
                 fn wrapping_ceil_div(self, rhs: Self) -> Self {
-                    -(-self).wrapping_floor_div(rhs)
+                    let mut ret = self.wrapping_div(rhs);
+
+                    //Round up if signs are equals and modulo != 0
+                    if (self ^ rhs) >= 0 && ret.wrapping_mul(rhs) != self {
+                        ret = ret.wrapping_add(1);
+                    }
+
+                    ret
                 }
             }
         };
