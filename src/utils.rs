@@ -183,18 +183,16 @@ pub(crate) fn remove_dots_from_file_path(mut file: String) -> String {
     file
 }
 
-/**
- * @return Will return a new DataObject of type VOID if the dataObject is None or the dataObject itself
- */
+/// This function converts an [OptionDataObjectRef] to a [DataObjectRef]
+///
+/// This function will return a [DataObjectRef] of type [VOID](DataType::VOID) if the `data_object` parameter is [None] or the Data Object itself
 pub fn none_to_lang_void(data_object: OptionDataObjectRef) -> DataObjectRef {
     data_object.unwrap_or_else(|| {
         DataObjectRef::new(DataObject::new_void())
     })
 }
 
-/**
- * Will return None if the dataObjects is empty or if dataObjects only contains Rust None values
- */
+/// This function will return [None] if the `data_objects` parameter is empty or if `data_object` only contains [None] values
 pub fn combine_data_objects(
     data_objects: &[DataObjectRef],
     interpreter: &mut Interpreter,
