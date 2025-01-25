@@ -7,52 +7,63 @@ use std::io::{BufRead, BufReader, Error, Read, Write};
 use std::path::{Path, PathBuf};
 use crate::interpreter::data::function::native::NativeError;
 
+/// This trait is used to abstract some io functionality
 pub trait PlatformAPI: Debug {
-    /**
-     * @param langPath Path to the folder
-     * @return Return all files inside the folder located at langPath
-     */
+    /// Return all files inside the folder located at `lang_path`
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_path` - Path to the folder
     fn get_lang_files(&self, lang_path: &Path) -> Result<Vec<PathBuf>, Error>;
 
-    /**
-     * @param langFile Path to the file
-     * @return Return the canonical path of the file located at langFile
-     */
+    /// Return the canonical path of the file located at `lang_file`
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_file` - Path to the file
     fn get_lang_path(&self, lang_file: &Path) -> Result<PathBuf, Error>;
 
-    /**
-     * @param langFile Path to the file
-     * @return Return the file name of the file located at langFile
-     */
+    /// Return the file name of the file located at `lang_file`
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_file` - Path to the file
     fn get_lang_file_name(&self, lang_file: &Path) -> Option<OsString>;
 
-    /**
-     * @param langFile Path to the file
-     * @return Return a reader for the file
-     */
+    /// Return a [BufRead] reader for the file located at `lang_file`
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_file` - Path to the file
     fn get_lang_buffered_reader(&self, lang_file: &Path) -> Result<Box<dyn BufRead>, Error>;
 
-    /**
-     * @param langFile Path to the file
-     * @return Return an input stream for the file
-     */
+    /// Return a [Read] reader for the file located at `lang_file`
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_file` - Path to the file
     fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<dyn Read>, Error>;
 
-    /**
-     * @param langFile Path to the file
-     * @param translationMap The Map of all translations
-     * @return Return true if successful else false (Return false if not implemented)
-     */
+    /// Writes a translation file
+    ///
+    /// # Arguments
+    ///
+    /// * `lang_file` - Path to the file
+    /// * `translation_map` - The map of all translations
     fn write_lang_file(&self, lang_file: &Path, translation_map: HashMap<String, String>) -> Result<(), Error>;
 
-    /**
-     * @param text The text prompt to be shown to the user
-     * @return Return the value inputed by the user
-     * @throws Exception Throw any exception if not implemented or if any other error occurred
-     */
+    /// Return the value inputted by the user
+    ///
+    /// # Arguments
+    ///
+    /// * `text`: The text prompt to be shown to the user
     fn show_input_dialog(&self, text: &str) -> Result<String, NativeError>;
 }
 
+/// This used standard io operations.
+///
+/// The [show_input_dialog](DefaultPlatformAPI::show_input_dialog) method is not implemented and will always return an [Err],
+/// because showing a dialog requires using a platform-dependent GUI API.
 #[derive(Debug)]
 pub struct DefaultPlatformAPI;
 
@@ -143,9 +154,9 @@ impl PlatformAPI for DefaultPlatformAPI {
         Ok(())
     }
 
-    /**
-     * This method is not implemented
-     */
+    /// This method is not implemented
+    ///
+    /// Trait doc: [show_input_dialog](PlatformAPI::show_input_dialog)
     fn show_input_dialog(&self, _text: &str) -> Result<String, NativeError> {
         Err(NativeError::new(
             "Not Implemented",

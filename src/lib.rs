@@ -53,12 +53,16 @@ extern crate lang_interpreter_macros;
 
 /// This macro generates a unique ID for Lang Native Function
 ///
-/// This macro is used within the [crate::lang_func_adapter!] macro
+/// This macro is used within the [crate::lang_func_adapter!] macro.
+///
+/// # Arguments
+///
+/// * `$ident` - The identifier of the static LazyLock function id
 pub use lang_interpreter_macros::lang_func_id;
 
 /// This macro generates an instance of [FunctionMetadata](crate::interpreter::data::function::FunctionMetadata)
 ///
-/// It should be used in combination with [crate::lang_func!]
+/// It should be used in combination with the [crate::lang_func!] macro.
 pub use lang_interpreter_macros::lang_func_metadata;
 
 /// This macro generates a boxed [NativeFunctionAdapter](crate::interpreter::data::function::native::NativeFunctionAdapter)
@@ -67,6 +71,11 @@ pub use lang_interpreter_macros::lang_func_metadata;
 /// The return type of this macro is `(FunctionMetadata, Box<dyn NativeFunctionAdapter>, NativeFuncId)`
 ///
 /// This macro is used within the [crate::lang_func!] macro
+///
+/// # Arguments
+///
+/// * `$func` - An identifier of a rust function or lambda
+/// * `$metadata` - The Lang function metadata ([FunctionMetadata](crate::interpreter::data::function::FunctionMetadata))
 pub use lang_interpreter_macros::lang_func_adapter;
 
 use lang_interpreter_macros::internal_tuple_from_lang_args_impl;

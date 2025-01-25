@@ -17,7 +17,21 @@
 ///
 /// If move is used to capture local values in a closure,
 /// a copy for basic values (like i32) or a clone for Arc/Rc/Gc values must be created and must be
-/// provided to the second argument (After function name and before function metadata) of this macro as `vec![val1, val2, ...]`
+/// provided to the second argument (`$value_dependencies`) (After function name and before function metadata) of this macro
+///
+/// # Arguments
+///
+/// ## 2 Argument variant
+///
+/// * `$func` - An identifier of a rust function or lambda
+/// * `$metadata` - The Lang function metadata ([FunctionMetadata](crate::interpreter::data::function::FunctionMetadata))
+///
+/// ## 3 Argument variant
+///
+/// * `$func` - An identifier of a rust function or lambda
+/// * `$value_dependencies` - A vector (`vec![val1, val2, ...]`) which contains all dependencies which are captured inside closure function
+///                           (This is important for the equals and strict equals operators when comparing lang functions)
+/// * `$metadata` - The Lang function metadata ([FunctionMetadata](crate::interpreter::data::function::FunctionMetadata))
 ///
 /// # Examples
 ///
