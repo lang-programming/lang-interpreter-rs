@@ -1,3 +1,13 @@
+//! # Lang Interpreter RS
+//!
+//! langRS is an implementation of the Lang Programming language.
+//!
+//! This is a rust reimplementation of the Standard Lang interpreter ([Standard Lang GitHub repo](https://github.com/lang-programming/lang-interpreter))
+//!
+//! # Features
+//! - All Lang standard language features
+//! - Support for Rust Native Functions (Native modules are currently **not** supported, but will be in the future: Both statically linked and dynamically linked)
+
 #![warn(clippy::allow_attributes)]
 #![warn(clippy::assigning_clones)]
 #![warn(clippy::cloned_instead_of_copied)]
