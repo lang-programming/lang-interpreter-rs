@@ -131,7 +131,7 @@ pub(crate) mod math {
 
 /// Converts negative indices to positive indices (e.g. `-1` => `len - 1` => last element)
 ///
-/// This function will return None if the converted index is `< 0` or `>= len`
+/// This function will return [None] if the converted index is `< 0` or `>= len`
 /// The returned value is guaranteed to be `< len`
 pub fn wrap_index(index: i32, len: usize) -> Option<usize> {
     let index = index as isize;
@@ -151,7 +151,7 @@ pub fn wrap_index(index: i32, len: usize) -> Option<usize> {
 
 /// Converts negative indices to positive indices (e.g. `-1` => `len - 1` => last element)
 ///
-/// This function will return None if the converted index is `< 0` or `> len`
+/// This function will return [None] if the converted index is `< 0` or `> len`
 /// The returned value is guaranteed to be `<= len`
 pub fn wrap_index_allow_len(index: i32, len: usize) -> Option<usize> {
     let index = index as isize;
@@ -192,7 +192,17 @@ pub fn none_to_lang_void(data_object: OptionDataObjectRef) -> DataObjectRef {
     })
 }
 
-/// This function will return [None] if the `data_objects` parameter is empty or if `data_object` only contains [None] values
+/// This functions combines a list of [DataObjectRef]s into a single [DataObjectRef]
+///
+/// This function will return ...
+/// * ... [None] if `data_objects` is empty.
+/// * ... the first value if there is exactly one [DataObjectRef] in `data_objects`.
+/// * ... the first non-[Void] if there is exactly one non-[Void] [DataObjectRef] in `data_objects`.
+/// * ... a new [Void] value if all values in `data_objects` are [Void].
+/// * ... a new [Text] value by stripping all [Void] values and converting all remaining `data_objects` to [Text] and concatenating them.
+///
+/// [Void]: DataType::VOID
+/// [Text]: DataType::TEXT
 pub fn combine_data_objects(
     data_objects: &[DataObjectRef],
     interpreter: &mut Interpreter,
@@ -229,6 +239,16 @@ pub fn combine_data_objects(
     Some(DataObjectRef::new(DataObject::new_text(builder)))
 }
 
+/// Returns a new [Vec] where all [Argument separator] values in `arguments_list` are stripped.
+///
+/// This function handles these special cases:
+/// * If the first value is an [Argument separator] a [Void] value will be inserted at index 0.
+/// * If the last value is an [Argument separator] a [Void] value will be inserted at the last index.
+/// * If there are two consecutive [Argument separator] values, they will be replaced with a single [Void] value.
+/// * If there are multiple values between to [Argument separator] values, all values between them will be combined via [combine_data_objects].
+///
+/// [Void]: DataType::VOID
+/// [Argument separator]: DataType::ARGUMENT_SEPARATOR
 pub fn combine_arguments_without_argument_separators(
     argument_list: &[DataObjectRef],
     interpreter: &mut Interpreter,
@@ -264,9 +284,9 @@ pub fn combine_arguments_without_argument_separators(
     combined_argument_list
 }
 
-/**
- * @return Returns a list of DataObjects where all arguments are separated by an ARGUMENT_SEPARATOR
- */
+/// Returns a new [Vec] where all arguments are separated with [Argument separator] values.
+///
+/// [Argument separator]: DataType::ARGUMENT_SEPARATOR
 pub fn separate_arguments_with_argument_separators(
     argument_list: &[DataObjectRef],
 ) -> Vec<DataObjectRef> {
@@ -292,11 +312,7 @@ pub fn separate_arguments_with_argument_separators(
     argument_list
 }
 
-/**
- * @param funcA Function A
- * @param funcB Function B
- * @return Returns true if the function signature of funcA and funcB are equals
- */
+/// Returns `true` if the function signature of `func_a` and `func_b` are equals
 pub fn are_function_signatures_equals(func_a: &Function, func_b: &Function) -> bool {
     if func_a.var_args_parameter().map(|var_args| var_args.0) != func_b.var_args_parameter().
             map(|var_args| var_args.0) || func_a.parameter_list().len() != func_b.parameter_list().len() {
@@ -312,12 +328,12 @@ pub fn are_function_signatures_equals(func_a: &Function, func_b: &Function) -> b
     true
 }
 
-/**
- * @param functions Function signatures will be extracted from the FunctionPointerObject
- * @param argumentList The combined argument list
- *
- * @return Returns the most restrictive function for the provided arguments or null if no function signature matches the arguments
- */
+/// Returns the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+///
+/// # Arguments
+///
+/// * `functions` - The functions signatures to be checked against
+/// * `argument_list` - The combined argument list to check for
 pub fn get_most_restrictive_function<'a>(
     functions: &'a FunctionPointerObject,
     argument_list: &[DataObjectRef],
@@ -327,12 +343,12 @@ pub fn get_most_restrictive_function<'a>(
     function_index.and_then(|function_index| functions.get_function(function_index))
 }
 
-/**
- * @param functions Function signatures will be extracted from the FunctionPointerObject
- * @param argumentList The combined argument list
- *
- * @return Returns the index of the most restrictive function for the provided arguments or -1 if no function signature matches the arguments
- */
+/// Returns the overloaded function index of the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+///
+/// # Arguments
+///
+/// * `function` - The overloaded functions signatures to be checked against
+/// * `argument_list` - The combined argument list to check for
 pub fn get_most_restrictive_function_index(
     functions: &FunctionPointerObject,
     argument_list: &[DataObjectRef],
@@ -346,12 +362,12 @@ pub fn get_most_restrictive_function_index(
     get_most_restrictive_function_signature_index_internal(&function_signatures, argument_list)
 }
 
-/**
- * @param functionSignatures Function signatures will be extracted from the LangBaseFunctions
- * @param argumentList The combined argument list
- *
- * @return Returns the index of the most restrictive function signature for the provided arguments
- */
+/// Returns the index of the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+///
+/// # Arguments
+///
+/// * `function_signatures` - The functions signatures to be checked against
+/// * `argument_list` - The combined argument list to check for
 pub fn get_most_restrictive_function_signature_index(
     function_signatures: &[Function],
     argument_list: &[DataObjectRef],
@@ -363,12 +379,7 @@ pub fn get_most_restrictive_function_signature_index(
 
     get_most_restrictive_function_signature_index_internal(&function_signatures, argument_list)
 }
-/**
- * @param varArgsParameterIndices Index of the var args argument of the function signature, if there is no var args argument the value must be set to -1
- * @param argumentList The combined argument list
- *
- * @return Returns the index of the most restrictive function signature for the provided arguments
- */
+
 fn get_most_restrictive_function_signature_index_internal(
     function_signatures: &[(&[Parameter], Option<usize>)],
     argument_list: &[DataObjectRef],
@@ -445,9 +456,25 @@ fn get_most_restrictive_function_signature_index_internal(
     best_function_index
 }
 
-/**
- * @return Returns the version as a tuple or None if the version is invalid
- */
+/// Returns the version as a tuple or `None` if the version is invalid
+///
+/// The returned tuple contains the following version components: (major, minor, bugfix)
+///
+/// # Arguments
+///
+/// * `version` - A version prefixed by `v` which contains all version components (major, minor, and bugfix)
+///
+/// # Examples
+///
+/// ```
+/// use lang_interpreter::utils;
+///
+/// let version = utils::get_version_components("v1.0.0");
+/// assert_eq!(version, Some((1, 0, 0)));
+///
+/// let invalid_version = utils::get_version_components("v1.0");
+/// assert_eq!(invalid_version, None);
+/// ```
 pub fn get_version_components(version: &str) -> Option<(i32, i32, i32)> {
     if version.is_empty() {
         return None;
@@ -481,11 +508,12 @@ pub fn get_version_components(version: &str) -> Option<(i32, i32, i32)> {
     }
 }
 
-/**
- * @return Returns Greater if versionA is older than versionB<br>
- * returns Equal if versionA is newer than versionB<br>
- * returns None if versionA is equalsTo versionB<br>
- */
+/// Returns the order of `version_a` and `version_b`
+///
+/// # Arguments
+///
+/// * `version_a` - A tuple which contains the following version components: (major, minor, bugfix)
+/// * `version_b` - A tuple which contains the following version components: (major, minor, bugfix)
 pub fn compare_versions_components(version_a: (i32, i32, i32), version_b: (i32, i32, i32)) -> Ordering {
     if version_a.0 != version_b.0 {
         return version_a.0.cmp(&version_b.0);
@@ -498,12 +526,12 @@ pub fn compare_versions_components(version_a: (i32, i32, i32), version_b: (i32, 
     version_a.2.cmp(&version_b.2)
 }
 
-/**
- * @return Returns Less if versionA is older than versionB<br>
- * returns Greater if versionA is newer than versionB<br>
- * returns Equal if versionA is equalsTo versionB<br>
- * returns None if at least one argument is invalid
- */
+/// Returns the order of `version_a` and `version_b` or `None` if at least one version is invalid
+///
+/// # Arguments
+///
+/// * `version_a` - A version prefixed by `v` which contains all version components (major, minor, and bugfix)
+/// * `version_b` - A version prefixed by `v` which contains all version components (major, minor, and bugfix)
 pub fn compare_versions_str(version_a: &str, version_b: &str) -> Option<Ordering> {
     let version_a = get_version_components(version_a)?;
     let version_b = get_version_components(version_b)?;
@@ -640,9 +668,7 @@ pub(crate) fn split_off_arguments<T>(list: &mut VecDeque<T>, at: usize) -> VecDe
     argument_list
 }
 
-/**
- * Returns true if the call operator is defined for the provided DataObject else false
- */
+/// Returns true if the call operator is defined for the provided [DataObjectRef] else false
 pub fn is_callable(data_object: &DataObjectRef) -> bool {
     let has_op_method = data_object.object_value().is_some_and(|object_value| {
         !object_value.borrow().is_class() && object_value.borrow().methods().contains_key("op:call")
@@ -655,6 +681,7 @@ pub fn is_callable(data_object: &DataObjectRef) -> bool {
             is_struct_definition || is_object_class
 }
 
+/// Returns true if the member access operator is defined for the provided [DataObjectRef] else false
 pub fn is_member_access_allowed(value_object: &DataObjectRef) -> bool {
     matches!(value_object.data_type(), DataType::ERROR | DataType::STRUCT | DataType::OBJECT)
 }
@@ -685,9 +712,7 @@ impl Error for InvalidTranslationTemplateSyntaxError {}
 #[derive(Debug, Copy, Clone)]
 struct CountRange {
     start_count: i32,
-    /**
-     * If None: All values >= startCount
-     */
+    /// If `None`: All values >= startCount
     end_count: Option<i32>,
 }
 
@@ -721,9 +746,9 @@ impl TranslationPluralizationTemplate {
     }
 }
 
-/**
- * @return Will return a formatted template translation ("{" can be escaped with "{{")
- */
+/// Returns a formatted template translation
+///
+/// `{` can be escaped with `{{`
 pub fn format_translation_template(
     translation_value: &str,
     template_map: HashMap<Box<str>, Box<str>>,
@@ -777,9 +802,9 @@ pub fn format_translation_template(
     Ok(builder)
 }
 
-/**
- * @return Will return a formatted translation with the correct pluralization (";" can be escaped with ";;" and "{" can be escaped with "{{")
- */
+/// Return a formatted translation with the correct pluralization
+///
+/// `;` can be escaped with `;;` and `{` can be escaped with `{{`
 pub fn format_translation_template_pluralization(
     translation_value: &str,
     count: i32,
@@ -787,10 +812,9 @@ pub fn format_translation_template_pluralization(
     format_translation_template_pluralization_with_template(translation_value, count, HashMap::new())
 }
 
-/**
- * @return Will return a formatted translation with the correct pluralization and additional template values [the count template value will be overridden]
- * (";" can be escaped with ";;" and "{" can be escaped with "{{")
- */
+/// Returns a formatted translation with the correct pluralization and additional template values (the count template value will be overridden)
+///
+/// `;` can be escaped with `;;` and `{` can be escaped with `{{`
 pub fn format_translation_template_pluralization_with_template(
     translation_value: &str,
     count: i32,
