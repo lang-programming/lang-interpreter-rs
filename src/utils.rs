@@ -328,7 +328,7 @@ pub fn are_function_signatures_equals(func_a: &Function, func_b: &Function) -> b
     true
 }
 
-/// Returns the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+/// Returns the most restrictive function for the provided arguments or [None] if no function signature matches the arguments
 ///
 /// # Arguments
 ///
@@ -343,7 +343,7 @@ pub fn get_most_restrictive_function<'a>(
     function_index.and_then(|function_index| functions.get_function(function_index))
 }
 
-/// Returns the overloaded function index of the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+/// Returns the overloaded function index of the most restrictive function for the provided arguments or [None] if no function signature matches the arguments
 ///
 /// # Arguments
 ///
@@ -362,7 +362,7 @@ pub fn get_most_restrictive_function_index(
     get_most_restrictive_function_signature_index_internal(&function_signatures, argument_list)
 }
 
-/// Returns the index of the most restrictive function for the provided arguments or `None` if no function signature matches the arguments
+/// Returns the index of the most restrictive function for the provided arguments or [None] if no function signature matches the arguments
 ///
 /// # Arguments
 ///
@@ -456,7 +456,7 @@ fn get_most_restrictive_function_signature_index_internal(
     best_function_index
 }
 
-/// Returns the version as a tuple or `None` if the version is invalid
+/// Returns the version as a tuple or [None] if the version is invalid
 ///
 /// The returned tuple contains the following version components: (major, minor, bugfix)
 ///
@@ -526,7 +526,7 @@ pub fn compare_versions_components(version_a: (i32, i32, i32), version_b: (i32, 
     version_a.2.cmp(&version_b.2)
 }
 
-/// Returns the order of `version_a` and `version_b` or `None` if at least one version is invalid
+/// Returns the order of `version_a` and `version_b` or [None] if at least one version is invalid
 ///
 /// # Arguments
 ///
@@ -712,7 +712,7 @@ impl Error for InvalidTranslationTemplateSyntaxError {}
 #[derive(Debug, Copy, Clone)]
 struct CountRange {
     start_count: i32,
-    /// If `None`: All values >= startCount
+    /// If [None]: All values >= startCount
     end_count: Option<i32>,
 }
 
