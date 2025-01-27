@@ -10,6 +10,13 @@ use crate::utils;
 
 const MAX_MODULE_FILE_SIZE: usize = 1024 * 1024 * 1024; //1 GiB
 
+/// Returns the path inside the module given a lang path
+///
+/// # Arguments
+///
+/// * `module` - The module
+/// * `current_path` - The lang path which must be in this format: `<module:`*name*`[`*path to module*`]>`*path inside module*
+/// * `file` - The path relative to `current_path` to the file inside the module
 pub fn get_module_file_path(module: &Module, mut current_path: &str, file: &str) -> String {
     if file.starts_with("/") {
         return utils::remove_dots_from_file_path(file.to_string());
@@ -31,9 +38,12 @@ pub fn get_module_file_path(module: &Module, mut current_path: &str, file: &str)
     utils::remove_dots_from_file_path(path)
 }
 
-/**
- * @param file Must be absolute (Starts with "/")
- */
+/// Returns the bytes of the file inside the module
+///
+/// # Arguments
+///
+/// * `module` - The module
+/// * `file` - The absolute file path inside the module (Must start with `/`)
 pub fn read_module_lang_file(module: &Module, file: &str) -> Result<Box<[u8]>, Error> {
     let module_lang_bytes = module.zip_data().get(&*("lang".to_string() + file));
     if let Some(module_lang_bytes) = module_lang_bytes {
@@ -46,10 +56,28 @@ pub fn read_module_lang_file(module: &Module, file: &str) -> Result<Box<[u8]>, E
     }
 }
 
+/// Loads a module and returns the value returned by the module or a lang error
+///
+/// This function either forwards an error thrown in the module or a return value if any.
+///
+/// # Arguments
+///
+/// * `interpreter` - The interpreter
+/// * `module_file` - The path to the module file
+/// * `args` - The arguments which will be set as `&LANG_ARGS` inside the module
 pub fn load(interpreter: &mut Interpreter, module_file: &str, args: &[DataObjectRef]) -> OptionDataObjectRef {
     load_unload(interpreter, true, module_file, args)
 }
 
+/// Unloads a module and returns the value returned by the module or a lang error
+///
+/// This function either forwards an error thrown in the module or a return value if any.
+///
+/// # Arguments
+///
+/// * `interpreter` - The interpreter
+/// * `module_name` - The identifier of the module
+/// * `args` - The arguments which will be set as `&LANG_ARGS` inside the module
 pub fn unload(interpreter: &mut Interpreter, module_name: &str, args: &[DataObjectRef]) -> OptionDataObjectRef {
     load_unload(interpreter, false, module_name, args)
 }

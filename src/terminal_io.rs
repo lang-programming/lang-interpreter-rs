@@ -116,7 +116,7 @@ impl TerminalIO {
         if let Some(file) = &mut self.file {
             let err = write!(file, "{log}");
             if let Err(e) = err {
-                //Doesn't use the log_stack_trace method to avoid a stack overflow
+                //Do not use the log_stack_trace method to avoid a stack overflow
                 #[cfg(not(feature = "wasm"))]
                 {
                     eprintln!("{e}");
