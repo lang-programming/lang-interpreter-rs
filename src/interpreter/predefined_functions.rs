@@ -263,9 +263,8 @@ mod lang_functions {
 }
 
 mod system_functions {
-    use std::{ptr, thread};
+    use std::ptr;
     use std::ops::Deref;
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
     use gc::Gc;
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataTypeConstraint, OptionDataObjectRef, StructObject};
@@ -273,6 +272,14 @@ mod system_functions {
     use crate::interpreter::data::function::native::NativeError;
     use crate::lexer::CodePosition;
     use crate::utils;
+
+    #[cfg(not(feature = "wasm"))]
+    use std::thread;
+
+    #[cfg(not(feature = "wasm"))]
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    #[cfg(feature = "wasm")]
+    use web_time::{SystemTime, UNIX_EPOCH};
 
     pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         functions.push(crate::lang_func!(
@@ -302,9 +309,20 @@ mod system_functions {
                 ));
             }
 
-            thread::sleep(Duration::from_millis(milli_seconds as u64));
+            #[cfg(not(feature = "wasm"))]
+            {
+                thread::sleep(Duration::from_millis(milli_seconds as u64));
+            }
 
-            None
+            if cfg!(feature = "wasm") {
+                Some(interpreter.set_errno_error_object(
+                    InterpretingError::FunctionNotSupported,
+                    Some("func.sleep is not supported for WASM"),
+                    CodePosition::EMPTY,
+                ))
+            }else {
+                None
+            }
         }
 
         functions.push(crate::lang_func!(
@@ -1279,9 +1297,9 @@ mod io_functions {
                 interpreter.set_errno(InterpretingError::NoTerminalWarning, None, CodePosition::EMPTY);
 
                 if !message.is_empty() {
-                    println!("{}", message);
+                    lang_println!("{}", message);
                 }
-                print!("Input: ");
+                lang_print!("Input: ");
                 let _ = io::stdout().flush();
 
                 let mut line = String::new();
@@ -1373,9 +1391,9 @@ mod io_functions {
 
                 //Write to standard error if the log level is WARNING or higher
                 if log_level > 3 {
-                    eprintln!("[{:<8}]: {text}", level.name());
+                    lang_eprintln!("[{:<8}]: {text}", level.name());
                 }else {
-                    println!("[{:<8}]: {text}", level.name());
+                    lang_println!("[{:<8}]: {text}", level.name());
                 }
             }
 
@@ -1421,9 +1439,9 @@ mod io_functions {
 
                 //Write to standard error if the log level is WARNING or higher
                 if level.level() > 3 {
-                    eprintln!("[{:<8}]: {text}", level.name());
+                    lang_eprintln!("[{:<8}]: {text}", level.name());
                 }else {
-                    println!("[{:<8}]: {text}", level.name());
+                    lang_println!("[{:<8}]: {text}", level.name());
                 }
             }
 
@@ -1541,7 +1559,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            print!("{text}");
+            lang_print!("{text}");
             let _ = io::stdout().flush();
         }
 
@@ -1563,7 +1581,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            println!("{text}");
+            lang_println!("{text}");
         }
 
         functions.push(crate::lang_func!(
@@ -1596,7 +1614,7 @@ mod io_functions {
 
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
 
-            print!("{out}");
+            lang_print!("{out}");
             let _ = io::stdout().flush();
 
             None
@@ -1620,7 +1638,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            eprint!("{text}");
+            lang_eprint!("{text}");
             let _ = io::stderr().flush();
         }
 
@@ -1642,7 +1660,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            eprintln!("{text}");
+            lang_eprintln!("{text}");
         }
 
         functions.push(crate::lang_func!(
@@ -1675,7 +1693,7 @@ mod io_functions {
 
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
 
-            eprint!("{out}");
+            lang_eprint!("{out}");
             let _ = io::stderr().flush();
 
             None
@@ -13005,7 +13023,7 @@ mod lang_test_functions {
             if let Some(term) = &mut interpreter.term {
                 interpreter.lang_test_store.print_results_to_terminal(term);
             }else {
-                println!("{}", interpreter.lang_test_store.print_results());
+                lang_println!("{}", interpreter.lang_test_store.print_results());
             }
 
             None

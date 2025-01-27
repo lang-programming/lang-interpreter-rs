@@ -98,13 +98,33 @@ impl TerminalIO {
             log += "\n";
         }
 
-        print!("{log}");
+        #[cfg(not(feature = "wasm"))]
+        {
+            print!("{log}");
+        }
+        #[cfg(feature = "wasm")]
+        {
+            match lvl {
+                Level::NotSet | Level::User | Level::Config => web_sys::console::log_1(&log.as_str().into()),
+                Level::Debug => web_sys::console::debug_1(&log.as_str().into()),
+                Level::Info => web_sys::console::info_1(&log.as_str().into()),
+                Level::Warning => web_sys::console::warn_1(&log.as_str().into()),
+                Level::Error | Level::Critical => web_sys::console::error_1(&log.as_str().into()),
+            }
+        }
         
         if let Some(file) = &mut self.file {
             let err = write!(file, "{log}");
             if let Err(e) = err {
                 //Doesn't use the log_stack_trace method to avoid a stack overflow
-                eprintln!("{e}");
+                #[cfg(not(feature = "wasm"))]
+                {
+                    eprintln!("{e}");
+                }
+                #[cfg(feature = "wasm")]
+                {
+                    web_sys::console::error_1(&e.to_string().into());
+                }
             }
         }
     }

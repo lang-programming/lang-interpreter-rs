@@ -1,8 +1,12 @@
 use std::fmt::{Display, Formatter, Write as _};
-use std::time::SystemTime;
 use crate::interpreter::data::{DataObject, DataObjectRef, DataType, DataTypeConstraintError};
 use crate::interpreter::InterpretingError;
 use crate::terminal_io::{Level, TerminalIO};
+
+#[cfg(not(feature = "wasm"))]
+use std::time::SystemTime;
+#[cfg(feature = "wasm")]
+use web_time::SystemTime;
 
 #[derive(Debug)]
 pub struct LangTest {

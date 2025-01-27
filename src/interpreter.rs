@@ -20,7 +20,6 @@ use std::ops::Deref;
 use std::{ptr, str};
 use std::rc::Rc;
 use std::str::FromStr;
-use std::time::Instant;
 use ahash::AHashMap;
 use gc::Gc;
 use include_dir::{include_dir, Dir};
@@ -59,6 +58,11 @@ use crate::terminal_io::{Level, TerminalIO};
 use crate::parser::ast::{Node, NodeData, Operator, OperatorType, AST};
 use crate::parser::{Parser, ParsingError};
 use crate::utils;
+
+#[cfg(not(feature = "wasm"))]
+use std::time::Instant;
+#[cfg(feature = "wasm")]
+use web_time::Instant;
 
 #[derive(Debug)]
 pub struct Interpreter {
@@ -7143,7 +7147,7 @@ impl Interpreter {
                     Self::LOG_TAG,
                 );
             }else {
-                eprintln!("{}", output);
+                lang_eprintln!("{}", output);
             }
         }
 

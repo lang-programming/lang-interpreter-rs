@@ -26,3 +26,12 @@ rand = { version = "0.8.5", features = ["small_rng"] }
 ahash = "0.8.11"
 zip = { version = "2.2.2", default-features = false, features = ["deflate"] }
 gc = { version = "0.5.0", features = ["derive"] }
+
+# "getrandom" is required for "ahash" but will not work on WASM without enabling the "js" flag
+# For building to WASM, the "js" flag must be enabled here
+getrandom = { version = "0.2.15", optional = true, features = ["js"] }
+web-time = { version = "1.1.0", optional = true }
+web-sys = { version = "0.3.77", optional = true }
+
+[features]
+wasm = ["dep:getrandom", "dep:web-time", "dep:web-sys", "web-sys/console"]
