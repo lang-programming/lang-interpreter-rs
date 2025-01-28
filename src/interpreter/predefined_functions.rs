@@ -13065,7 +13065,7 @@ mod linker_functions {
                 interpreter.current_call_stack_element().lang_path()[10..].to_string() + "/" + lang_file_name)
         }else if let Some(module) = &module {
             module_manager::get_module_file_path(module, interpreter.current_call_stack_element().lang_path(), lang_file_name)
-        }else if PathBuf::from(lang_file_name).is_absolute() {
+        }else if PathBuf::from(lang_file_name).is_absolute() || lang_file_name.starts_with("/") {
             lang_file_name.to_string()
         }else {
             let mut original_path = interpreter.current_call_stack_element().lang_path();
