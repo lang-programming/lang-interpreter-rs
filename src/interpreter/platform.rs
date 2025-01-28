@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use std::fmt::Debug;
 use std::fs;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Error, Read, Write};
+use std::io::{Error, Read, Write};
 use std::path::{Path, PathBuf};
 use crate::interpreter::data::function::native::NativeError;
 
@@ -30,19 +30,12 @@ pub trait PlatformAPI: Debug {
     /// * `lang_file` - Path to the file
     fn get_lang_file_name(&self, lang_file: &Path) -> Option<OsString>;
 
-    /// Return a [BufRead] reader for the file located at `lang_file`
+    /// Return a Box<u8> for the file located at `lang_file`
     ///
     /// # Arguments
     ///
     /// * `lang_file` - Path to the file
-    fn get_lang_buffered_reader(&self, lang_file: &Path) -> Result<Box<dyn BufRead>, Error>;
-
-    /// Return a [Read] reader for the file located at `lang_file`
-    ///
-    /// # Arguments
-    ///
-    /// * `lang_file` - Path to the file
-    fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<dyn Read>, Error>;
+    fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<[u8]>, Error>;
 
     /// Writes a translation file
     ///
@@ -122,21 +115,15 @@ impl PlatformAPI for DefaultPlatformAPI {
         path.file_name().map(|str| str.to_os_string())
     }
 
-    fn get_lang_buffered_reader(&self, lang_file: &Path) -> Result<Box<dyn BufRead>, Error> {
+    fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<[u8]>, Error> {
         let path = lang_file;
 
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
+        let mut file = File::open(path)?;
 
-        Ok(Box::new(reader))
-    }
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes)?;
 
-    fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<dyn Read>, Error> {
-        let path = lang_file;
-
-        let file = File::open(path)?;
-
-        Ok(Box::new(file))
+        Ok(bytes.into_boxed_slice())
     }
 
     fn write_lang_file(&self, lang_file: &Path, translation_map: HashMap<String, String>) -> Result<(), Error> {

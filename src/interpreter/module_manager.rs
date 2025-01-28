@@ -248,8 +248,8 @@ fn read_module_data(
     lmc_ptr: &mut Option<LangModuleConfiguration>,
 ) -> OptionDataObjectRef {
     let reader = interpreter.platform_api.get_lang_reader(module_file.as_ref());
-    let mut reader = match reader {
-        Ok(reader) => reader,
+    let zip_archive = match reader {
+        Ok(zip_archive) => zip_archive,
         Err(e) => {
             return Some(interpreter.set_errno_error_object(
                 InterpretingError::FileNotFound,
@@ -257,15 +257,6 @@ fn read_module_data(
                 CodePosition::EMPTY,
             ));
         },
-    };
-    let mut zip_archive = Vec::new();
-    let ret = reader.read_to_end(&mut zip_archive);
-    if let Err(e) = ret {
-        return Some(interpreter.set_errno_error_object(
-            InterpretingError::FileNotFound,
-            Some(&e.to_string()),
-            CodePosition::EMPTY,
-        ));
     };
 
     let zip_archive = ZipArchive::new(Cursor::new(zip_archive));

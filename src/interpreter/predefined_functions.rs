@@ -13032,7 +13032,6 @@ mod lang_test_functions {
 }
 
 mod linker_functions {
-    use std::io::Read;
     use std::path::{Path, PathBuf};
     use std::str;
     use crate::interpreter::data::function::{native, Function, FunctionMetadata};
@@ -13163,14 +13162,10 @@ mod linker_functions {
 
             String::from_utf8_lossy(&file).to_string()
         }else {
-            let mut file = interpreter.platform_api.get_lang_reader(Path::new(&absolute_path)).
+            let file_bytes = interpreter.platform_api.get_lang_reader(Path::new(&absolute_path)).
                     map_err(NativeError::apply_with_message("File not found"))?;
 
-            let mut lang_code = String::new();
-            file.read_to_string(&mut lang_code).
-                    map_err(NativeError::apply_with_message("Can not read file"))?;
-
-            lang_code
+            String::from_utf8_lossy(&file_bytes).to_string()
         };
 
         let original_line_number = interpreter.parser_line_number();
