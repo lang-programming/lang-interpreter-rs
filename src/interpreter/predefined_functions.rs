@@ -13068,7 +13068,13 @@ mod linker_functions {
         }else if PathBuf::from(lang_file_name).is_absolute() {
             lang_file_name.to_string()
         }else {
-            interpreter.current_call_stack_element().lang_path().to_string() + "/" + lang_file_name
+            let mut original_path = interpreter.current_call_stack_element().lang_path();
+
+            if original_path.ends_with("/") {
+                original_path = &original_path[..original_path.len() - 1];
+            }
+
+            original_path.to_string() + "/" + lang_file_name
         };
 
         let lang_path_tmp;
