@@ -82,18 +82,14 @@ pub enum Operator {
     Or,
 
     //ALL
-    /**
-     * COMMA is a parser-o
-     */
+    /// Parser-only operator (This operator can only be used during parsing)
     Comma,
     GetItem,
     OptionalGetItem,
     Slice,
     OptionalSlice,
     MemberAccess,
-    /**
-     * MEMBER_ACCESS opera
-     */
+    /// [MemberAccess](Operator::MemberAccess) operator where composite type is `&this`
     MemberAccessThis,
     OptionalMemberAccess,
     MemberAccessPointer,
@@ -672,16 +668,12 @@ pub struct ClassDefinition {
 
     members: Vec<ClassMember>,
 
-    /**
-     * If multiple methods have the same name, they are overloaded
-     */
+    /// If multiple methods have the same name, they are overloaded
     methods: Vec<Method>,
 
     constructors: Vec<Constructor>,
 
-    /**
-     * List of parent nodes separated by ArgumentSeparator nodes
-     */
+    /// List of parent nodes separated by [ArgumentSeparator](NodeData::ArgumentSeparator) nodes
     parent_classes: Vec<Node>,
 }
 
