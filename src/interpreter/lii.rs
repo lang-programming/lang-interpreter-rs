@@ -65,11 +65,11 @@ pub fn get_and_clear_errno_error_object(interpreter: &mut Interpreter) -> Interp
     interpreter.get_and_clear_errno_error_object()
 }
 
-/**
- * Creates a function which is accessible globally in the Interpreter (= in all scopes)<br>
- * If function already exists, it will be overridden<br>
- * Function can be accessed with "func.funcName"/"fn.funcName" or with "linker.funcName"/"ln.funcName" and can't be removed nor changed by the Lang file
- */
+/// Creates a function which is accessible globally in the Interpreter (= in all scopes)
+///
+/// If function already exists, it will be overridden
+///
+/// Function can be accessed with `func.funcName`/`fn.funcName` or with `linker.funcName`/`ln.funcName` and can't be removed nor changed by the Lang file
 pub fn add_predefined_function(interpreter: &mut Interpreter, func_name: impl Into<Box<str>>, function: FunctionPointerObjectRef) {
     interpreter.funcs.insert(func_name.into(), function);
 }
@@ -95,9 +95,7 @@ pub fn current_call_stack_element(interpreter: &Interpreter) -> &StackElement {
     interpreter.current_call_stack_element()
 }
 
-/**
- * Must be called before get_and_reset_return_value() method
- */
+/// Must be called before calling the [get_and_reset_return_value()] method
 pub fn is_returned_value_throw_value(interpreter: &Interpreter) -> bool {
     interpreter.execution_state.is_thrown_value
 }
