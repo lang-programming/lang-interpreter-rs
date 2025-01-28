@@ -13144,6 +13144,8 @@ mod linker_functions {
                     get_file(absolute_path);
 
             let Some(file) = file else {
+                interpreter.exit_scope();
+
                 return Ok(Some(interpreter.set_errno_error_object(
                     InterpretingError::FileNotFound,
                     Some("File not found during loading of lang standard implementation."),
@@ -13158,6 +13160,8 @@ mod linker_functions {
             let file = match file {
                 Ok(file) => file,
                 Err(e) => {
+                    interpreter.exit_scope();
+
                     return Ok(Some(interpreter.set_errno_error_object(
                         InterpretingError::FileNotFound,
                         Some(&e.to_string()),
@@ -13169,7 +13173,7 @@ mod linker_functions {
             String::from_utf8_lossy(&file).to_string()
         }else {
             let file_bytes = interpreter.platform_api.get_lang_reader(Path::new(&absolute_path)).
-                    map_err(NativeError::apply_with_message("File not found"))?;
+                    map_err(NativeError::apply_with_message("File not found")).inspect_err(|_| interpreter.exit_scope())?;
 
             String::from_utf8_lossy(&file_bytes).to_string()
         };
