@@ -13146,6 +13146,9 @@ mod linker_functions {
             let Some(file) = file else {
                 interpreter.exit_scope();
 
+                //Update call stack
+                interpreter.pop_stack_element();
+
                 return Ok(Some(interpreter.set_errno_error_object(
                     InterpretingError::FileNotFound,
                     Some("File not found during loading of lang standard implementation."),
@@ -13162,6 +13165,9 @@ mod linker_functions {
                 Err(e) => {
                     interpreter.exit_scope();
 
+                    //Update call stack
+                    interpreter.pop_stack_element();
+
                     return Ok(Some(interpreter.set_errno_error_object(
                         InterpretingError::FileNotFound,
                         Some(&e.to_string()),
@@ -13173,7 +13179,12 @@ mod linker_functions {
             String::from_utf8_lossy(&file).to_string()
         }else {
             let file_bytes = interpreter.platform_api.get_lang_reader(Path::new(&absolute_path)).
-                    map_err(NativeError::apply_with_message("File not found")).inspect_err(|_| interpreter.exit_scope())?;
+                    map_err(NativeError::apply_with_message("File not found")).inspect_err(|_| {
+                interpreter.exit_scope();
+
+                //Update call stack
+                interpreter.pop_stack_element();
+            })?;
 
             String::from_utf8_lossy(&file_bytes).to_string()
         };
