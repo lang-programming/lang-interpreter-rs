@@ -34,4 +34,19 @@ web-time = { version = "1.1.0", optional = true }
 web-sys = { version = "0.3.77", optional = true }
 
 [features]
-wasm = ["dep:getrandom", "dep:web-time", "dep:web-sys", "web-sys/console"]
+wasm = [
+    "dep:getrandom",
+
+    "dep:web-time",
+
+    "dep:web-sys",
+    "web-sys/console",
+]
+wasm-platform-api = [
+    "wasm",
+
+    "web-sys/Url",
+    "web-sys/WorkerLocation",
+    "web-sys/XmlHttpRequest",
+    "web-sys/XmlHttpRequestResponseType",
+]

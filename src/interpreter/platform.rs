@@ -1,3 +1,8 @@
+#[cfg(feature = "wasm-platform-api")]
+pub mod wasm;
+#[cfg(feature = "wasm-platform-api")]
+pub use wasm::WASMPlatformAPI;
+
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fmt::Debug;
