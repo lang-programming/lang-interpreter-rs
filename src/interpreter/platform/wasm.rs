@@ -11,11 +11,15 @@ use crate::interpreter::platform::PlatformAPI;
 
 /// This used fetch for io operations.
 ///
+/// [WASMPlatformAPI] can only be used if the [Interpreter](crate::interpreter::Interpreter) is used within a [Web Worker]
+///
 /// The following functions are not implemented and will always return an [Err]:
 ///
 /// * [get_lang_files](PlatformAPI::get_lang_files)
 /// * [write_lang_file](PlatformAPI::write_lang_file)
 /// * [show_input_dialog](PlatformAPI::show_input_dialog)
+///
+/// [Web Worker]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
 #[derive(Debug)]
 pub struct WASMPlatformAPI;
 
