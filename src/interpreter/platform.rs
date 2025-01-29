@@ -1,6 +1,8 @@
 #[cfg(feature = "wasm-platform-api")]
+#[doc(hidden)]
 pub mod wasm;
 #[cfg(feature = "wasm-platform-api")]
+#[doc(inline)]
 pub use wasm::WASMPlatformAPI;
 
 use std::collections::HashMap;
@@ -14,14 +16,14 @@ use crate::interpreter::data::function::native::NativeError;
 
 /// This trait is used to abstract some io functionality
 pub trait PlatformAPI: Debug {
-    /// Return all files inside the folder located at `lang_path`
+    /// Returns all files inside the folder located at `lang_path`
     ///
     /// # Arguments
     ///
     /// * `lang_path` - Path to the folder
     fn get_lang_files(&self, lang_path: &Path) -> Result<Vec<PathBuf>, Error>;
 
-    /// Return the canonical path of the file located at `lang_file`
+    /// Returns the canonical path of the file located at `lang_file`
     ///
     /// # Arguments
     ///
@@ -35,7 +37,7 @@ pub trait PlatformAPI: Debug {
     /// * `lang_file` - Path to the file
     fn get_lang_file_name(&self, lang_file: &Path) -> Option<OsString>;
 
-    /// Return a Box<u8> for the file located at `lang_file`
+    /// Returns a `Box<u8>` for the file located at `lang_file`
     ///
     /// # Arguments
     ///
@@ -50,7 +52,7 @@ pub trait PlatformAPI: Debug {
     /// * `translation_map` - The map of all translations
     fn write_lang_file(&self, lang_file: &Path, translation_map: HashMap<String, String>) -> Result<(), Error>;
 
-    /// Return the value inputted by the user
+    /// Returns the value inputted by the user
     ///
     /// # Arguments
     ///

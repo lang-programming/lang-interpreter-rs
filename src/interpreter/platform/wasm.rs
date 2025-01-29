@@ -11,7 +11,11 @@ use crate::interpreter::platform::PlatformAPI;
 
 /// This used fetch for io operations.
 ///
-/// [WASMPlatformAPI] can only be used if the [Interpreter](crate::interpreter::Interpreter) is used within a [Web Worker]
+/// <div class="warning">
+///
+/// [WASMPlatformAPI] can only be used if the [Interpreter](crate::interpreter::Interpreter) is used within a [Web Worker].
+///
+/// </div>
 ///
 /// The following functions are not implemented and will always return an [Err]:
 ///
