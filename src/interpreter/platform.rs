@@ -8,7 +8,7 @@ pub use wasm::WASMPlatformAPI;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fmt::Debug;
-use std::fs;
+use std::{fs, io};
 use std::fs::File;
 use std::io::{Error, Read, Write};
 use std::path::{Path, PathBuf};
@@ -58,6 +58,44 @@ pub trait PlatformAPI: Debug {
     ///
     /// * `text`: The text prompt to be shown to the user
     fn show_input_dialog(&self, text: &str) -> Result<String, NativeError>;
+
+    /// Prints to standard output without newline
+    ///
+    /// # Arguments
+    ///
+    /// * `text`: The text to be outputted
+    fn print(&mut self, text: &str) {
+        print!("{text}");
+        let _ = io::stdout().flush();
+    }
+
+    /// Prints to standard output with newline
+    ///
+    /// # Arguments
+    ///
+    /// * `text`: The text to be outputted
+    fn println(&mut self, text: &str) {
+        println!("{text}");
+    }
+
+    /// Prints to error output without newline
+    ///
+    /// # Arguments
+    ///
+    /// * `text`: The text to be outputted
+    fn print_error(&mut self, text: &str) {
+        eprint!("{text}");
+        let _ = io::stderr().flush();
+    }
+
+    /// Prints to error output with newline
+    ///
+    /// # Arguments
+    ///
+    /// * `text`: The text to be outputted
+    fn println_error(&mut self, text: &str) {
+        eprintln!("{text}");
+    }
 }
 
 /// This used standard io operations.

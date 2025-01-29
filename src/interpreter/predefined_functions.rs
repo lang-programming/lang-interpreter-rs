@@ -1262,8 +1262,7 @@ mod system_functions {
 }
 
 mod io_functions {
-    use std::io;
-    use std::io::{stdin, Read, Write};
+    use std::io::{stdin, Read};
     use crate::interpreter::data::function::{Function, FunctionMetadata};
     use crate::interpreter::data::{DataObject, DataObjectRef, DataType, Number, OptionDataObjectRef};
     use crate::interpreter::{conversions, Interpreter, InterpretingError};
@@ -1297,10 +1296,9 @@ mod io_functions {
                 interpreter.set_errno(InterpretingError::NoTerminalWarning, None, CodePosition::EMPTY);
 
                 if !message.is_empty() {
-                    lang_println!("{}", message);
+                    interpreter.platform_api.println(&message);
                 }
-                lang_print!("Input: ");
-                let _ = io::stdout().flush();
+                interpreter.platform_api.print("Input: ");
 
                 let mut line = String::new();
                 let count = stdin().read_line(&mut line);
@@ -1391,9 +1389,9 @@ mod io_functions {
 
                 //Write to standard error if the log level is WARNING or higher
                 if log_level > 3 {
-                    lang_eprintln!("[{:<8}]: {text}", level.name());
+                    interpreter.platform_api.println_error(&format!("[{:<8}]: {text}", level.name()));
                 }else {
-                    lang_println!("[{:<8}]: {text}", level.name());
+                    interpreter.platform_api.println(&format!("[{:<8}]: {text}", level.name()));
                 }
             }
 
@@ -1439,9 +1437,9 @@ mod io_functions {
 
                 //Write to standard error if the log level is WARNING or higher
                 if level.level() > 3 {
-                    lang_eprintln!("[{:<8}]: {text}", level.name());
+                    interpreter.platform_api.println_error(&format!("[{:<8}]: {text}", level.name()));
                 }else {
-                    lang_println!("[{:<8}]: {text}", level.name());
+                    interpreter.platform_api.println(&format!("[{:<8}]: {text}", level.name()));
                 }
             }
 
@@ -1559,8 +1557,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            lang_print!("{text}");
-            let _ = io::stdout().flush();
+            interpreter.platform_api.print(&text);
         }
 
         functions.push(crate::lang_func!(
@@ -1581,7 +1578,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            lang_println!("{text}");
+            interpreter.platform_api.println(&text);
         }
 
         functions.push(crate::lang_func!(
@@ -1613,9 +1610,7 @@ mod io_functions {
             }
 
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
-
-            lang_print!("{out}");
-            let _ = io::stdout().flush();
+            interpreter.platform_api.print(&out);
 
             None
         }
@@ -1638,8 +1633,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            lang_eprint!("{text}");
-            let _ = io::stderr().flush();
+            interpreter.platform_api.print_error(&text);
         }
 
         functions.push(crate::lang_func!(
@@ -1660,7 +1654,7 @@ mod io_functions {
             text_object: DataObjectRef,
         ) {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
-            lang_eprintln!("{text}");
+            interpreter.platform_api.println_error(&text);
         }
 
         functions.push(crate::lang_func!(
@@ -1692,9 +1686,7 @@ mod io_functions {
             }
 
             let out = conversions::to_text(interpreter, &out, CodePosition::EMPTY);
-
-            lang_eprint!("{out}");
-            let _ = io::stderr().flush();
+            interpreter.platform_api.print_error(&out);
 
             None
         }
@@ -13023,7 +13015,7 @@ mod lang_test_functions {
             if let Some(term) = &mut interpreter.term {
                 interpreter.lang_test_store.print_results_to_terminal(term);
             }else {
-                lang_println!("{}", interpreter.lang_test_store.print_results());
+                interpreter.platform_api.println(&interpreter.lang_test_store.print_results());
             }
 
             None

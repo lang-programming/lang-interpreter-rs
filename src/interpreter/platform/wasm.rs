@@ -129,4 +129,34 @@ impl PlatformAPI for WASMPlatformAPI {
             None,
         ))
     }
+
+    fn print(&mut self, text: &str) {
+        //TODO cache and do the printing in println only
+        self.println(text);
+    }
+
+    fn println(&mut self, text: &str) {
+        //TODO cache and print in println
+
+        if text.is_empty() {
+            web_sys::console::log_0();
+        }else {
+            web_sys::console::log_1(&text.into());
+        }
+    }
+
+    fn print_error(&mut self, text: &str) {
+        //TODO cache and do the printing in println_error only
+        self.println_error(text);
+    }
+
+    fn println_error(&mut self, text: &str) {
+        //TODO cache and print in println
+
+        if text.is_empty() {
+            web_sys::console::error_0();
+        }else {
+            web_sys::console::error_1(&text.into());
+        }
+    }
 }

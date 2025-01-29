@@ -7147,7 +7147,7 @@ impl Interpreter {
                     Self::LOG_TAG,
                 );
             }else {
-                lang_eprintln!("{}", output);
+                self.platform_api.println_error(&output);
             }
         }
 
