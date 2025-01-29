@@ -95,11 +95,22 @@ impl TerminalIO {
         }
         #[cfg(feature = "custom-logging")]
         {
-            Ok(Self {
-                file,
-                log_level: Level::NotSet,
-                logger: Box::new(DefaultLogger),
-            })
+            #[cfg(not(feature = "wasm"))]
+            {
+                Ok(Self {
+                    file,
+                    log_level: Level::NotSet,
+                    logger: Box::new(DefaultLogger),
+                })
+            }
+            #[cfg(feature = "wasm")]
+            {
+                Ok(Self {
+                    file,
+                    log_level: Level::NotSet,
+                    logger: Box::new(JsConsoleLogger),
+                })
+            }
         }
     }
 
