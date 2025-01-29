@@ -8,6 +8,14 @@ use web_sys::wasm_bindgen::JsValue;
 use crate::interpreter::data::function::native::NativeError;
 use crate::interpreter::platform::PlatformAPI;
 
+
+/// This used fetch for io operations.
+///
+/// The following functions are not implemented and will always return an [Err]:
+///
+/// * [get_lang_files](PlatformAPI::get_lang_files)
+/// * [write_lang_file](PlatformAPI::write_lang_file)
+/// * [show_input_dialog](PlatformAPI::show_input_dialog)
 #[derive(Debug)]
 pub struct WASMPlatformAPI;
 
