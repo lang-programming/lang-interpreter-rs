@@ -3,14 +3,14 @@
 pub mod custom_logging;
 #[cfg(feature = "custom-logging")]
 #[doc(inline)]
-pub use custom_logging::*;
+pub use custom_logging::{Logger, DefaultLogger};
 
 #[cfg(all(
     feature = "custom-logging",
     feature = "wasm",
 ))]
 #[doc(inline)]
-pub use custom_logging::wasm::*;
+pub use custom_logging::wasm::JsConsoleLogger;
 
 use std::error::Error;
 use std::ffi::OsString;
@@ -101,6 +101,21 @@ impl TerminalIO {
                 logger: Box::new(DefaultLogger),
             })
         }
+    }
+
+    #[cfg(feature = "custom-logging")]
+    pub fn with_custom_logger(log_file: Option<OsString>, logger: Box<dyn Logger>) -> Result<Self, io::Error> {
+        let file = if let Some(log_file) = log_file {
+            Some(File::create(log_file)?)
+        }else {
+            None
+        };
+
+        Ok(Self {
+            file,
+            log_level: Level::NotSet,
+            logger,
+        })
     }
 
     pub fn set_level(&mut self, level: Level) {

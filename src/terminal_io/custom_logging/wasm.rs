@@ -17,7 +17,7 @@ impl Default for JsConsoleLogger {
 }
 
 impl Logger for JsConsoleLogger {
-    fn log(&mut self, lvl: Level, time_label: &str, tag: &str, text: &str) {
+    fn log(&mut self, lvl: Level, time_label: &str, text: &str, tag: &str) {
         let log = format!(
             "[{}][{}][{}]: {}",
             lvl.name(),
