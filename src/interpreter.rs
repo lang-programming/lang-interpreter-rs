@@ -7141,7 +7141,7 @@ impl Interpreter {
             );
 
             if let Some(term) = &mut self.term {
-                term.logln(
+                term.log(
                     if new_errno < 0 { Level::Warning } else { Level::Error },
                     output,
                     Self::LOG_TAG,

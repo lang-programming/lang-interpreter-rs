@@ -1385,7 +1385,7 @@ mod io_functions {
             let text = conversions::to_text(interpreter, &text_object, CodePosition::EMPTY);
 
             if let Some(term) = &mut interpreter.term {
-                term.logln(level, format!("[From Lang file]: {text}"), Interpreter::LOG_TAG);
+                term.log(level, format!("[From Lang file]: {text}"), Interpreter::LOG_TAG);
             }else {
                 interpreter.set_errno(InterpretingError::NoTerminalWarning, None, CodePosition::EMPTY);
 
@@ -1433,7 +1433,7 @@ mod io_functions {
             let text = if text.is_empty() { "" } else { &format!("{text}: ") };
 
             if let Some(term) = &mut interpreter.term {
-                term.logln(level, format!("[From Lang file]: {text}"), Interpreter::LOG_TAG);
+                term.log(level, format!("[From Lang file]: {text}"), Interpreter::LOG_TAG);
             }else {
                 interpreter.set_errno(InterpretingError::NoTerminalWarning, None, CodePosition::EMPTY);
 

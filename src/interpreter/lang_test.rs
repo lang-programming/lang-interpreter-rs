@@ -119,8 +119,8 @@ impl LangTest {
             unit.print_results_to_terminal(term);
         }
 
-        term.logln(Level::Info, "------------------------------------------", Self::LOG_TAG);
-        term.logln(Level::Config, format!(
+        term.log(Level::Info, "------------------------------------------", Self::LOG_TAG);
+        term.log(Level::Config, format!(
             "Summary:\nTime taken: {:.3} s\nTests passed: {}/{}",
             diff as f64 / 1000.0,
             self.test_passed_count(),
@@ -167,7 +167,7 @@ impl LangTest {
         }
 
         if !out.is_empty() {
-            term.logln(Level::Error, &out, Self::LOG_TAG);
+            term.log(Level::Error, &out, Self::LOG_TAG);
         }
     }
 }
@@ -285,7 +285,7 @@ impl Unit {
             return;
         }
 
-        term.logln(Level::Config, format!(
+        term.log(Level::Config, format!(
             "Unit: {}:\nTests passed: {}/{}",
             self.name.as_ref().map(|name| format!("\"{name}\"")).unwrap_or("noname".to_string()),
             self.test_passed_count(),
@@ -321,17 +321,17 @@ impl Unit {
         }
 
         if !out.is_empty() {
-            term.logln(Level::Error, &out, Self::LOG_TAG);
+            term.log(Level::Error, &out, Self::LOG_TAG);
         }
 
         if self.sub_units.len() > 1 {
-            term.logln(Level::Config, "SubUnits:", Self::LOG_TAG);
+            term.log(Level::Config, "SubUnits:", Self::LOG_TAG);
 
             for sub_unit in &self.sub_units {
                 sub_unit.print_results_to_terminal(term);
             }
         }else if out.is_empty() {
-            term.logln(Level::Config, "", Self::LOG_TAG);
+            term.log(Level::Config, "", Self::LOG_TAG);
         }
     }
 }
@@ -446,7 +446,7 @@ impl SubUnit {
             return;
         };
 
-        term.logln(Level::Config, format!(
+        term.log(Level::Config, format!(
             "\tSubUnit: {}:\n\t\tTests passed: {}/{}",
             name,
             self.test_passed_count(),
@@ -468,7 +468,7 @@ impl SubUnit {
 
         out += "\n";
 
-        term.logln(Level::Error, &out, Self::LOG_TAG);
+        term.log(Level::Error, &out, Self::LOG_TAG);
     }
 }
 

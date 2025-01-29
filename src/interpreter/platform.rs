@@ -3,7 +3,7 @@
 pub mod wasm;
 #[cfg(feature = "wasm-platform-api")]
 #[doc(inline)]
-pub use wasm::WASMPlatformAPI;
+pub use wasm::*;
 
 use std::collections::HashMap;
 use std::ffi::OsString;

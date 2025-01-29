@@ -1,6 +1,20 @@
+#[cfg(feature = "custom-logging")]
+#[doc(hidden)]
+pub mod custom_logging;
+#[cfg(feature = "custom-logging")]
+#[doc(inline)]
+pub use custom_logging::*;
+
+#[cfg(all(
+    feature = "custom-logging",
+    feature = "wasm",
+))]
+#[doc(inline)]
+pub use custom_logging::wasm::*;
+
 use std::error::Error;
 use std::ffi::OsString;
-use std::{fmt, io};
+use std::io;
 use std::fs::File;
 use std::io::Write;
 use chrono::Local;
@@ -57,6 +71,9 @@ impl Level {
 pub struct TerminalIO {
     file: Option<File>,
     log_level: Level,
+
+    #[cfg(feature = "custom-logging")]
+    logger: Box<dyn Logger>,
 }
 
 impl TerminalIO {
@@ -69,50 +86,62 @@ impl TerminalIO {
             None
         };
 
-        Ok(Self {
-            file,
-            log_level: Level::NotSet,
-        })
+        #[cfg(not(feature = "custom-logging"))]
+        {
+            Ok(Self {
+                file,
+                log_level: Level::NotSet,
+            })
+        }
+        #[cfg(feature = "custom-logging")]
+        {
+            Ok(Self {
+                file,
+                log_level: Level::NotSet,
+                logger: Box::new(DefaultLogger),
+            })
+        }
     }
 
     pub fn set_level(&mut self, level: Level) {
         self.log_level = level;
     }
 
-    fn log_internal(&mut self, lvl: Level, txt: impl Into<String>, tag: impl Into<String>, new_line: bool) {
+    fn log_internal(&mut self, lvl: Level, txt: &str, tag: &str) {
         if !lvl.should_log(self.log_level) {
             return;
         }
 
-        let current_time = Local::now().format(Self::TIME_FORMAT);
+        let current_time = Local::now().format(Self::TIME_FORMAT).to_string();
 
-        let mut log = format!(
+        let log = format!(
             "[{}][{}][{}]: {}",
             lvl.name(),
             current_time,
-            tag.into(),
-            txt.into(),
+            tag,
+            txt,
         );
 
-        if new_line {
-            log += "\n";
-        }
-
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(not(feature = "custom-logging"))]
         {
-            print!("{log}");
-        }
-        #[cfg(feature = "wasm")]
-        {
-            match lvl {
-                Level::NotSet | Level::User | Level::Config => web_sys::console::log_1(&log.as_str().into()),
-                Level::Debug => web_sys::console::debug_1(&log.as_str().into()),
-                Level::Info => web_sys::console::info_1(&log.as_str().into()),
-                Level::Warning => web_sys::console::warn_1(&log.as_str().into()),
-                Level::Error | Level::Critical => web_sys::console::error_1(&log.as_str().into()),
+            #[cfg(not(feature = "wasm"))]
+            {
+                println!("{log}");
+            }
+            #[cfg(feature = "wasm")]
+            {
+                match lvl {
+                    Level::NotSet | Level::User | Level::Config => web_sys::console::log_1(&log.as_str().into()),
+                    Level::Debug => web_sys::console::debug_1(&log.as_str().into()),
+                    Level::Info => web_sys::console::info_1(&log.as_str().into()),
+                    Level::Warning => web_sys::console::warn_1(&log.as_str().into()),
+                    Level::Error | Level::Critical => web_sys::console::error_1(&log.as_str().into()),
+                }
             }
         }
-        
+        #[cfg(feature = "custom-logging")]
+        self.logger.log(lvl, &current_time, txt, tag);
+
         if let Some(file) = &mut self.file {
             let err = write!(file, "{log}");
             if let Err(e) = err {
@@ -130,18 +159,10 @@ impl TerminalIO {
     }
     
     pub fn log(&mut self, lvl: Level, txt: impl Into<String>, tag: impl Into<String>) {
-        self.log_internal(lvl, txt, tag, false);
-    }
-    
-    pub fn logf(&mut self, lvl: Level, fmt: fmt::Arguments<'_>, tag: impl Into<String>) {
-        self.log(lvl, fmt.to_string(), tag);
-    }
-    
-    pub fn logln(&mut self, lvl: Level, txt: impl Into<String>, tag: impl Into<String>) {
-        self.log_internal(lvl, txt, tag, true);
+        self.log_internal(lvl, &txt.into(), &tag.into());
     }
     
     pub fn log_stack_trace(&mut self, error: Box<dyn Error>, tag: impl Into<String>) {
-        self.logln(Level::Error, error.to_string(), tag);
+        self.log(Level::Error, error.to_string(), tag);
     }
 }
