@@ -95,9 +95,10 @@ fn call_operator_method(
 }
 
 //General operation functions
-/**
- * For "@"
- */
+
+/// Operator definition of the [LEN] operator (`@`)
+///
+/// [LEN]: crate::parser::ast::Operator::Len
 pub fn op_len(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -153,9 +154,9 @@ pub fn op_len(
         _ => None,
     }
 }
-/**
- * For "^"
- */
+/// Operator definition of the [DEEP_COPY] operator (`^`)
+///
+/// [DEEP_COPY]: crate::parser::ast::Operator::DeepCopy
 pub fn op_deep_copy(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -262,9 +263,9 @@ pub fn op_deep_copy(
         }).unwrap())),
     }
 }
-/**
- * For "|||"
- */
+/// Operator definition of the [CONCAT] operator (`|||`)
+///
+/// [CONCAT]: crate::parser::ast::Operator::Concat
 pub fn op_concat(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -439,9 +440,9 @@ pub fn op_concat(
         _ => None,
     }
 }
-/**
- * For "&lt;=&gt;"
- */
+/// Operator definition of the [SPACESHIP] operator (`<=>`)
+///
+/// [SPACESHIP]: crate::parser::ast::Operator::Spaceship
 pub fn op_spaceship(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -466,9 +467,10 @@ pub fn op_spaceship(
 }
 
 //Math operation functions
-/**
- * For "+|"
- */
+
+/// Operator definition of the [INC] operator (`+|`)
+///
+/// [INC]: crate::parser::ast::Operator::Inc
 pub fn op_inc(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -562,9 +564,9 @@ pub fn op_inc(
         _ => None,
     }
 }
-/**
- * For "-|"
- */
+/// Operator definition of the [DEC] operator (`-|`)
+///
+/// [DEC]: crate::parser::ast::Operator::Dec
 pub fn op_dec(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -660,9 +662,9 @@ pub fn op_dec(
         _ => None,
     }
 }
-/**
- * For "+"
- */
+/// Operator definition of the [POS] operator (`+`)
+///
+/// [POS]: crate::parser::ast::Operator::Pos
 pub fn op_pos(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -682,9 +684,9 @@ pub fn op_pos(
         data_object.set_data(&operand.borrow())
     }).unwrap()))
 }
-/**
- * For "-"
- */
+/// Operator definition of the [INV] operator (`-`)
+///
+/// [INV]: crate::parser::ast::Operator::Inv
 pub fn op_inv(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -752,9 +754,9 @@ pub fn op_inv(
         _ => None,
     }
 }
-/**
- * For "+"
- */
+/// Operator definition of the [ADD] operator (`+`)
+///
+/// [ADD]: crate::parser::ast::Operator::Add
 pub fn op_add(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -997,9 +999,9 @@ pub fn op_add(
         _ => None,
     }
 }
-/**
- * For "-"
- */
+/// Operator definition of the [SUB] operator (`-`)
+///
+/// [SUB]: crate::parser::ast::Operator::Sub
 pub fn op_sub(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -1202,9 +1204,9 @@ pub fn op_sub(
         _ => None,
     }
 }
-/**
- * For "*"
- */
+/// Operator definition of the [MUL] operator (`*`)
+///
+/// [MUL]: crate::parser::ast::Operator::Mul
 pub fn op_mul(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -1365,9 +1367,9 @@ pub fn op_mul(
         _ => None,
     }
 }
-/**
- * For "**"
- */
+/// Operator definition of the [POW] operator (`**`)
+///
+/// [POW]: crate::parser::ast::Operator::Pow
 pub fn op_pow(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -1600,9 +1602,9 @@ pub fn op_pow(
         _ => None,
     }
 }
-/**
- * For "/"
- */
+/// Operator definition of the [DIV] operator (`/`)
+///
+/// [DIV]: crate::parser::ast::Operator::Div
 pub fn op_div(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -1785,9 +1787,9 @@ pub fn op_div(
         _ => None,
     }
 }
-/**
- * For "~/"
- */
+/// Operator definition of the [TRUNC_DIV] operator (`~/`)
+///
+/// [TRUNC_DIV]: crate::parser::ast::Operator::TruncDiv
 pub fn op_trunc_div(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -2142,9 +2144,9 @@ pub fn op_trunc_div(
         _ => None,
     }
 }
-/**
- * For "//"
- */
+/// Operator definition of the [FLOOR_DIV] operator (`//`)
+///
+/// [FLOOR_DIV]: crate::parser::ast::Operator::FloorDiv
 pub fn op_floor_div(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -2415,9 +2417,9 @@ pub fn op_floor_div(
         _ => None,
     }
 }
-/**
- * For "^/"
- */
+/// Operator definition of the [CEIL_DIV] operator (`^/`)
+///
+/// [CEIL_DIV]: crate::parser::ast::Operator::CeilDiv
 pub fn op_ceil_div(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -2688,9 +2690,9 @@ pub fn op_ceil_div(
         _ => None,
     }
 }
-/**
- * For "%"
- */
+/// Operator definition of the [MOD] operator (`%`)
+///
+/// [MOD]: crate::parser::ast::Operator::Mod
 pub fn op_mod(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -2871,9 +2873,9 @@ pub fn op_mod(
         _ => None,
     }
 }
-/**
- * For "&amp;"
- */
+/// Operator definition of the [BITWISE_AND] operator (`&`)
+///
+/// [BITWISE_AND]: crate::parser::ast::Operator::BitwiseAnd
 pub fn op_and(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -2932,9 +2934,9 @@ pub fn op_and(
         _ => None,
     }
 }
-/**
- * For "|"
- */
+/// Operator definition of the [BITWISE_OR] operator (`|`)
+///
+/// [BITWISE_OR]: crate::parser::ast::Operator::BitwiseOr
 pub fn op_or(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3002,9 +3004,9 @@ pub fn op_or(
         _ => None,
     }
 }
-/**
- * For "^"
- */
+/// Operator definition of the [BITWISE_XOR] operator (`^`)
+///
+/// [BITWISE_XOR]: crate::parser::ast::Operator::BitwiseXor
 pub fn op_xor(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3063,9 +3065,9 @@ pub fn op_xor(
         _ => None,
     }
 }
-/**
- * For "~"
- */
+/// Operator definition of the [BITWISE_NOT] operator (`~`)
+///
+/// [BITWISE_NOT]: crate::parser::ast::Operator::BitwiseNot
 pub fn op_not(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -3097,9 +3099,9 @@ pub fn op_not(
         _ => None,
     }
 }
-/**
- * For "&lt;&lt;"
- */
+/// Operator definition of the [LSHIFT] operator (`<<`)
+///
+/// [LSHIFT]: crate::parser::ast::Operator::Lshift
 pub fn op_lshift(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3158,9 +3160,9 @@ pub fn op_lshift(
         _ => None,
     }
 }
-/**
- * For "&gt;&gt;"
- */
+/// Operator definition of the [RSHIFT] operator (`>>`)
+///
+/// [RSHIFT]: crate::parser::ast::Operator::Rshift
 pub fn op_rshift(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3228,9 +3230,9 @@ pub fn op_rshift(
         _ => None,
     }
 }
-/**
- * For "&gt;&gt;&gt;"
- */
+/// Operator definition of the [RZSHIFT] operator (`>>>`)
+///
+/// [RZSHIFT]: crate::parser::ast::Operator::Rzshift
 pub fn op_rzshift(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3302,6 +3304,8 @@ pub fn op_rzshift(
 }
 
 //All operation functions
+
+/// Operator definition of the `CAST` operator
 pub fn op_cast(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3384,9 +3388,9 @@ pub fn op_cast(
         _ => None,
     }
 }
-/**
- * For "[...]"
- */
+/// Operator definition of the [GET_ITEM] operator (`[...]`)
+///
+/// [GET_ITEM]: crate::parser::ast::Operator::GetItem
 pub fn op_get_item(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3544,9 +3548,9 @@ pub fn op_get_item(
         _ => None,
     }
 }
-/**
- * For "?.[...]"
- */
+/// Operator definition of the [OPTIONAL_GET_ITEM] operator (`?.[...]`)
+///
+/// [OPTIONAL_GET_ITEM]: crate::parser::ast::Operator::OptionalGetItem
 pub fn op_optional_get_item(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3559,9 +3563,9 @@ pub fn op_optional_get_item(
         op_get_item(interpreter, left_side_operand, right_side_operand, pos)
     }
 }
-/**
- * For "[...:...]"
- */
+/// Operator definition of the [SLICE] operator (`[...:...]`)
+///
+/// [SLICE]: crate::parser::ast::Operator::Slice
 pub fn op_slice(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3854,9 +3858,9 @@ pub fn op_slice(
         _ => None,
     }
 }
-/**
- * For "?.[...:...]"
- */
+/// Operator definition of the [OPTIONAL_SLICE] operator (`?.[...:...]`)
+///
+/// [OPTIONAL_SLICE]: crate::parser::ast::Operator::OptionalSlice
 pub fn op_optional_slice(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3870,6 +3874,7 @@ pub fn op_optional_slice(
         op_slice(interpreter, left_side_operand, middle_operand, right_side_operand, pos)
     }
 }
+/// Operator definition of the `SET_ITEM`
 pub fn op_set_item(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -3997,9 +4002,8 @@ pub fn op_set_item(
 }
 
 //Special operator functions
-/**
- * For "func.abs()"
- */
+
+/// Operator definition of the `ABS` (`func.abs(...)`)
 pub fn op_abs(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -4043,9 +4047,7 @@ pub fn op_abs(
         _ => None,
     }
 }
-/**
- * For "func.iter()"
- */
+/// Operator definition of the `ITER` (`func.iter(...)`)
 pub fn op_iter(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -4075,9 +4077,7 @@ pub fn op_iter(
         _ => None,
     }
 }
-/**
- * For "func.hasNext()"
- */
+/// Operator definition of the `HAS_NEXT` (`func.hasNext(...)`)
 pub fn op_has_next(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -4094,9 +4094,7 @@ pub fn op_has_next(
         data_object.set_bool(conversions::to_bool(interpreter, &ret, pos))
     }).unwrap()))
 }
-/**
- * For "func.next()"
- */
+/// Operator definition of the `NEXT` (`func.next(...)`)
 pub fn op_next(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
@@ -4110,9 +4108,7 @@ pub fn op_next(
     )
 }
 
-/**
- * For "...(...)"
- */
+/// Operator definition of the `CALL` (`...(...)`)
 pub fn op_call(
     interpreter: &mut Interpreter,
     callee: &DataObjectRef,
@@ -4247,9 +4243,10 @@ pub fn op_call(
 }
 
 //Comparison functions
-/**
- * For "=="
- */
+
+/// Operator definition of the [EQUALS] operator (`==`)
+///
+/// [EQUALS]: crate::parser::ast::Operator::Equals
 pub fn is_equals(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -4499,9 +4496,9 @@ pub fn is_equals(
         },
     }
 }
-/**
- * For "==="
- */
+/// Operator definition of the [STRICT_EQUALS] operator (`===`)
+///
+/// [STRICT_EQUALS]: crate::parser::ast::Operator::StrictEquals
 pub fn is_strict_equals(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -4684,9 +4681,9 @@ pub fn is_strict_equals(
         },
     }
 }
-/**
- * For "&lt;"
- */
+/// Operator definition of the [LESS_THAN] operator (`<`)
+///
+/// [LESS_THAN]: crate::parser::ast::Operator::LessThan
 pub fn is_less_than(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -4868,7 +4865,9 @@ pub fn is_less_than(
         _ => false,
     }
 }
-
+/// Operator definition of the [GREATER_THAN] operator (`>`)
+///
+/// [GREATER_THAN]: crate::parser::ast::Operator::GreaterThan
 pub fn is_greater_than(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -5050,9 +5049,9 @@ pub fn is_greater_than(
         _ => false,
     }
 }
-/**
- * For "&lt;="
- */
+/// Operator definition of the [LESS_THAN_OR_EQUALS] operator (`<=`)
+///
+/// [LESS_THAN_OR_EQUALS]: crate::parser::ast::Operator::LessThanOrEquals
 pub fn is_less_than_or_equals(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
@@ -5062,9 +5061,9 @@ pub fn is_less_than_or_equals(
     is_less_than(interpreter, left_side_operand, right_side_operand, pos) ||
             is_equals(interpreter, left_side_operand, right_side_operand, pos)
 }
-/**
- * For "&gt;="
- */
+/// Operator definition of the [GREATER_THAN_OR_EQUALS] operator (`>=`)
+///
+/// [GREATER_THAN_OR_EQUALS]: crate::parser::ast::Operator::GreaterThanOrEquals
 pub fn is_greater_than_or_equals(
     interpreter: &mut Interpreter,
     left_side_operand: &DataObjectRef,
