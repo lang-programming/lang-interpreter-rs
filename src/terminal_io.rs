@@ -114,6 +114,9 @@ impl TerminalIO {
         }
     }
 
+    /// Creates a [TerminalIO] instance with a custom logger
+    ///
+    /// This feature is only available if the `custom-logging` feature is enabled
     #[cfg(feature = "custom-logging")]
     pub fn with_custom_logger(log_file: Option<OsString>, logger: Box<dyn Logger>) -> Result<Self, io::Error> {
         let file = if let Some(log_file) = log_file {

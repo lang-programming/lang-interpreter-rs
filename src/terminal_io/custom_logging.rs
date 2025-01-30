@@ -3,14 +3,18 @@
 pub mod wasm;
 
 use std::fmt::Debug;
-use crate::terminal_io::Level;
+use crate::terminal_io::{Level, TerminalIO};
 
 /// This trait is used to abstract logging functionality
+///
+/// This trait is only available if the `custom-logging` feature is enabled
 pub trait Logger: Debug {
     fn log(&mut self, lvl: Level, time_label: &str, text: &str, tag: &str);
 }
 
 /// This [Logger] prints to standard out
+///
+/// This struct is only available if the `custom-logging` feature is enabled
 #[derive(Debug)]
 pub struct DefaultLogger;
 

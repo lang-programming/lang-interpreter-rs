@@ -1,6 +1,8 @@
 use crate::terminal_io::{Level, Logger};
 
 /// This [Logger] prints to the web browser console
+///
+/// This struct is only available if the `custom-logging` and the `wasm` features are enabled
 #[derive(Debug)]
 pub struct JsConsoleLogger;
 
