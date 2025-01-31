@@ -30,7 +30,7 @@ fn call_conversion_method(
 }
 
 //DataType conversion methods
-pub fn convert_byte_buffer_to_text(
+fn convert_byte_buffer_to_text(
     operand: Gc<GcCell<Box<[u8]>>>,
 ) -> String {
     let mut builder = String::new();
@@ -156,7 +156,7 @@ fn convert_struct_to_text(
     builder
 }
 
-pub fn to_text_internal(
+fn to_text_internal(
     interpreter: &mut Interpreter,
     operand: &DataObjectRef,
     recursion_step: usize,
