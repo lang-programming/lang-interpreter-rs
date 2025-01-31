@@ -3,7 +3,7 @@
 pub mod wasm;
 
 use std::fmt::Debug;
-use crate::terminal_io::{Level, TerminalIO};
+use crate::terminal_io::Level;
 
 /// This trait is used to abstract logging functionality
 ///
