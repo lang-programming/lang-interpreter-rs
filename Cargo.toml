@@ -3,7 +3,7 @@ members = ["lang-interpreter-macros"]
 
 [package]
 name = "lang-interpreter"
-version = "0.0.6"
+version = "0.0.7-dev"
 edition = "2021"
 authors = ["JDDev0 <jddev0@dorneger.at>"]
 description = "A rust reimplementation of the Standard Lang interpreter"
