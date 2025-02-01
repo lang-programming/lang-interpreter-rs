@@ -7,7 +7,7 @@ use web_sys::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::wasm_bindgen::JsValue;
 use crate::interpreter::data::function::native::NativeError;
 use crate::interpreter::platform::PlatformAPI;
-
+use crate::regex_patterns;
 
 /// This used fetch for io operations.
 ///
@@ -57,7 +57,7 @@ impl PlatformAPI for WASMPlatformAPI {
             path = Path::new("./");
         }
 
-        let path = &*path.to_string_lossy();
+        let path = &*regex_patterns::WASM_STARTS_WITH_MULTIPLE_DOUBLE_SLASH.replace_all(&path.to_string_lossy(), "/").to_string();
 
         let location = js_sys::Reflect::get(js_sys::global().as_ref(), &"location".into()).map_err(|err| Error::new(
             ErrorKind::Other,
@@ -66,7 +66,6 @@ impl PlatformAPI for WASMPlatformAPI {
 
         let location = WorkerLocation::from(location);
 
-        //TODO fix url creation (Double slash: "//")
         let location = Url::new_with_base(path, &location.href()).map_err(|err| Error::new(
             ErrorKind::Other,
             err.as_string().as_deref().unwrap_or("Error"),
@@ -84,9 +83,11 @@ impl PlatformAPI for WASMPlatformAPI {
     fn get_lang_reader(&self, lang_file: &Path) -> Result<Box<[u8]>, Error> {
         #[inline(always)]
         fn internal(lang_file: &Path) -> Result<Box<[u8]>, JsValue> {
+            let lang_file = &*regex_patterns::WASM_STARTS_WITH_MULTIPLE_DOUBLE_SLASH.replace_all(&lang_file.to_string_lossy(), "/").to_string();
+
             let request = XmlHttpRequest::new()?;
             request.set_response_type(XmlHttpRequestResponseType::Arraybuffer);
-            request.open_with_async("GET", &lang_file.to_string_lossy(), false)?;
+            request.open_with_async("GET", lang_file, false)?;
             request.send()?;
 
             let status_code = request.status().unwrap_or(500);

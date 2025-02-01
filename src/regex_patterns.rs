@@ -69,3 +69,7 @@ pub static STARTS_WITH_ASSIGNMENT_OPERATOR: LazyLock<Regex, fn() -> Regex> =
 
 pub static UTILS_PARENT_FOLDER: LazyLock<Regex, fn() -> Regex> =
     LazyLock::new(|| Regex::new(r"\/([^/]|[^/.][^/]|[^/][^/.]|[^/]{3,})\/\.\.\/").unwrap());
+
+#[cfg(feature = "wasm-platform-api")]
+pub static WASM_STARTS_WITH_MULTIPLE_DOUBLE_SLASH: LazyLock<Regex, fn() -> Regex> =
+    LazyLock::new(|| Regex::new(r"^//+").unwrap());

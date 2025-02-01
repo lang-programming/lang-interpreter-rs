@@ -13132,8 +13132,7 @@ mod linker_functions {
         interpreter.enter_scope(Some(lang_args));
 
         let lang_code = if inside_lang_standard_implementation {
-            let file = Interpreter::RESOURCES_DIR.
-                    get_file(absolute_path);
+            let file = Interpreter::RESOURCES_DIR.get_file(absolute_path);
 
             let Some(file) = file else {
                 interpreter.exit_scope();
