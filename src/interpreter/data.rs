@@ -332,9 +332,7 @@ impl DataObject {
         }
     }
 
-    /**
-     * Creates a new data object of type NULL
-     */
+    /// Creates a new data object of type [NULL](DataType::NULL)
     pub fn new() -> Self {
         Self {
             value: DataValue::Null,
@@ -460,11 +458,11 @@ impl DataObject {
         Ok(())
     }
 
-    /**
-     * This method <b>ignores</b> the final and static state of the data object<br>
-     * This method will not modify variableName<br>
-     * This method will also not modify finalData nor staticData (<b>Except</b>: copyStaticAndFinalModifiers flag is set)
-     */
+    /// This method clones the value of `data_object` into self.
+    ///
+    /// This method **ignores** the final and static state of this data object
+    /// This method will not modify the variableName.
+    /// This method will also not modify final nor static flags (**Except** the copy static and final modifiers flag is set in `data_object`)
     pub fn set_data(&mut self, data_object: &DataObject) -> Result<&mut Self, DataTypeConstraintError> {
         self.check_type(data_object.value.data_type())?;
 
@@ -745,9 +743,7 @@ impl DataObject {
         }
     }
 
-    /**
-     * Sets data to INT = 1 if boolean value is true else INT = 0
-     */
+    /// Sets data to [INT](DataType::INT) with the value 1 if `value` is true else 0
     pub fn set_bool(&mut self, value: bool) -> Result<&mut Self, DataTypeConstraintError> {
         if self.is_final_data() {
             return Ok(self);
