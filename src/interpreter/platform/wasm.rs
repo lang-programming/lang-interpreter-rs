@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::io::{Error, ErrorKind};
+use std::mem;
 use std::path::{Path, PathBuf};
 use web_sys::{js_sys, Url, WorkerLocation, XmlHttpRequest, XmlHttpRequestResponseType};
 use web_sys::js_sys::{ArrayBuffer, Uint8Array};
@@ -25,11 +26,17 @@ use crate::regex_patterns;
 ///
 /// [Web Worker]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
 #[derive(Debug)]
-pub struct WASMPlatformAPI;
+pub struct WASMPlatformAPI {
+    print_buffer: String,
+    print_error_buffer: String,
+}
 
 impl WASMPlatformAPI {
     pub fn new() -> Self {
-        Self
+        Self {
+            print_buffer: String::new(),
+            print_error_buffer: String::new(),
+        }
     }
 }
 
@@ -132,12 +139,15 @@ impl PlatformAPI for WASMPlatformAPI {
     }
 
     fn print(&mut self, text: &str) {
-        //TODO cache and do the printing in println only
-        self.println(text);
+        self.print_buffer += text;
     }
 
     fn println(&mut self, text: &str) {
-        //TODO cache and print in println
+        let text = if self.print_buffer.is_empty() {
+            text.to_string()
+        }else {
+            mem::take(&mut self.print_buffer) + text
+        };
 
         if text.is_empty() {
             web_sys::console::log_0();
@@ -147,12 +157,15 @@ impl PlatformAPI for WASMPlatformAPI {
     }
 
     fn print_error(&mut self, text: &str) {
-        //TODO cache and do the printing in println_error only
-        self.println_error(text);
+        self.print_error_buffer += text;
     }
 
     fn println_error(&mut self, text: &str) {
-        //TODO cache and print in println
+        let text = if self.print_error_buffer.is_empty() {
+            text.to_string()
+        }else {
+            mem::take(&mut self.print_error_buffer) + text
+        };
 
         if text.is_empty() {
             web_sys::console::error_0();
