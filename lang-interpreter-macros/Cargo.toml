@@ -1,7 +1,7 @@
 [package]
 name = "lang-interpreter-macros"
-version = "0.2.1"
-edition = "2021"
+version = "0.3.0"
+edition = "2024"
 authors = ["JDDev0 <jddev0@dorneger.at>"]
 description = "Proc Macros for the lang-interpreter crate"
 repository = "https://github.com/lang-programming/lang-interpreter-rs"
@@ -18,6 +18,6 @@ proc-macro = true
 
 [dependencies]
 darling = "0.20.10"
-syn = "2.0.96"
+syn = "2.0.98"
 quote = "1.0.38"
 proc-macro2 = "1.0.93"
