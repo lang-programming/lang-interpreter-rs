@@ -866,23 +866,21 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
 
         let mut module_path: Option<String> = None;
         let mut module_file: Option<&str> = None;
-        //TODO improve when if let chains become stable
-        if current_stack_element.lang_path().starts_with("<module:") {
-            if let Some(module) = current_stack_element.module() {
-                let prefix = format!(
-                    "<module:{}[{}]>",
-                    module.file(),
-                    module.lang_module_configuration().name()
-                );
+        if current_stack_element.lang_path().starts_with("<module:") &&
+                let Some(module) = current_stack_element.module() {
+            let prefix = format!(
+                "<module:{}[{}]>",
+                module.file(),
+                module.lang_module_configuration().name()
+            );
 
-                let mut path = current_stack_element.lang_path()[prefix.len()..].to_string();
-                if !path.starts_with("/") {
-                    path = "/".to_string() + &path;
-                }
-
-                module_path = Some(path);
-                module_file = current_stack_element.lang_file();
+            let mut path = current_stack_element.lang_path()[prefix.len()..].to_string();
+            if !path.starts_with("/") {
+                path = "/".to_string() + &path;
             }
+
+            module_path = Some(path);
+            module_file = current_stack_element.lang_file();
         }
 
         DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -928,23 +926,21 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                 map(|ele| {
                     let mut module_path: Option<String> = None;
                     let mut module_file: Option<&str> = None;
-                    //TODO improve when if let chains become stable
-                    if ele.lang_path().starts_with("<module:") {
-                        if let Some(module) = ele.module() {
-                            let prefix = format!(
-                                "<module:{}[{}]>",
-                                module.file(),
-                                module.lang_module_configuration().name()
-                            );
+                    if ele.lang_path().starts_with("<module:") &&
+                            let Some(module) = ele.module() {
+                        let prefix = format!(
+                            "<module:{}[{}]>",
+                            module.file(),
+                            module.lang_module_configuration().name()
+                        );
 
-                            let mut path = ele.lang_path()[prefix.len()..].to_string();
-                            if !path.starts_with("/") {
-                                path = "/".to_string() + &path;
-                            }
-
-                            module_path = Some(path);
-                            module_file = ele.lang_file();
+                        let mut path = ele.lang_path()[prefix.len()..].to_string();
+                        if !path.starts_with("/") {
+                            path = "/".to_string() + &path;
                         }
+
+                        module_path = Some(path);
+                        module_file = ele.lang_file();
                     }
 
                     DataObjectRef::new(DataObject::with_update(|data_object| {

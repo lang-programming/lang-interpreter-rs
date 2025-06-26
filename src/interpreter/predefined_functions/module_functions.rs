@@ -399,7 +399,6 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         function_object: DataObjectRef,
     ) -> OptionDataObjectRef {
         let module = interpreter.current_call_stack_element().module();
-        //TODO improve when if let chains become stable
         let Some(module) = module else {
             return Some(interpreter.set_errno_error_object(
                 InterpretingError::FunctionNotSupported,
@@ -458,7 +457,6 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
         function_object: DataObjectRef,
     ) -> OptionDataObjectRef {
         let module = interpreter.current_call_stack_element().module();
-        //TODO improve when if let chains become stable
         let Some(module) = module else {
             return Some(interpreter.set_errno_error_object(
                 InterpretingError::FunctionNotSupported,
@@ -555,7 +553,6 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             final_data: bool,
         ) -> OptionDataObjectRef {
             let module = interpreter.current_call_stack_element().module();
-            //TODO improve when if let chains become stable
             let Some(module) = module else {
                 return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
@@ -658,7 +655,6 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             final_data: bool,
         ) -> OptionDataObjectRef {
             let module = interpreter.current_call_stack_element().module();
-            //TODO improve when if let chains become stable
             let Some(module) = module else {
                 return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,
@@ -761,7 +757,6 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             final_data: bool,
         ) -> OptionDataObjectRef {
             let module = interpreter.current_call_stack_element().module();
-            //TODO improve when if let chains become stable
             let Some(module) = module else {
                 return Some(interpreter.set_errno_error_object(
                     InterpretingError::FunctionNotSupported,

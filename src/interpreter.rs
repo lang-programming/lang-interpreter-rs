@@ -2519,31 +2519,29 @@ impl Interpreter {
         let error_type;
         let error_message;
 
-        //TODO improve when if let chains become stable
         'skip_error: {
-            if let Some(error_object) = &error_object {
-                if let Some(error_value) = error_object.error_value() {
-                    let message_node = node.child_nodes().get(1);
-                    let message_object = message_node.
-                            and_then(|node| self.interpret_node(None, node));
+            if let Some(error_object) = &error_object &&
+                    let Some(error_value) = error_object.error_value() {
+                let message_node = node.child_nodes().get(1);
+                let message_object = message_node.
+                        and_then(|node| self.interpret_node(None, node));
 
-                    error_type = error_value.err();
+                error_type = error_value.err();
 
-                    if let Some(message_object) = message_object {
-                        error_message = Some(conversions::to_text(self, &message_object, message_node.unwrap().pos()));
+                if let Some(message_object) = message_object {
+                    error_message = Some(conversions::to_text(self, &message_object, message_node.unwrap().pos()));
 
-                        let error_message = error_message.as_deref();
-                        self.execution_state.returned_or_thrown_value = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
-                            data_object.set_error(Gc::new(ErrorObject::new(error_value.err(), error_message)))
-                        }).unwrap()));
-                    }else {
-                        error_message = None;
+                    let error_message = error_message.as_deref();
+                    self.execution_state.returned_or_thrown_value = Some(DataObjectRef::new(DataObject::with_update(|data_object| {
+                        data_object.set_error(Gc::new(ErrorObject::new(error_value.err(), error_message)))
+                    }).unwrap()));
+                }else {
+                    error_message = None;
 
-                        self.execution_state.returned_or_thrown_value = Some(error_object.clone());
-                    }
-
-                    break 'skip_error;
+                    self.execution_state.returned_or_thrown_value = Some(error_object.clone());
                 }
+
+                break 'skip_error;
             }
 
             error_type = InterpretingError::IncompatibleDataType;
@@ -4172,13 +4170,9 @@ impl Interpreter {
         let function_lang_path = internal_function.lang_path();
         let function_lang_file = internal_function.lang_file();
 
-        //TODO improve when if let chains become stable
-        let function_name = if let Some(function_name) = function_name {
-            if fp.function_name().is_some() {
-                fp.to_string()
-            }else {
-                function_name.to_string()
-            }
+        let function_name = if let Some(function_name) = function_name &&
+                fp.function_name().is_none() {
+            function_name.to_string()
         }else {
             fp.to_string()
         };
@@ -4207,13 +4201,9 @@ impl Interpreter {
             }else {
                 function_lang_file
             },
-            //TODO improve when if let chains become stable
-            if let Some(member_of_class_value) = member_of_class {
-                if !member_of_class_value.borrow().is_class() {
-                    Some(member_of_class_value.borrow().base_definition().unwrap())
-                }else {
-                    member_of_class.cloned()
-                }
+            if let Some(member_of_class_value) = member_of_class &&
+                    !member_of_class_value.borrow().is_class() {
+                Some(member_of_class_value.borrow().base_definition().unwrap())
             }else {
                 member_of_class.cloned()
             },
@@ -4401,7 +4391,6 @@ impl Interpreter {
                 ));
             };
 
-            //TODO improve when if let chains become stable
             if let Some(object_value) = composite_type.object_value() {
                 if object_value.borrow().is_class() {
                     return Some(self.set_errno_error_object(
@@ -4475,7 +4464,6 @@ impl Interpreter {
         let fp = if let Some(composite_type) = composite_type {
             let object_value = composite_type.object_value();
 
-            //TODO improve when if let chains become stable
             if let Some(struct_value) = composite_type.struct_value() {
                 if !function_name.starts_with("fp.") {
                     function_name = "fp.".to_string() + &function_name;
@@ -4715,7 +4703,6 @@ impl Interpreter {
                 return function_pointer_data_object;
             }
 
-            //TODO improve when if let chains become stable
             let Some(function_pointer_data_object) = &function_pointer_data_object else {
                 return Some(self.set_errno_error_object(
                     InterpretingError::InvalidAssignment,
@@ -5064,7 +5051,6 @@ impl Interpreter {
                 return struct_data_object; //Forward error from getOrCreateDataObjectFromVariableName()
             }
 
-            //TODO improve when if let chains become stable
             let Some(struct_data_object) = &struct_data_object else {
                 return Some(self.set_errno_error_object(
                     InterpretingError::InvalidAssignment,
@@ -5219,7 +5205,6 @@ impl Interpreter {
                     break 'early_ret class_data_object; //Forward error from getOrCreateDataObjectFromVariableName()
                 }
 
-                //TODO improve when if let chains become stable
                 let Some(class_data_object) = &class_data_object else {
                     break 'early_ret Some(self.set_errno_error_object(
                         InterpretingError::InvalidAssignment,
@@ -5260,7 +5245,6 @@ impl Interpreter {
 
             let mut parent_class_object_list = Vec::with_capacity(parent_class_list.len());
             for parent_class in parent_class_list {
-                //TODO improve when if let chains become stable
                 let Some(object_value) = parent_class.object_value() else {
                     break 'early_ret Some(self.set_errno_error_object(
                         InterpretingError::IncompatibleDataType,
