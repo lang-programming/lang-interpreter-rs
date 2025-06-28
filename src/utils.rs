@@ -287,6 +287,7 @@ pub fn combine_arguments_without_argument_separators(
 /// Returns a new [Vec] where all arguments are separated with [Argument separator] values.
 ///
 /// [Argument separator]: DataType::ARGUMENT_SEPARATOR
+#[expect(clippy::let_and_return)]
 pub fn separate_arguments_with_argument_separators(
     argument_list: &[DataObjectRef],
 ) -> Vec<DataObjectRef> {

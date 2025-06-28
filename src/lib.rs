@@ -32,6 +32,8 @@
 #![warn(clippy::suboptimal_flops)]
 #![warn(clippy::too_long_first_doc_paragraph)]
 
+#![allow(clippy::uninlined_format_args)]
+
 //Triggered by Trace and Finalize derive
 #![allow(non_local_definitions)]
 

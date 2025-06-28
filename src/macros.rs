@@ -30,7 +30,7 @@
 ///
 /// * `$func` - An identifier of a rust function or lambda
 /// * `$value_dependencies` - A vector (`vec![val1, val2, ...]`) which contains all dependencies which are captured inside closure function
-///                           (This is important for the equals and strict equals operators when comparing lang functions)
+///   (This is important for the equals and strict equals operators when comparing lang functions)
 /// * `$metadata` - The Lang function metadata ([FunctionMetadata](crate::interpreter::data::function::FunctionMetadata))
 ///
 /// # Examples

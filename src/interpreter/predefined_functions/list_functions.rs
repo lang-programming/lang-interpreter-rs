@@ -1844,9 +1844,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
     ) -> DataObjectRef {
         let combined_list = lists.iter().
                 flat_map(|ele| {
-                    let arr = ele.list_value().unwrap().borrow().clone();
-
-                    arr
+                    ele.list_value().unwrap().borrow().clone()
                 }).collect();
 
         DataObjectRef::new(DataObject::with_update(|data_object| {

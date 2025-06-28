@@ -1804,9 +1804,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
     ) -> DataObjectRef {
         let combined_array = arrays.iter().
                 flat_map(|ele| {
-                    let arr = ele.array_value().unwrap().borrow().clone();
-
-                    arr
+                    ele.array_value().unwrap().borrow().clone()
                 }).collect();
 
         DataObjectRef::new(DataObject::with_update(|data_object| {
@@ -1898,7 +1896,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                 );
             }
 
-            if arr.len() == 0 || count == 0 {
+            if arr.is_empty() || count == 0 {
                 return DataObjectRef::new(DataObject::with_update(|data_object| {
                     data_object.set_array(Box::from([]))
                 }).unwrap());
@@ -2066,7 +2064,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                 ));
             }
 
-            if arr.len() == 0 || count == 0 {
+            if arr.is_empty() || count == 0 {
                 return Some(DataObjectRef::new(DataObject::with_update(|data_object| {
                     data_object.set_array(Box::from([]))
                 }).unwrap()));
