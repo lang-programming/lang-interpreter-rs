@@ -308,7 +308,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret_n = operators::op_call(
                 interpreter,
                 n,
-                &[b.clone()],
+                std::slice::from_ref(&b),
                 CodePosition::EMPTY,
             );
             args_a.push(utils::none_to_lang_void(ret_n));
@@ -364,7 +364,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret_n = operators::op_call(
                 interpreter,
                 n,
-                &[b.clone()],
+                std::slice::from_ref(&b),
                 CodePosition::EMPTY,
             );
             args_a.push(utils::none_to_lang_void(ret_n));
@@ -417,7 +417,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret_n = operators::op_call(
                 interpreter,
                 n,
-                &[b.clone()],
+                std::slice::from_ref(&b),
                 CodePosition::EMPTY,
             );
             args_a.push(utils::none_to_lang_void(ret_n));

@@ -41,12 +41,11 @@ impl LangTest {
             let _ = write!(builder, "\n{line_prefix}Message:  {message}");
         }
 
-        if let Some(actual_value) = actual_value {
-            if let Some(expected_value) = expected_value {
+        if let Some(actual_value) = actual_value
+            && let Some(expected_value) = expected_value {
                 let _ = write!(builder, "\n{line_prefix}Actual:   {actual_value}");
                 let _ = write!(builder, "\n{line_prefix}Excepted: {expected_value}");
             }
-        }
 
         if let Some(stack_trace) = stack_trace {
             let _ = write!(builder, "\n{line_prefix}Stack trace:{stack_trace}");

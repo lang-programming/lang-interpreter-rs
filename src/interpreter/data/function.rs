@@ -283,15 +283,14 @@ impl Function {
         let mut argument_index = 0;
         'outer:
         for i in 0..arg_cnt {
-            if let Some(call_cnt) = self.combinator_function_call_count {
-                if argument_index >= combined_argument_list.len() &&
+            if let Some(call_cnt) = self.combinator_function_call_count
+                && argument_index >= combined_argument_list.len() &&
                         (self.var_args_parameter.is_none() || call_cnt == 0) {
                     return Some(self.combinator_call(
                         this_object_with_super_level,
                         combined_argument_list,
                     ));
                 }
-            }
 
             let parameter = &self.parameter_list[i];
 
@@ -551,8 +550,8 @@ impl Function {
 
         let ret = ret.unwrap();
 
-        if let Some(type_constraint) = &self.return_value_type_constraint {
-            if !interpreter.is_thrown_value() {
+        if let Some(type_constraint) = &self.return_value_type_constraint
+            && !interpreter.is_thrown_value() {
                 //Thrown values are always allowed
 
                 let ret = utils::none_to_lang_void(ret.clone());
@@ -564,7 +563,6 @@ impl Function {
                     ));
                 }
             }
-        }
 
         ret
     }
@@ -1002,13 +1000,12 @@ impl FunctionPointerObject {
         functions: &[InternalFunction],
         metadata: &FunctionMetadata,
     ) -> Result<Self, DataTypeConstraintError> {
-        if let Some(this_object) = &this_object {
-            if this_object.borrow().is_class() {
+        if let Some(this_object) = &this_object
+            && this_object.borrow().is_class() {
                 return Err(DataTypeConstraintError::with_message(
                     "The this-object must be an object",
                 ));
             }
-        }
 
         Ok(Self {
             this_object,

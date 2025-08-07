@@ -198,13 +198,13 @@ impl Interpreter {
         &self.data[scope_id]
     }
 
-    pub fn data_ref(&self) -> Ref<Data> {
+    pub fn data_ref(&self) -> Ref<'_, Data> {
         let scope_id = self.scope_id as usize;
 
         self.data[scope_id].borrow()
     }
 
-    pub fn data_mut(&mut self) -> RefMut<Data> {
+    pub fn data_mut(&mut self) -> RefMut<'_, Data> {
         let scope_id = self.scope_id as usize;
 
         self.data[scope_id].borrow_mut()
@@ -634,8 +634,8 @@ impl Interpreter {
             variable_name = variable_name[index_module_identifier_end + 4..].to_string();
         }
 
-        if let Some(composite_type) = &composite_type {
-            if let Some(object_data) = composite_type.object_value() {
+        if let Some(composite_type) = &composite_type
+            && let Some(object_data) = composite_type.object_value() {
                 if variable_name.starts_with("mp.") && !object_data.borrow().is_class() {
                     let variable_names = object_data.borrow().methods().
                             keys().
@@ -687,7 +687,6 @@ impl Interpreter {
                     );
                 }
             }
-        }
 
         if variable_name.starts_with("$") || variable_name.starts_with("&") ||
                 variable_name.starts_with("fp.") {
@@ -707,14 +706,13 @@ impl Interpreter {
                             map(Rc::from).
                             collect::<Vec<_>>();
 
-                    if !object_data.borrow().is_class() {
-                        if let Some(members) = object_data.borrow().members() {
+                    if !object_data.borrow().is_class()
+                        && let Some(members) = object_data.borrow().members() {
                             variable_names.extend(members.iter().
                                     filter_map(|data_object| data_object.
                                             variable_name().
                                             map(Rc::from)));
                         }
-                    }
 
                     variable_names.into_boxed_slice()
                 }else {
@@ -804,17 +802,15 @@ impl Interpreter {
                 return node.clone();
             }
 
-            if let Some(struct_value) = previous_value.struct_value() {
-                if struct_value.is_definition() {
+            if let Some(struct_value) = previous_value.struct_value()
+                && struct_value.is_definition() {
                     return node.clone();
                 }
-            }
 
-            if let Some(object_value) = previous_value.object_value() {
-                if object_value.borrow().is_class() || object_value.borrow().methods().contains_key("op:call") {
+            if let Some(object_value) = previous_value.object_value()
+                && (object_value.borrow().is_class() || object_value.borrow().methods().contains_key("op:call")) {
                     return node.clone();
                 }
-            }
         }
 
         //Previous node value wasn't a function -> return children of node in between "(" and ")" as ListNode
@@ -2936,15 +2932,14 @@ impl Interpreter {
 
                     drop(lvalue);
 
-                    if let Some(func_name) = variable_name.strip_prefix("fp.") {
-                        if self.funcs.iter().any(|(key, _)| *func_name == **key) {
+                    if let Some(func_name) = variable_name.strip_prefix("fp.")
+                        && self.funcs.iter().any(|(key, _)| *func_name == **key) {
                             self.set_errno(
                                 InterpretingError::VarShadowingWarning,
                                 Some(&format!("\"{variable_name}\" shadows a predefined or linker function")),
                                 node.pos(),
                             );
                         }
-                    }
 
                     return Some(rvalue);
                 }
@@ -3100,8 +3095,8 @@ impl Interpreter {
                             }
                         }
 
-                        if ret.is_none() {
-                            if let Some(members) = object_value.borrow().members() {
+                        if ret.is_none()
+                            && let Some(members) = object_value.borrow().members() {
                                 //If a static member and a member have the same variable name, the static member will be shadowed
                                 for member in members {
                                     let member_name = member.variable_name().unwrap();
@@ -3112,7 +3107,6 @@ impl Interpreter {
                                     }
                                 }
                             }
-                        }
 
                         ret
                     }
@@ -3160,8 +3154,8 @@ impl Interpreter {
             return Some(ret);
         }
 
-        if supports_pointer_dereferencing {
-            if let Some(index) = variable_name.find("*") {
+        if supports_pointer_dereferencing
+            && let Some(index) = variable_name.find("*") {
                 let referenced_variable_name = variable_name[..index].to_string() +
                         &variable_name[index + 1..];
                 let referenced_variable = self.get_or_create_data_object_from_variable_name(
@@ -3192,10 +3186,9 @@ impl Interpreter {
                 //If no var pointer was dereferenced, return null data object
                 return Some(DataObjectRef::new(DataObject::new()));
             }
-        }
 
-        if supports_pointer_referencing && variable_name.contains("]") {
-            if let Some(index_opening_bracket) = variable_name.find("[") {
+        if supports_pointer_referencing && variable_name.contains("]")
+            && let Some(index_opening_bracket) = variable_name.find("[") {
                 let index_matching_bracket = utils::get_index_of_matching_bracket_str(
                     variable_name,
                     index_opening_bracket,
@@ -3245,7 +3238,6 @@ impl Interpreter {
                     None
                 };
             }
-        }
 
         if !should_create_data_object {
             return None;
@@ -3330,9 +3322,9 @@ impl Interpreter {
             ));
         }
 
-        if let Some(composite_type) = &composite_type {
-            if let Some(object_value) = composite_type.object_value() {
-                if (variable_name.starts_with("mp.") || variable_name.starts_with("op:") || variable_name.starts_with("to:")) &&
+        if let Some(composite_type) = &composite_type
+            && let Some(object_value) = composite_type.object_value()
+                && (variable_name.starts_with("mp.") || variable_name.starts_with("op:") || variable_name.starts_with("to:")) &&
                         !object_value.borrow().is_class() {
                     return self.get_or_create_data_object_from_variable_name(
                         Some(composite_type.clone()),
@@ -3345,8 +3337,6 @@ impl Interpreter {
                         node.pos(),
                     );
                 }
-            }
-        }
 
         if variable_name.starts_with("$") || variable_name.starts_with("&") || variable_name.starts_with("fp.") {
             return self.get_or_create_data_object_from_variable_name(
@@ -3700,8 +3690,8 @@ impl Interpreter {
                     //Set arguments
                     let mut argument_index = 0;
                     for i in 0..arg_count {
-                        if let Some(call_count) = function.combinator_function_call_count() {
-                            if argument_index >= combined_argument_list.len() &&
+                        if let Some(call_count) = function.combinator_function_call_count()
+                            && argument_index >= combined_argument_list.len() &&
                                     (function.var_args_parameter().is_none() || call_count == 0) {
                                 combinator_function_call_ret = Some(function.combinator_call(
                                     this_object.map(|this_object| (this_object.clone(), internal_function.super_level().unwrap())),
@@ -3710,7 +3700,6 @@ impl Interpreter {
 
                                 break;
                             }
-                        }
 
                         let parameter = &parameter_list[i];
                         let argument_pos = argument_pos_list[i];
@@ -4054,8 +4043,8 @@ impl Interpreter {
                 let ret_tmp = combinator_function_call_ret.
                         unwrap_or_else(|| utils::none_to_lang_void(self.get_and_reset_return_value()));
 
-                if !thrown_value {
-                    if let Some(return_value_type_constraint) = return_value_type_constraint {
+                if !thrown_value
+                    && let Some(return_value_type_constraint) = return_value_type_constraint {
                         //Thrown values are always allowed
                         if !return_value_type_constraint.is_type_allowed(ret_tmp.data_type()) {
                             return Some(self.set_errno_error_object(
@@ -4068,7 +4057,6 @@ impl Interpreter {
                             ));
                         }
                     }
-                }
 
                 Some(ret_tmp)
             },
@@ -4261,8 +4249,8 @@ impl Interpreter {
             }
 
             //Composite type unpacking
-            if let NodeData::UnprocessedVariableName(variable_name) = argument.node_data() {
-                if variable_name.contains("&") && variable_name.ends_with("...") {
+            if let NodeData::UnprocessedVariableName(variable_name) = argument.node_data()
+                && variable_name.contains("&") && variable_name.ends_with("...") {
                     let mut variable_name = variable_name.to_string();
 
                     let is_module_variable = variable_name.starts_with("[[");
@@ -4360,7 +4348,6 @@ impl Interpreter {
                         continue;
                     }
                 }
-            }
 
             let argument_value = self.interpret_node(None, argument);
             if let Some(argument_value) = &argument_value {
@@ -4768,15 +4755,14 @@ impl Interpreter {
                 let token = token.trim();
 
                 if token.starts_with("@param") && token.chars().nth(6).
-                        is_some_and(|char| char.is_whitespace()) {
-                    if let Some(colon_index) = token.find(":") {
+                        is_some_and(|char| char.is_whitespace())
+                    && let Some(colon_index) = token.find(":") {
                         let name = token[6..colon_index].trim();
                         let comment = token[colon_index + 1..].trim();
                         parameter_doc_comments.insert(name, comment);
 
                         continue;
                     }
-                }
 
                 string_builder += token;
                 string_builder += "\n";

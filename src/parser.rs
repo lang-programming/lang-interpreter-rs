@@ -469,8 +469,8 @@ impl Parser {
                                 }
                             );
 
-                            if current_operator_precedence <= operator.unwrap().precedence() {
-                                if let Some(tokens_left) = tokens_left {
+                            if current_operator_precedence <= operator.unwrap().precedence()
+                                && let Some(tokens_left) = tokens_left {
                                     tokens_left.append(tokens);
 
                                     if !whitespaces.is_empty() {
@@ -481,7 +481,6 @@ impl Parser {
 
                                     break 'tokenProcessing;
                                 }
-                            }
 
                             if !whitespaces.is_empty() {
                                 whitespaces.clear();
@@ -671,8 +670,8 @@ impl Parser {
                         if operator.unwrap().operator_type().is_compatible_with(operator_type) &&
                                 (!other_tokens.is_empty() || !left_nodes.is_empty()) {
                             //No "<=" because it should be parsed right-to-left
-                            if current_operator_precedence < operator.unwrap().precedence() {
-                                if let Some(tokens_left) = tokens_left {
+                            if current_operator_precedence < operator.unwrap().precedence()
+                                && let Some(tokens_left) = tokens_left {
                                     tokens_left.append(tokens);
 
                                     if !whitespaces.is_empty() {
@@ -683,7 +682,6 @@ impl Parser {
 
                                     break 'tokenProcessing;
                                 }
-                            }
 
                             //Add as value if nothing is behind operator
                             if tokens.len() == 1 {
@@ -949,8 +947,8 @@ impl Parser {
 
                         match operator {
                             Some(op) if op.is_binary() && something_before_operator => {
-                                if current_operator_precedence <= op.precedence() {
-                                    if let Some(tokens_left) = tokens_left {
+                                if current_operator_precedence <= op.precedence()
+                                    && let Some(tokens_left) = tokens_left {
                                         tokens_left.append(tokens);
 
                                         if !whitespaces.is_empty() {
@@ -961,7 +959,6 @@ impl Parser {
 
                                         break 'tokenProcessing;
                                     }
-                                }
 
                                 //Add as value if nothing is behind "operator"
                                 if tokens.len() == 1 {
@@ -1102,8 +1099,8 @@ impl Parser {
                         if operator.unwrap().operator_type().is_compatible_with(operator_type) &&
                                 (!other_tokens.is_empty() || !left_nodes.is_empty()) {
                             //No "<=" because it should be parsed right-to-left
-                            if current_operator_precedence < operator.unwrap().precedence() {
-                                if let Some(tokens_left) = tokens_left {
+                            if current_operator_precedence < operator.unwrap().precedence()
+                                && let Some(tokens_left) = tokens_left {
                                     tokens_left.append(tokens);
 
                                     if !whitespaces.is_empty() {
@@ -1114,7 +1111,6 @@ impl Parser {
 
                                     break 'tokenProcessing;
                                 }
-                            }
 
                             //Parse middle part
                             let mut inner_tokens_left_behind_middle_part_end = VecDeque::new();
@@ -1234,8 +1230,8 @@ impl Parser {
                         }
                     }
 
-                    if value == ":" {
-                        if let Some(tokens_left_behind_middle_part_end) = tokens_left_behind_middle_part_end {
+                    if value == ":"
+                        && let Some(tokens_left_behind_middle_part_end) = tokens_left_behind_middle_part_end {
                             //End of inline if or slice
 
                             //Replace DUMMY slice operator
@@ -1252,15 +1248,13 @@ impl Parser {
                             tokens_left_behind_middle_part_end.append(tokens);
 
                             //Reset (Simulated end)
-                            if let Some(tokens_left) = tokens_left {
-                                if !tokens_left.is_empty() {
+                            if let Some(tokens_left) = tokens_left
+                                && !tokens_left.is_empty() {
                                     tokens_left.clear();
                                 }
-                            }
 
                             break 'tokenProcessing;
                         }
-                    }
 
                     tokens.pop_front();
 
@@ -1356,11 +1350,10 @@ impl Parser {
             Node::new_list_node(Vec::from_iter(left_nodes.drain(..)))
         };
 
-        if let Some(tokens_left) = tokens_left {
-            if !tokens.is_empty() {
+        if let Some(tokens_left) = tokens_left
+            && !tokens.is_empty() {
                 tokens_left.append(tokens);
             }
-        }
 
         let pos = left_node.pos().combine(&right_node.as_ref().map(Node::pos).unwrap_or(left_node.pos()));
 
@@ -4486,13 +4479,12 @@ impl Parser {
         }
 
         //FLOAT
-        if token.ends_with("f") || token.ends_with("F") {
-            if let Ok(value) = f32::from_str(&token[..token.len() - 1]) {
+        if (token.ends_with("f") || token.ends_with("F"))
+            && let Ok(value) = f32::from_str(&token[..token.len() - 1]) {
                 nodes.push(Node::new_float_value_node(number_token.pos(), value));
 
                 return;
             }
-        }
 
         //DOUBLE
         #[expect(clippy::needless_return)]

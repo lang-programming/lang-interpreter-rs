@@ -128,11 +128,10 @@ impl PlatformAPI for DefaultPlatformAPI {
             let file_type = file.file_type()?;
             if !file_type.is_dir() {
                 let file_name = file.file_name();
-                if let Some(file_name) = file_name.to_str() {
-                    if file_name.to_ascii_lowercase().ends_with(".lang") {
+                if let Some(file_name) = file_name.to_str()
+                    && file_name.to_ascii_lowercase().ends_with(".lang") {
                         lang_files.push(file.path());
                     }
-                }
             }
         }
 

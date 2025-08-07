@@ -342,9 +342,9 @@ impl Lexer {
             }
 
             let byte_index = current_line.find("\\");
-            if let Some(byte_index) = byte_index {
-                if end_byte_index.is_some_and(|end_byte_index| byte_index < end_byte_index) ||
-                        (end_byte_index.is_none() && byte_index < current_line.len() - 1) {
+            if let Some(byte_index) = byte_index
+                && (end_byte_index.is_some_and(|end_byte_index| byte_index < end_byte_index) ||
+                        (end_byte_index.is_none() && byte_index < current_line.len() - 1)) {
                     let token = &current_line[..byte_index];
 
                     from_column = self.column;
@@ -361,7 +361,6 @@ impl Lexer {
 
                     continue;
                 }
-            }
 
             let was_lines_empty = lines.is_empty();
             let ret = self.try_tokenize_new_line(&current_line, lines, tokens);
@@ -509,8 +508,8 @@ impl Lexer {
         while byte_end_index > 0 {
             let byte_index = current_line.find("\\");
 
-            if let Some(byte_index) = byte_index {
-                if byte_index < byte_end_index {
+            if let Some(byte_index) = byte_index
+                && byte_index < byte_end_index {
                     let token = &current_line[..byte_index];
                     let index = token.chars().count();
 
@@ -530,7 +529,6 @@ impl Lexer {
 
                     continue;
                 }
-            }
 
             let token = &current_line[..byte_end_index];
             let end_index = token.chars().count();
@@ -811,8 +809,8 @@ impl Lexer {
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
         let match_result = regex_patterns::STARTS_WITH_FUNCTION_IDENTIFIER.find(current_line);
-        if let Some(match_result) = match_result {
-            if match_result.start() == 0 {
+        if let Some(match_result) = match_result
+            && match_result.start() == 0 {
                 let token = match_result.as_str();
 
                 let from_column = self.column;
@@ -822,7 +820,6 @@ impl Lexer {
 
                 return Some(current_line[token.len()..].to_string())
             }
-        }
 
         None
     }
@@ -834,8 +831,8 @@ impl Lexer {
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
         let match_result = regex_patterns::STARTS_WITH_VAR_NAME_FULL_WITH_FUNCS_AND_PTR_AND_DEREFERENCE_WITH_OPERATOR_AND_CONVERSION_METHODS.find(current_line);
-        if let Some(match_result) = match_result {
-            if match_result.start() == 0 {
+        if let Some(match_result) = match_result
+            && match_result.start() == 0 {
                 let mut token = match_result.as_str();
 
                 //Check if var pointer brackets are closed correctly
@@ -866,7 +863,6 @@ impl Lexer {
 
                 return Some(current_line[token.len()..].to_string())
             }
-        }
 
         None
     }
@@ -898,8 +894,8 @@ impl Lexer {
         tokens: &mut Vec<Token>,
     ) -> Option<String> {
         let match_result = regex_patterns::STARTS_WITH_ARGUMENT_SEPARATOR.find(current_line);
-        if let Some(match_result) = match_result {
-            if match_result.start() == 0 {
+        if let Some(match_result) = match_result
+            && match_result.start() == 0 {
                 let token = match_result.as_str();
 
                 let from_column = self.column;
@@ -909,7 +905,6 @@ impl Lexer {
 
                 return Some(current_line[token.len()..].to_string())
             }
-        }
 
         None
     }
@@ -925,8 +920,8 @@ impl Lexer {
         }
 
         let match_result = regex_patterns::STARTS_WITH_ASSIGNMENT_OPERATOR.find(current_line);
-        if let Some(match_result) = match_result {
-            if match_result.start() == 0 {
+        if let Some(match_result) = match_result
+            && match_result.start() == 0 {
                 let token = match_result.as_str();
 
                 let from_column = self.column;
@@ -936,7 +931,6 @@ impl Lexer {
 
                 return Some(current_line[token.len()..].to_string())
             }
-        }
 
         if let Some(end) = current_line.strip_prefix(" = ") {
             let token = &current_line[..3];

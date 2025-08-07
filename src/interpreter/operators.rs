@@ -37,7 +37,7 @@ fn call_operator_method_2_arg(
         interpreter,
         left_side_operand,
         &("op:".to_string() + operator_name),
-        &[right_side_operand.clone()],
+        std::slice::from_ref(right_side_operand),
         pos,
     );
 
@@ -49,7 +49,7 @@ fn call_operator_method_2_arg(
         interpreter,
         right_side_operand,
         &("op:r-".to_string() + operator_name),
-        &[left_side_operand.clone()],
+        std::slice::from_ref(left_side_operand),
         pos,
     )
 }
@@ -2959,7 +2959,7 @@ pub fn op_or(
         return interpreter.call_function_pointer(
             &right_value,
             right_side_operand.variable_name().as_deref(),
-            &[left_side_operand.clone()],
+            std::slice::from_ref(left_side_operand),
             pos
         );
     }
@@ -3185,7 +3185,7 @@ pub fn op_rshift(
         return interpreter.call_function_pointer(
             &right_value,
             right_side_operand.variable_name().as_deref(),
-            &[left_side_operand.clone()],
+            std::slice::from_ref(left_side_operand),
             pos
         );
     }
@@ -3251,8 +3251,8 @@ pub fn op_rzshift(
         return Some(ret);
     }
 
-    if let Some(right_value) = right_side_operand.function_pointer_value() {
-        if let Some(left_value) = left_side_operand.array_value() {
+    if let Some(right_value) = right_side_operand.function_pointer_value()
+        && let Some(left_value) = left_side_operand.array_value() {
             return interpreter.call_function_pointer(
                 &right_value,
                 right_side_operand.variable_name().as_deref(),
@@ -3260,7 +3260,6 @@ pub fn op_rzshift(
                 pos
             );
         }
-    }
 
     match left_side_operand.data_value() {
         DataValue::Int(left_value) => {
@@ -4071,7 +4070,7 @@ pub fn op_iter(
         DataValue::Text(_) => {
             let basic_iterator_class = interpreter.standard_types.get("&BasicIterator").unwrap().object_value().unwrap();
 
-            Some(interpreter.call_constructor(&basic_iterator_class, &[operand.clone()], pos))
+            Some(interpreter.call_constructor(&basic_iterator_class, std::slice::from_ref(operand), pos))
         },
 
         _ => None,
@@ -4281,21 +4280,19 @@ pub fn is_equals(
                 return **left_value == *right_value;
             }
 
-            if left_value.chars().count() == 1 {
-                if let Some(right_value) = right_side_operand.char_value() {
+            if left_value.chars().count() == 1
+                && let Some(right_value) = right_side_operand.char_value() {
                     return left_value.chars().next().unwrap() == right_value;
                 }
-            }
 
             number.is_some_and(|_| is_equals(interpreter, right_side_operand, left_side_operand, pos))
         },
 
         DataValue::Char(left_value) => {
-            if let Some(right_value) = right_side_operand.text_value() {
-                if right_value.chars().count() == 1 {
+            if let Some(right_value) = right_side_operand.text_value()
+                && right_value.chars().count() == 1 {
                     return *left_value == right_value.chars().next().unwrap();
                 }
-            }
 
             number.is_some_and(|number| *left_value as i32 == number.int_value())
         },
@@ -4721,11 +4718,10 @@ pub fn is_less_than(
                 return **left_value < *right_value;
             }
 
-            if left_value.chars().count() == 1 {
-                if let Some(right_value) = right_side_operand.char_value() {
+            if left_value.chars().count() == 1
+                && let Some(right_value) = right_side_operand.char_value() {
                     return left_value.chars().next().unwrap() < right_value;
                 }
-            }
 
             let this_number = conversions::to_number(interpreter, left_side_operand, pos);
             let Some(this_number) = this_number else {
@@ -4743,11 +4739,10 @@ pub fn is_less_than(
         },
 
         DataValue::Char(left_value) => {
-            if let Some(right_value) = right_side_operand.text_value() {
-                if right_value.chars().count() == 1 {
+            if let Some(right_value) = right_side_operand.text_value()
+                && right_value.chars().count() == 1 {
                     return *left_value < right_value.chars().next().unwrap();
                 }
-            }
 
             match number.data_value().clone() {
                 DataValue::Int(number) => (*left_value as i32) < number,
@@ -4905,11 +4900,10 @@ pub fn is_greater_than(
                 return **left_value > *right_value;
             }
 
-            if left_value.chars().count() == 1 {
-                if let Some(right_value) = right_side_operand.char_value() {
+            if left_value.chars().count() == 1
+                && let Some(right_value) = right_side_operand.char_value() {
                     return left_value.chars().next().unwrap() > right_value;
                 }
-            }
 
             let this_number = conversions::to_number(interpreter, left_side_operand, pos);
             let Some(this_number) = this_number else {
@@ -4927,11 +4921,10 @@ pub fn is_greater_than(
         },
 
         DataValue::Char(left_value) => {
-            if let Some(right_value) = right_side_operand.text_value() {
-                if right_value.chars().count() == 1 {
+            if let Some(right_value) = right_side_operand.text_value()
+                && right_value.chars().count() == 1 {
                     return *left_value > right_value.chars().next().unwrap();
                 }
-            }
 
             match number.data_value().clone() {
                 DataValue::Int(number) => (*left_value as i32) > number,

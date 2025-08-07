@@ -944,7 +944,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                     let ret = utils::none_to_lang_void(interpreter.call_function_pointer(
                         &filter_object.function_pointer_value().unwrap(),
                         filter_object.variable_name().as_deref(),
-                        &[ele.clone()],
+                        std::slice::from_ref(ele),
                         CodePosition::EMPTY,
                     ));
 
@@ -993,7 +993,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                     let ret = utils::none_to_lang_void(interpreter.call_function_pointer(
                         &filter_object.function_pointer_value().unwrap(),
                         filter_object.variable_name().as_deref(),
-                        &[ele.clone()],
+                        std::slice::from_ref(ele),
                         CodePosition::EMPTY,
                     ));
 
@@ -1036,7 +1036,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             *ele = utils::none_to_lang_void(interpreter.call_function_pointer(
                 &map_object.function_pointer_value().unwrap(),
                 map_object.variable_name().as_deref(),
-                &[ele.clone()],
+                std::slice::from_ref(ele),
                 CodePosition::EMPTY,
             ));
         }
@@ -1076,7 +1076,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             new_arr.push(utils::none_to_lang_void(interpreter.call_function_pointer(
                 &map_object.function_pointer_value().unwrap(),
                 map_object.variable_name().as_deref(),
-                &[ele.clone()],
+                std::slice::from_ref(ele),
                 CodePosition::EMPTY,
             )));
         }
@@ -1508,7 +1508,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
                     interpreter.call_function_pointer(
                         &function_object.function_pointer_value().unwrap(),
                         function_object.variable_name().as_deref(),
-                        &[ele.clone()],
+                        std::slice::from_ref(ele),
                         CodePosition::EMPTY,
                     );
                 }
@@ -1682,7 +1682,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret =  utils::none_to_lang_void(interpreter.call_function_pointer(
                 &predicate_object.function_pointer_value().unwrap(),
                 predicate_object.variable_name().as_deref(),
-                &[ele.clone()],
+                std::slice::from_ref(ele),
                 CodePosition::EMPTY,
             ));
 
@@ -1726,7 +1726,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret =  utils::none_to_lang_void(interpreter.call_function_pointer(
                 &predicate_object.function_pointer_value().unwrap(),
                 predicate_object.variable_name().as_deref(),
-                &[ele.clone()],
+                std::slice::from_ref(ele),
                 CodePosition::EMPTY,
             ));
 
@@ -1770,7 +1770,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             let ret =  utils::none_to_lang_void(interpreter.call_function_pointer(
                 &predicate_object.function_pointer_value().unwrap(),
                 predicate_object.variable_name().as_deref(),
-                &[ele.clone()],
+                std::slice::from_ref(ele),
                 CodePosition::EMPTY,
             ));
 

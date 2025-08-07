@@ -1668,18 +1668,16 @@ impl Node {
                     Operator::ConditionalNon) {
                     let mut inner_non_value = None;
 
-                    if let Some(node) = operation_expression.left_side_operand.as_deref() {
-                        if let
+                    if let Some(node) = operation_expression.left_side_operand.as_deref()
+                        && let
                                 NodeData::Operation(inner_operation_expression) |
                                 NodeData::Math(inner_operation_expression) |
-                                NodeData::Condition(inner_operation_expression) = &node.node_data {
-                            if matches!(inner_operation_expression.operator(), Operator::Non) ||
+                                NodeData::Condition(inner_operation_expression) = &node.node_data
+                            && (matches!(inner_operation_expression.operator(), Operator::Non) ||
                                     mem::discriminant(&operation_expression.operator) ==
-                                            mem::discriminant(&inner_operation_expression.operator) {
+                                            mem::discriminant(&inner_operation_expression.operator)) {
                                 inner_non_value.clone_from(&inner_operation_expression.left_side_operand);
                             }
-                        }
-                    }
 
                     if inner_non_value.is_some() {
                         operation_expression.left_side_operand = inner_non_value;

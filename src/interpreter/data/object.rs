@@ -315,13 +315,12 @@ impl LangObject {
                 let static_members = &parent_class.borrow().static_members;
 
                 for super_static_member in static_members {
-                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name {
-                        if **super_static_member_name == *static_member_name {
+                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name
+                        && **super_static_member_name == *static_member_name {
                             return Err(DataTypeConstraintError::with_message(format!(
                                 "Super class static member must not be shadowed (For static member \"{static_member_name}\")",
                             )));
                         }
-                    }
                 }
             }
         }
@@ -365,15 +364,14 @@ impl LangObject {
 
             if let Some(function_pointer) = static_member.function_pointer_value() {
                 let func = function_pointer.copy_with_mapped_functions(|function| {
-                    if let Some(member_of_class) = function.member_of_class() {
-                        if ptr::eq(member_of_class.borrow().deref(), Self::dummy_class_definition_class().borrow().deref()) {
+                    if let Some(member_of_class) = function.member_of_class()
+                        && ptr::eq(member_of_class.borrow().deref(), Self::dummy_class_definition_class().borrow().deref()) {
                             return InternalFunction::copy_with_class_member_attributes(
                                 function,
                                 new_value.clone(),
                                 Visibility::Public,
                             );
                         }
-                    }
 
                     function.clone()
                 });
@@ -398,14 +396,13 @@ impl LangObject {
             for parent_class in parent_classes.iter() {
                 let static_members = &parent_class.borrow().static_members;
                 for super_static_member in static_members {
-                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name {
-                        if *super_static_member_name == member.name {
+                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name
+                        && *super_static_member_name == member.name {
                             return Err(DataTypeConstraintError::with_message(format!(
                                 "Super class static member must not be shadowed (For member \"{}\")",
                                 member.name,
                             )));
                         }
-                    }
                 }
 
                 let parent_class = parent_class.borrow();
@@ -422,14 +419,13 @@ impl LangObject {
             }
 
             for static_member in static_members.iter() {
-                if let Some(static_member_name) = &static_member.borrow().variable_name {
-                    if *static_member_name == member.name {
+                if let Some(static_member_name) = &static_member.borrow().variable_name
+                    && *static_member_name == member.name {
                         return Err(DataTypeConstraintError::with_message(format!(
                             "Static members must not be shadowed (For member \"{}\")",
                             member.name,
                         )));
                     }
-                }
             }
         }
 
@@ -527,14 +523,13 @@ impl LangObject {
             for parent_class in parent_classes.iter() {
                 let static_members = &parent_class.borrow().static_members;
                 for super_static_member in static_members {
-                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name {
-                        if **super_static_member_name == *function_var_name {
+                    if let Some(super_static_member_name) = &super_static_member.borrow().variable_name
+                        && **super_static_member_name == *function_var_name {
                             return Err(DataTypeConstraintError::with_message(format!(
                                 "\"fp.\" static members of a super class must not be shadowed by method (For method \"{}\" and member \"{}\")",
                                 method_name, function_var_name,
                             )));
                         }
-                    }
                 }
 
                 let parent_class = parent_class.borrow();
@@ -551,14 +546,13 @@ impl LangObject {
             }
 
             for static_member in static_members.iter() {
-                if let Some(static_member_name) = &static_member.borrow().variable_name {
-                    if **static_member_name == function_var_name {
+                if let Some(static_member_name) = &static_member.borrow().variable_name
+                    && **static_member_name == function_var_name {
                         return Err(DataTypeConstraintError::with_message(format!(
                             "\"fp.\" static members must not be shadowed by method (For method \"{}\" and member \"{}\")",
                             method_name, function_var_name,
                         )));
                     }
-                }
             }
 
             for member in members.iter() {
