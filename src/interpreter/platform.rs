@@ -98,7 +98,7 @@ pub trait PlatformAPI: Debug {
     }
 }
 
-/// This used standard io operations.
+/// This uses standard io operations.
 ///
 /// The [show_input_dialog](DefaultPlatformAPI::show_input_dialog) method is not implemented and will always return an [Err],
 /// because showing a dialog requires using a platform-dependent GUI API.

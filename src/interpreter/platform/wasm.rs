@@ -10,7 +10,7 @@ use crate::interpreter::data::function::native::NativeError;
 use crate::interpreter::platform::PlatformAPI;
 use crate::regex_patterns;
 
-/// This used fetch for io operations.
+/// This uses fetch for io operations.
 ///
 /// <div class="warning">
 ///
