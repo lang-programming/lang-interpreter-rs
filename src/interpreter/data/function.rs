@@ -721,7 +721,7 @@ impl Function {
             builder += ", ";
         }
 
-        if !builder.is_empty() {
+        if !self.parameter_list.is_empty() {
             builder = builder[..builder.len() - 2].to_string();
         }
 
