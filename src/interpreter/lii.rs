@@ -3,6 +3,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
 use ahash::AHashMap;
+use lang_interpreter::interpreter::platform::PlatformAPI;
 use crate::interpreter::data::{DataObjectRef, DataTypeConstraintError, FunctionPointerObjectRef, OptionDataObjectRef};
 use crate::interpreter::{ErrorOutputFlag, Interpreter, InterpretingError, StackElement};
 use crate::interpreter::data::function::{FunctionPointerObject};
@@ -13,6 +14,10 @@ use crate::terminal_io::TerminalIO;
 
 pub fn get_term(interpreter: &mut Interpreter) -> Option<&mut TerminalIO> {
     interpreter.term.as_mut()
+}
+
+pub fn get_platform_api(interpreter: &mut Interpreter) -> &mut dyn PlatformAPI {
+    &mut *interpreter.platform_api
 }
 
 pub fn get_translation(interpreter: &Interpreter, key: &str) -> Option<Rc<str>> {
