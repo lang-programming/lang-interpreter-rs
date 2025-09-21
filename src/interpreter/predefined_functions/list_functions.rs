@@ -1737,7 +1737,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
     functions.push(crate::lang_func!(
             list_any_match_function,
             crate::lang_func_metadata!(
-                name="ListAnyMatch",
+                name="listAnyMatch",
                 return_type_constraint(
                     allowed=["INT"],
                 ),
