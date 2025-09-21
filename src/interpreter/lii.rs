@@ -88,6 +88,10 @@ pub fn add_predefined_functions(interpreter: &mut Interpreter, funcs: impl IntoI
     interpreter.funcs.extend(funcs);
 }
 
+pub fn get_predefined_functions(interpreter: &Interpreter) -> &AHashMap<Box<str>, FunctionPointerObjectRef> {
+    &interpreter.funcs
+}
+
 pub fn exec(interpreter: &mut Interpreter, lines: &str) -> OptionDataObjectRef {
     interpreter.get_and_reset_return_value(); //Reset returned value else the interpreter would stop immediately
 
