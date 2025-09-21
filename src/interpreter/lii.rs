@@ -9,6 +9,11 @@ use crate::interpreter::data::function::{FunctionPointerObject};
 use crate::interpreter::module::Module;
 use crate::lexer::CodePosition;
 use crate::parser::ast::{Node, AST};
+use crate::terminal_io::TerminalIO;
+
+pub fn get_term(interpreter: &mut Interpreter) -> Option<&mut TerminalIO> {
+    interpreter.term.as_mut()
+}
 
 pub fn get_translation(interpreter: &Interpreter, key: &str) -> Option<Rc<str>> {
     interpreter.data_ref().lang.get(key).cloned()
