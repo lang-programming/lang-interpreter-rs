@@ -265,6 +265,8 @@ impl Lexer {
 
             if lines.is_empty() {
                 self.lines_is_empty = true;
+
+                return Some(String::new());
             }else {
                 return Some(lines.pop_front().unwrap().to_string())
             }

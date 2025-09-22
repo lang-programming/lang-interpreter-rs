@@ -372,6 +372,40 @@ fn multiline_text_without_escape_sequence_support() {
 }
 
 #[test]
+fn multiline_text_without_escape_sequence_support_without_end_token() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("{{{TEST \"\"\"\\s\\u{6A}\\\ntest\n\n");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "{{{", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 21), "TEST \"\"\"\\s\\u{6A}\\", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 21, 22), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 5), "test", TokenType::LiteralText),
+        Token::new(CodePosition::new(2, 2, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(3, 3, 1, 2), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(4, 4, 1, 1), "", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(4, 4, 1, 1), "Multiline text closing bracket \"}}}\" is missing!", TokenType::LexerError),
+        Token::new(CodePosition::new(4, 4, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn multiline_text_without_escape_sequence_support_start_token_only() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("{{{");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "{{{", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(2, 2, 1, 1), "Multiline text closing bracket \"}}}\" is missing!", TokenType::LexerError),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
 fn multiline_text_with_escape_sequence_support() {
     let mut lexer = Lexer::new();
 
@@ -395,6 +429,44 @@ fn multiline_text_with_escape_sequence_support() {
         Token::new(CodePosition::new(5, 5, 3, 6), "\"\"\"", TokenType::EndMultilineText),
         Token::new(CodePosition::new(5, 5, 6, 7), "\n", TokenType::Eol),
         Token::new(CodePosition::new(6, 6, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn multiline_text_with_escape_sequence_support_without_end_token() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\"\"\"TEST {{{\\s\\u{6A}\\\ntest\n\n");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "\"\"\"", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 12), "TEST {{{", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 12, 14), "\\s", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 14, 14), "", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 14, 20), "\\u{6A}", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 20, 21), "\\", TokenType::LiteralText),
+        Token::new(CodePosition::new(1, 1, 21, 22), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 5), "test", TokenType::LiteralText),
+        Token::new(CodePosition::new(2, 2, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(3, 3, 1, 2), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(4, 4, 1, 1), "", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(4, 4, 1, 1), "Multiline text closing bracket '\"\"\"' is missing!", TokenType::LexerError),
+        Token::new(CodePosition::new(4, 4, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn multiline_text_with_escape_sequence_support_start_token_only() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\"\"\"");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 4), "\"\"\"", TokenType::StartMultilineText),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::EndMultilineText),
+        Token::new(CodePosition::new(2, 2, 1, 1), "Multiline text closing bracket '\"\"\"' is missing!", TokenType::LexerError),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
     ]);
 }
 
