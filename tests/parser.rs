@@ -21,6 +21,92 @@ fn empty_block() {
 }
 
 #[test]
+fn closing_bracket_only() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("}");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn closing_bracket_only_with_1_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n}");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn closing_bracket_only_with_2_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n\\\n}");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn closing_bracket_only_with_3_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n\\\n\\\n}");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn opening_bracket_only() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("{");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn opening_bracket_only_with_1_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n{");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn opening_bracket_only_with_2_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n\\\n{");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn opening_bracket_only_with_3_leading_line_separator() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\\\n\\\n\\\n{");
+
+    assert_eq!(ast, Some(AST::new()));
+}
+
+#[test]
+fn empty_single_line_text() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("\"\"");
+
+    assert_eq!(ast, Some(AST::from([
+        Node::new_text_value_node(
+            CodePosition::new(1, 2, 1, 2),
+            "",
+        ),
+    ])));
+}
+
+#[test]
 fn equals_sign_in_function_call() {
     let mut parser = Parser::new();
 

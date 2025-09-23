@@ -5106,16 +5106,15 @@ impl Parser {
 
                 if tokens.get(i).is_some_and(|token| matches!(token.token_type(), TokenType::Eol)) {
                     tokens.remove(i);
-                    i -= 1;
                 }
 
-                i -= 1;
+                i = i.wrapping_sub(1);
             }else if matches!(token.token_type(), TokenType::SingleLineTextQuotes) {
                 tokens.remove(i);
-                i -= 1;
+                i = i.wrapping_sub(1);
             }
 
-            i += 1;
+            i = i.wrapping_add(1);
         }
 
         tokens.make_contiguous();
