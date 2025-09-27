@@ -1145,7 +1145,7 @@ pub fn add_functions(functions: &mut Vec<(FunctionMetadata, Function)>) {
             crate::lang_func_metadata!(
                 name="listMapToNew",
                 return_type_constraint(
-                    allowed=["ARRAY"],
+                    allowed=["LIST"],
                 ),
                 parameter(
                     name="&list",
