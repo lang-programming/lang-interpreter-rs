@@ -759,7 +759,7 @@ impl Lexer {
         if current_line.len() >= 2 && current_line.as_bytes()[0] == b'\\' {
             'unicodeEscapeSequence: {
                 if current_line.as_bytes()[1] == b'u' && current_line.len() >= 5 &&
-                        current_line.as_bytes()[2] == b'{' && current_line.as_bytes()[3] != b'}' {
+                        current_line.as_bytes()[2] == b'{' && current_line.as_bytes()[3] != b'}' && current_line.contains("}") {
                     let mut i = 3;
                     while i < 10 && i < current_line.len() {
                         let c = current_line.as_bytes()[i];

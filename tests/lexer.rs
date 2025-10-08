@@ -471,6 +471,125 @@ fn multiline_text_with_escape_sequence_support_start_token_only() {
 }
 
 #[test]
+fn unicode_escape_sequence_without_end_token_len_0() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBlockBracket),
+        Token::new(CodePosition::new(1, 1, 4, 5), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_1() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 5), "a", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 5, 6), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_2() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 6), "a0", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 6, 7), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_3() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0b");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 7), "a0b", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 7, 8), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_4() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0b1");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 8), "a0b1", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 8, 9), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_5() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0b1c");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 9), "a0b1c", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 9, 10), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_6() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0b1c2");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 10), "a0b1c2", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 10, 11), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
+fn unicode_escape_sequence_without_end_token_len_7() {
+    let mut lexer = Lexer::new();
+
+    let tokens = lexer.read_tokens("\\u{a0b1c2d");
+
+    assert_eq!(tokens, vec![
+        Token::new(CodePosition::new(1, 1, 1, 3), "\\u", TokenType::EscapeSequence),
+        Token::new(CodePosition::new(1, 1, 3, 4), "{", TokenType::OpeningBracket),
+        Token::new(CodePosition::new(1, 1, 4, 11), "a0b1c2d", TokenType::Other),
+        Token::new(CodePosition::new(1, 1, 11, 12), "\n", TokenType::Eol),
+        Token::new(CodePosition::new(2, 2, 1, 1), "", TokenType::Eof),
+    ]);
+}
+
+#[test]
 fn other_with_newline_token_stream() {
     let mut lexer = Lexer::new();
 
