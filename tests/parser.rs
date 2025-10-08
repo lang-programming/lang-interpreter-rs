@@ -126,6 +126,20 @@ fn equals_sign_in_function_call() {
 }
 
 #[test]
+fn simple_assignment_with_rvalue_of_equals_sign() {
+    let mut parser = Parser::new();
+
+    let ast = parser.parse_lines("x ==");
+
+    assert_eq!(ast, Some(AST::from([
+        Node::new_assignment_node(
+            Node::new_text_value_node(CodePosition::new(1, 1, 1, 2), "x"),
+            Node::new_text_value_node(CodePosition::new(1, 1, 4, 5), "="),
+        ),
+    ])));
+}
+
+#[test]
 fn fizz_buzz_example() {
     let mut parser = Parser::new();
 

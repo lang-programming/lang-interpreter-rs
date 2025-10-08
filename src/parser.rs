@@ -1536,7 +1536,7 @@ impl Parser {
 
         let is_simple_assignment = assignment_token.value() == "=";
         if is_simple_assignment || assignment_token.value() == " = " {
-            let pos = lvalue_tokens[0].pos().combine(&lvalue_tokens[assignment_index - 1].pos());
+            let pos = lvalue_tokens[0].pos().combine(&lvalue_tokens[lvalue_tokens.len() - 1].pos());
 
             let regex = if is_simple_assignment {
                 &regex_patterns::PARSING_SIMPLE_ASSIGNMENT_VARIABLE_NAME_LVALUE
