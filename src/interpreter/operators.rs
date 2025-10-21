@@ -519,7 +519,7 @@ pub fn op_inc(
 
         DataValue::FunctionPointer(value) => {
             let value = value.clone();
-            let function_name = format!("<auto-unpack-func({value}>");
+            let function_name = format!("<auto-unpack-func({value})>");
 
             let operand = operand.clone();
             let auto_unpack_func = {
@@ -615,7 +615,7 @@ pub fn op_dec(
 
         DataValue::FunctionPointer(value) => {
             let value = value.clone();
-            let function_name = format!("<auto-pack-func({value}>");
+            let function_name = format!("<auto-pack-func({value})>");
 
             let operand = operand.clone();
             let auto_pack_func = {
