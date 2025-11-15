@@ -172,7 +172,7 @@ pub fn wrap_index_allow_len(index: i32, len: usize) -> Option<usize> {
 pub(crate) fn remove_dots_from_file_path(mut file: String) -> String {
     //Remove "/./"
     while file.contains("/./") {
-        file = file.replace("/./", "/").to_string();
+        file = file.replace("/./", "/");
     }
 
     //Remove "/../" and go to parent
