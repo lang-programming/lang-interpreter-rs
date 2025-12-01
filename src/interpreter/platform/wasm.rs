@@ -66,15 +66,13 @@ impl PlatformAPI for WASMPlatformAPI {
 
         let path = &*regex_patterns::WASM_STARTS_WITH_MULTIPLE_DOUBLE_SLASH.replace_all(&path.to_string_lossy(), "/").to_string();
 
-        let location = js_sys::Reflect::get(js_sys::global().as_ref(), &"location".into()).map_err(|err| Error::new(
-            ErrorKind::Other,
+        let location = js_sys::Reflect::get(js_sys::global().as_ref(), &"location".into()).map_err(|err| Error::other(
             err.as_string().as_deref().unwrap_or("Error"),
         ))?;
 
         let location = WorkerLocation::from(location);
 
-        let location = Url::new_with_base(path, &location.href()).map_err(|err| Error::new(
-            ErrorKind::Other,
+        let location = Url::new_with_base(path, &location.href()).map_err(|err| Error::other(
             err.as_string().as_deref().unwrap_or("Error"),
         ))?;
 
@@ -112,8 +110,7 @@ impl PlatformAPI for WASMPlatformAPI {
             Ok(bytes.into_boxed_slice())
         }
 
-        internal(lang_file).map_err(|err| Error::new(
-            ErrorKind::Other,
+        internal(lang_file).map_err(|err| Error::other(
             err.as_string().as_deref().unwrap_or("Error"),
         ))
     }
